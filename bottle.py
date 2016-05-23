@@ -1957,7 +1957,7 @@ class JSONPlugin(object):
 
             if isinstance(rv, dict):
                 #Attempt to serialize, raises exception on failure
-                json_response = dumps(rv)
+                json_response = dumps(rv, sort_keys=True, indent=2) + '\n'
                 #Set content type only if serialization successful
                 response.content_type = 'application/json'
                 return json_response
