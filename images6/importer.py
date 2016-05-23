@@ -72,6 +72,10 @@ def trig_import(name):
 
 
 def get_status():
+    if ImportJob.files == 0:
+        progress = 0
+    else:
+        progress = int((ImportJob.imported + ImportJob.failed) / ImportJob.files)
     return {
         '*schema': 'ImportStatus',
         'folder_name': ImportJob.folder_name,
@@ -79,10 +83,7 @@ def get_status():
         'files': ImportJob.files,
         'imported': ImportJob.imported,
         'failed': ImportJob.failed,
-        'progress': (
-            (ImportJob.imported + ImportJob.failed) / ImportJob.files
-            if ImportJob.status == 'importing' else 0
-        ),
+        'progress': progress,
     }
 
 
@@ -158,7 +159,7 @@ class ImportJob:
 
 def import_job(folder):
     try:
-        logging.info("Started importer thread for %s", str(folder))
+        logging.info("Started importer thread for %s", repr(folder))
         ImportJob.status = 'scanning'
         ImportJob.files = 0
         ImportJob.imported = 0
@@ -167,12 +168,12 @@ def import_job(folder):
         scanner = FolderScanner(folder.path, ext='jpg')
         for filepath in scanner.scan():
             if not folder.is_known(filepath):
-                folder.add_to_import()
+                folder.add_to_import(filepath)
                 ImportJob.files += 1
                 logging.debug('To import %s.', filepath)
 
         ImportJob.status = 'importing'
-        for file_path in folder.iter_to_import():
+        for file_path in folder:
             logging.debug("Importing %s", file_path)
             full_path = folder.get_full_path(file_path)
 
@@ -180,19 +181,22 @@ def import_job(folder):
             ImportModule = get_import_module(mime_type)
 
             if ImportModule is None:
-                debug.error('Could not find an import module for %s', mime_type)
+                logging.error('Could not find an import module for %s', mime_type)
                 ImportJob.failed += 1
                 folder.add_failed(file_path)
                 continue
 
             import_module = ImportModule(folder, file_path, mime_type)
             try:
+                logging.debug("Run import module %s", ImportModule.__name__)
                 import_module.run()
+                logging.debug("Import module ran successfully.")
             except Exception as e:
-                debug.error('Import failed for %s: %s', full_path, str(e))
+                logging.error('Import failed for %s: %s', full_path, str(e))
                 ImportJob.failed += 1
                 folder.add_failed(file_path)
-                continue
+                import_module.clean_up()
+                raise e
 
             ImportJob.imported += 1
             folder.add_imported(file_path)
@@ -201,11 +205,13 @@ def import_job(folder):
         ImportJob.status = 'done'
 
     except Exception as e:
+        logging.error('Import thread failed for %s: %s', full_path, str(e))
         ImportJob.status = 'error'
         raise e
 
     finally:
         ImportJob.lock.release()
+        logging.debug("Import thread closing.")
 
 
 def guess_mime_type(file_path):

@@ -2,6 +2,14 @@ import os
 import logging
 import argparse
 
+# Logging
+FORMAT = '%(asctime)s [%(threadName)s] %(filename)s +%(levelno)s ' + \
+         '%(funcName)s %(levelname)s %(message)s'
+logging.basicConfig(
+    format=FORMAT,
+    level=logging.DEBUG,
+)
+
 from .system import System
 
 from . import web
@@ -24,8 +32,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Config
-    system = System(args.config, debug=args.debug)
-    logging.info("*** Done setting up Databse.")
+    system = System(args.config)
+    logging.info("*** Done setting up Database.")
 
     # Web-Apps
     logging.info("*** Setting up Web-Apps...")

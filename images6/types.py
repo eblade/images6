@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from .metadata import wrap_dict, wrap_raw_json
 
 
@@ -176,7 +177,14 @@ class PropertySet(metaclass=ClassWithProperties):
     def to_dict(self):
         dct = {}
         for attr_name in self._all_properties:
-            dct[attr_name] = getattr(self, attr_name)
+            value = getattr(self, attr_name)
+            try:
+                try:
+                    dct[attr_name] = [value.to_dict() for value in value]
+                except (AttributeError, TypeError):
+                    dct[attr_name] = value.to_dict()
+            except AttributeError:
+                dct[attr_name] = value
         dct['*schema'] = self.__class__.__name__
         return dct
 
@@ -197,3 +205,8 @@ class PropertySet(metaclass=ClassWithProperties):
         inst = cls()
         inst.from_json(json_string)
         return inst
+
+
+class EnumProperty(Enum):
+    def to_dict(self):
+        return self.name

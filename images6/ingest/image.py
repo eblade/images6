@@ -9,7 +9,7 @@ from datetime import datetime
 from ..system import current_system
 from ..importer import GenericImportModule, register_import_module
 from ..localfile import FileCopy
-from ..entry import Entry, Variant, create_entry, update_entry_by_id, State, Access, Purpose
+from ..entry import Entry, Variant, create_entry, update_entry_by_id, delete_entry_by_id, State, Access, Purpose
 from ..exif import exif_position, exif_orientation, exif_string, exif_int, exif_ratio
 from ..types import PropertySet, Property
 from ..metadata import register_metadata_schema
@@ -19,26 +19,39 @@ from ..metadata import register_metadata_schema
 class JPEGImportModule(GenericImportModule):
     def run(self):
         self.full_source_file_path = self.folder.get_full_path(self.file_path)
+        logging.debug('Import %s', self.full_source_file_path)
         self.system = current_system()
 
+        logging.debug('Creating entry...')
         self.entry = create_entry(Entry(
             original_filename=os.path.basename(self.file_path),
             state=State.new,
         ))
+        logging.debug('Created entry.\n%s', self.entry.to_json())
 
         self.create_original()
+        logging.debug('Created original.')
 
         metadata = JPEGMetadata(**(self.analyse()))
         self.fix_taken_ts(metadata)
+        logging.debug('Read metadata.')
 
         angle, mirror = metadata.Angle, metadata.Mirror
         self.create_variant('thumb', Purpose.thumb, self.system.thumb_size, angle, mirror)
         self.create_variant('proxy', Purpose.proxy, self.system.proxy_size, angle, mirror)
         self.create_check(angle, mirror)
+        logging.debug('Created proxy files.')
 
         self.entry.metadata = metadata
 
+        logging.debug('Updating entry...\n%s', self.entry.to_json())
         update_entry_by_id(self.entry.id, self.entry)
+        logging.debug('Updated entry.\n%s', self.entry.to_json())
+
+    def clean_up(self):
+        logging.debug('Cleaning up...')
+        delete_entry_by_id(self.entry.id)
+        logging.debug('Cleaned up.')
 
     def create_original(self):
         original = Variant(
@@ -53,11 +66,11 @@ class JPEGImportModule(GenericImportModule):
                 original.get_filename(self.entry.id)
             ),
             link=True,
-            remove_source=folder.auto_remove,
+            remove_source=self.folder.auto_remove,
         )
         filecopy.run()
-        self.full_original_file_path = filecopy.destination_full_path
-        original.file_size = os.path.getsize(filecopy.destination_full_path)
+        self.full_original_file_path = filecopy.destination
+        original.file_size = os.path.getsize(filecopy.destination)
         self.entry.variants.append(original)
 
     def fix_taken_ts(self, metadata):
@@ -70,7 +83,7 @@ class JPEGImportModule(GenericImportModule):
                 .strftime('%Y-%m-%d %H:%M:%S')
         )
 
-    def create_variant(self, store, purpose, size, angle, mirror):
+    def create_variant(self, store, purpose, longest_edge, angle, mirror):
         variant = Variant(
             store=store,
             mime_type='image/jpeg',
@@ -79,16 +92,16 @@ class JPEGImportModule(GenericImportModule):
         full_path = os.path.join(
             self.system.media_root,
             variant.get_filename(self.entry.id),
-        ),
+        )
         variant.width, variant.height = _convert(
             self.full_original_file_path,
             full_path,
+            longest_edge=longest_edge,
             angle=angle,
             mirror=mirror,
-            size=size,
         )
         s = os.stat(full_path)
-        variant.size=s.st_size,
+        variant.size=s.st_size
         self.entry.variants.append(variant)
 
     def create_check(self, angle, mirror):
@@ -100,7 +113,7 @@ class JPEGImportModule(GenericImportModule):
         full_path = os.path.join(
             self.system.media_root,
             variant.get_filename(self.entry.id),
-        ),
+        )
         variant.width, variant.height = _create_check(
             self.full_original_file_path,
             full_path,
@@ -109,11 +122,11 @@ class JPEGImportModule(GenericImportModule):
             size=self.system.check_size,
         )
         s = os.stat(full_path)
-        variant.size=s.st_size,
+        variant.size=s.st_size
         self.entry.variants.append(variant)
 
     def analyse(self):
-        infile = self.image_path
+        infile = self.full_original_file_path
 
         exif = None
         with open(infile, 'rb') as f:
@@ -121,7 +134,7 @@ class JPEGImportModule(GenericImportModule):
 
         orientation, mirror, angle = exif_orientation(exif)
         lon, lat = exif_position(exif)
-        logging.debug(exif)
+        #logging.debug(exif)
 
         return {
             "Artist": exif_string(exif, "Image Artist"),
@@ -189,12 +202,14 @@ def _create_check(path_in, path_out, size=200, angle=None, mirror=None):
 
     with open(path_out, 'w') as out:
         img = Image.open(path_in)
-        width, height = im.size
+        width, height = img.size
 
-        bx = width / 2 - size / 2
-        by = height / 2 - size / 2
+        left = (width - size) / 2
+        top = (height - size) / 2
+        right = (width + size) / 2
+        bottom = (height + size) / 2
 
-        img = img.crop((x, y, size, size))
+        img.crop((left, top, right, bottom))
 
         if mirror == 'H':
             img = img.transpose(Image.FLIP_RIGHT_LEFT)

@@ -2,6 +2,7 @@ import logging
 import configparser
 import os
 import threading
+import json
 
 
 def current_system():
@@ -10,8 +11,7 @@ current_system.system = None
 
 
 class System:
-    def __init__(self, config_path, debug=False):
-        self.setup_logging(debug=debug)
+    def __init__(self, config_path):
         self.config = configparser.ConfigParser()
         self.config.read(config_path)
         self.name = self.config['Images']['name']
@@ -30,13 +30,6 @@ class System:
         current_system.system = self
         logging.info("System registered.")
 
-    def setup_logging(self, debug=False):
-        FORMAT = '%(asctime)s [%(threadName)s] %(filename)s +%(levelno)s ' + \
-                 '%(funcName)s %(levelname)s %(message)s'
-        logging.basicConfig(
-            format=FORMAT,
-            level=(logging.DEBUG if debug else logging.INFO),
-        )
 
     def setup_filesystem(self):
         self.root = os.path.expanduser(os.path.expandvars(self.config['Filesystem']['root']))
@@ -51,9 +44,9 @@ class System:
             logging.debug("Loading import folder '%s': %s", name, path)
             if name.startswith('-'):
                 name = name[1:]
-                auto_remove = False
-            else:
                 auto_remove = True
+            else:
+                auto_remove = False
             import_folder = ImportFolder(name, path, self.root, auto_remove)
             self.import_folders[name] = import_folder
 
@@ -62,7 +55,7 @@ class System:
         self.server_port = int(self.config['Server']['port'])
 
     def setup_database(self):
-        self.database_root = os.path.join(self.root, '_database')
+        self.database_root = os.path.join(self.root, 'database')
         self.database = Database(self.database_root)
 
 
@@ -96,6 +89,9 @@ class ImportFolder:
             self.failed = set()
         self.to_import = set()
 
+    def __repr__(self):
+        return '<ImportFolder %s%s %s>' % ('-' if self.auto_remove else '+', self.name, self.path)
+
     def is_imported(self, path):
         return path in self.imported
 
@@ -118,7 +114,10 @@ class ImportFolder:
         with open(self.failed_file, 'a') as f:
             f.write(path + '\n')
     
-    def iter_to_import(self):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
         try:
             return self.to_import.pop()
         except KeyError:
@@ -146,31 +145,35 @@ class Database:
             except IOError:
                 current = 0
             with open(self.id_counter_file, 'w') as f:
-                f.write(current + 1)
+                f.write(str(current + 1))
             return current
     
     def load_entries(self):
-        logging.info("Loading entries...")
-        self.entries = []
-        self.entries_by_id = {}
-        for r, ds, fs in os.walk(self.data_folder):
-            for f in fs:
-                if f.endswidth('.json'):
-                    path = os.path.join(r, f)
-                    with open(path, 'rb') as f:
-                        entry = json.load(f)
-                        self._read_entry(entry)
-        self.sort()
-        logging.info("Loaded %i entries.", len(self.entries))
+        with self.lock:
+            logging.info("Loading entries...")
+            self.entries = []
+            self.entries_by_id = {}
+            for r, ds, fs in os.walk(self.data_folder):
+                for f in fs:
+                    if f.endswith('.json'):
+                        path = os.path.join(r, f)
+                        with open(path, 'rb') as f:
+                            s = f.read().decode('utf8')
+                            entry = json.loads(s)
+                            self._read_entry(entry)
+            self._sort()
+            logging.info("Loaded %i entries.", len(self.entries))
 
     def _read_entry(self, entry):
-        with self.lock:
-            self.entries.append(entry)
-            self.entries_by_id[entry.id] = entry
+        self.entries.append(entry)
+        self.entries_by_id[entry.get('id')] = entry
+
+    def _sort(self):
+        self.entries.sort(key=lambda e: e.get('taken_ts'), reverse=True)
 
     def sort(self):
         with self.lock:
-            self.entries.sort(key=lambda e: e.get('taken_ts'), reverse=True)
+            self._sort()
 
     def get(self, id):
         return self.entries_by_id[id]
@@ -183,23 +186,25 @@ class Database:
             self.entries_by_id[id] = new_entry
             path = os.path.join(
                     self.data_folder,
-                    self.get_filename(id, 'json')
+                    self.get_json_filename(id)
             )
             tmp_path = path + '.tmp'
             with open(tmp_path, 'wb') as f:
-                json.dump(new_entry, f)
-                os.remove(path)
-                os.rename(tmp_path, path)
+                s = json.dumps(new_entry, indent=2, sort_keys=True)
+                f.write(s.encode('utf8'))
+            os.remove(path)
+            os.rename(tmp_path, path)
 
     def create(self, id, new_entry):
         with self.lock:
             self._read_entry(new_entry)
             path = os.path.join(
-                    self.data_folder,
-                    self.get_filename(id, 'json')
+                self.data_folder,
+                self.get_json_filename(id)
             )
             with open(path, 'wb') as f:
-                json.dump(new_entry, f)
+                s = json.dumps(new_entry, indent=2, sort_keys=True)
+                f.write(s.encode('utf8'))
 
     def delete(self, id):
         with self.lock:
@@ -207,8 +212,8 @@ class Database:
             self.entries.remove(entry)
             del self.entries_by_id[id]
             path = os.path.join(
-                    self.data_folder,
-                    self.get_filename(id, 'json')
+                self.data_folder,
+                self.get_json_filename(id)
             )
             os.remove(path)
 
@@ -219,3 +224,6 @@ class Database:
         if offset >= len(self.entries):
             return []
         return self.entries[offset:offset + page_size]
+    
+    def get_json_filename(self, id):
+        return '%08x.json' % (id)

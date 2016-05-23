@@ -3,11 +3,10 @@ import bottle
 import datetime
 import urllib
 import mimetypes
-
-from enum import Enum
+import os
 
 from .system import current_system
-from .types import PropertySet, Property
+from .types import PropertySet, Property, EnumProperty
 from .web import (
     Create,
     FetchById,
@@ -59,23 +58,23 @@ class App:
 ############
 
 
-class State(Enum):
-    new = 0
-    pending = 1
-    keep = 2
-    descard = 3
+class State(EnumProperty):
+    new = 'new'
+    pending = 'pending'
+    keep = 'keep'
+    discard = 'discard'
 
 
-class Access(Enum):
-    private = 0
-    public = 1
+class Access(EnumProperty):
+    private = 'private' 
+    public = 'public'
 
 
-class Purpose(Enum):
-    original = 0
-    proxy = 1
-    thumb = 2
-    check = 3
+class Purpose(EnumProperty):
+    original = 'original'
+    proxy = 'proxy'
+    thumb = 'thumb'
+    check = 'check'
 
 
 class Entry(PropertySet):
@@ -85,7 +84,7 @@ class Entry(PropertySet):
     import_folder = Property()
     state = Property(enum=State)
     access = Property(enum=Access, default=Access.private)
-    variants = Property(dict)
+    variants = Property(list)
     tags = Property(list)
     taken_ts = Property()
     metadata = Property(wrap=True)
@@ -97,9 +96,9 @@ class Entry(PropertySet):
 
     def calculate_urls(self):
         self.self_url = '%s/%s' % (App.BASE, self.file_name)
-        for variant, file_name in self.variants.items():
-            self.urls[variant] = '%s/%s/dl/%s/%s' % (
-                App.BASE, self.file_name, variant, file_name
+        for variant in self.variants:
+            self.urls[variant] = '%s/%i/dl/%s/%i' % (
+                App.BASE, self.id, variant.store, variant.version
             )
 
 
@@ -145,7 +144,7 @@ class Variant(PropertySet):
     mime_type = Property()
     size = Property(int)
     purpose = Property(enum=Purpose, default=Purpose.original)
-    version = Property(int)
+    version = Property(int, default=0)
     width = Property(int)
     height = Property(int)
 
@@ -172,24 +171,24 @@ def get_entries(query=None):
     else:
         offset = query.offset
         page_size = query.page_size
-    entry_data = current_system().get_page(offset, page_size)
+    entry_data = current_system().database.get_page(offset, page_size)
 
 
 def get_entry_by_id(id):
-    return Entry.FromDict(current_system().get_data(id))
+    return Entry.FromDict(current_system().database.get(id))
 
 
 def update_entry_by_id(id, ed):
-    current_system().update(id, ed.to_dict())
+    current_system().database.update(id, ed.to_dict())
     return get_entry_by_id(id)
 
 
 def create_entry(ed):
-    id = current_system().next_id()
+    id = current_system().database.next_id()
     ed.id = id
-    current_system().update(id, ed.to_dict())
+    current_system().database.create(id, ed.to_dict())
     return get_entry_by_id(id)
 
 
 def delete_entry_by_id(id):
-    current_system().delete(id)
+    current_system().database.delete(id)

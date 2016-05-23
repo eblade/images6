@@ -4,6 +4,7 @@
 import os
 import errno
 import logging
+import shutil
 
 
 ################################################################################
@@ -11,94 +12,39 @@ import logging
 
 
 class FileCopy(object):
-    """
-    File Copier for local file operations. Handles copying, linking and overwrite protection.
-
-    Args:
-        source_location (.location.LocationDescriptor): The `Location` to copy from.
-            May be `None` if `source_path` is absolute.
-        source_path (str): The relative path to copy from.
-        dest_location (.location.LocationDescriptor): The `Location` to copy to. Required.
-        dest_filename (str): The wanted filename to use on the destionation.
-        link (Optional[boo]): Try hard-linking before copying. Defaults to `False`.
-        keep_original (Optional[bool]): Keep source file, as opposed to deleting it when done.
-            Defaults to whatever the source `Location.metadata.keep_original` is.
-        dest_folder (str): Relative destination folder.
-            If not given, let destionation `Location` decide.
-
-    Attributes:
-        destination_rel_path (str): After run, contains the relative path of the destination
-            (from destination `Location` root).
-        destination_full_path (str): After run, contains the full path of the destination.
-        link (bool): Will be set to False if linking failed due to cross-device error.
-    """
     def __init__(
             self,
-            source_location=None,
-            source_path=None,
-            dest_location=None,
-            dest_filename=None,
+            source=None,
+            destination=None,
             link=False,
-            keep_original=None,
-            dest_folder=None):
+            remove_source=False):
 
-        self.source_location = source_location
-        if source_location and source_location.metadata and keep_original is None:
-            self.keep_original = source_location.metadata.keep_original
-        elif keep_original is None:
-            self.keep_original = True
-        else:
-            self.keep_original = keep_original
-        self.source_path = source_path
-        self.dest_location = dest_location
+        self.source = source
+        self.destination = destination
         self.link = link
-        self.dest_filename = dest_filename
-        self.dest_folder = dest_folder
-        self.destination_rel_path = None
-        self.destination_full_path = None
+        self.remove_source = remove_source
 
     def run(self):
-        if self.source_location:
-            src = os.path.join(self.source_location.root, self.source_path)
-        else:
-            src = self.source_path
-        dst_folder = self.dest_folder or self.dest_location.suggest_folder()
-        dst = os.path.join(dst_folder, self.dest_filename)
-        try:
-            os.makedirs(dst_folder)
-        except FileExistsError as e:
-            pass
-        c = 0
-        while True:
+        destination_folder = os.path.dirname(self.destination)
+        os.makedirs(destination_folder, exist_ok=True)
+
+        while self.link:
             try:
-                if c:
-                    dst_path, dst_ext = os.path.splitext(dst)
-                    fixed_dst = ''.join([dst_path, '_%i' % c, dst_ext])
-                else:
-                    fixed_dst = dst
                 if self.link:
-                    logging.debug("Linking %s -> %s", src, fixed_dst)
-                    os.link(src, fixed_dst)
-                    self.destination_rel_path = os.path.relpath(fixed_dst, self.dest_location.root)
-                    self.destination_full_path = fixed_dst
+                    logging.debug("Linking %s -> %s", self.source, self.destination)
+                    os.link(self.source, self.destination)
                 else:
-                    import shutil
-                    logging.debug("Copying %s -> %s", src, fixed_dst)
-                    shutil.copyfile(src, fixed_dst)
-                    self.destination_rel_path = os.path.relpath(fixed_dst, self.dest_location.root)
-                    self.destination_full_path = fixed_dst
+                    logging.debug("Copying %s -> %s", self.source, self.destination)
+                    shutil.copyfile(self.source, self.destination)
                 break
-            except FileExistsError:
-                logging.warning("File exists %s", fixed_dst)
-                c += 1
             except OSError as e:
                 if e.errno == errno.EXDEV:
-                    logging.warning("Cross-device link %s -> %s", src, fixed_dst)
+                    logging.warning("Cross-device link %s -> %s", self.source, self.destination)
                     self.link = False
                 else:
-                    logging.warning("OSError %i %s -> %s (%s)", e.errno, src, fixed_dst, str(e))
+                    logging.warning("OSError %i %s -> %s (%s)", e.errno, self.source, self.destination, str(e))
                     raise e
 
-        if not self.keep_original:
-            logging.debug("Removing original %s", src)
-            os.remove(src)
+        if self.remove_source:
+            logging.debug("Removing source %s", self.source)
+            os.remove(self.source)
