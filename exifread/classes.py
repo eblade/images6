@@ -1,11 +1,9 @@
 import struct
 import re
+import logging
 
-from .exif_log import get_logger
 from .utils import s2n_motorola, s2n_intel, Ratio
 from .tags import *
-
-logger = get_logger()
 
 
 class IfdTag:
@@ -124,7 +122,7 @@ class ExifHeader:
         try:
             entries = self.s2n(ifd, 2)
         except TypeError:
-            logger.warning("Possibly corrupted IFD: %s" % ifd)
+            logging.warning("Possibly corrupted IFD: %s" % ifd)
             return
 
         for i in range(entries):
@@ -191,12 +189,12 @@ class ExifHeader:
                                 try:
                                     values = values.decode("utf-8")
                                 except UnicodeDecodeError:
-                                    logger.warning("Possibly corrupted field %s in %s IFD", tag_name, ifd_name)
+                                    logging.warning("Possibly corrupted field %s in %s IFD", tag_name, ifd_name)
                         except OverflowError:
-                            logger.warn('OverflowError at position: %s, length: %s', file_position, count)
+                            logging.warn('OverflowError at position: %s, length: %s', file_position, count)
                             values = ''
                         except MemoryError:
-                            logger.warn('MemoryError at position: %s, length: %s', file_position, count)
+                            logging.warn('MemoryError at position: %s, length: %s', file_position, count)
                             values = ''
                 else:
                     values = []
@@ -245,10 +243,10 @@ class ExifHeader:
                         elif type(tag_entry[1]) is tuple:
                             ifd_info = tag_entry[1]
                             try:
-                                logger.debug('%s SubIFD at offset %d:', ifd_info[0], values[0])
+                                logging.debug('%s SubIFD at offset %d:', ifd_info[0], values[0])
                                 self.dump_ifd(values[0], ifd_info[0], tag_dict=ifd_info[1], stop_tag=stop_tag)
                             except IndexError:
-                                logger.warn('No values found for %s SubIFD', ifd_info[0])
+                                logging.warn('No values found for %s SubIFD', ifd_info[0])
                         else:
                             printable = ''
                             for i in values:
@@ -264,7 +262,7 @@ class ExifHeader:
                 # fix for python2's handling of unicode values
                 except UnicodeEncodeError:
                     tag_value = unicode(self.tags[ifd_name + ' ' + tag_name])
-                logger.debug(' %s: %s', tag_name, tag_value)
+                logging.debug(' %s: %s', tag_name, tag_value)
 
             if tag_name == stop_tag:
                 break
@@ -387,11 +385,11 @@ class ExifHeader:
         # cameras work that way.
         if 'NIKON' in make:
             if note.values[0:7] == [78, 105, 107, 111, 110, 0, 1]:
-                logger.debug("Looks like a type 1 Nikon MakerNote.")
+                logging.debug("Looks like a type 1 Nikon MakerNote.")
                 self.dump_ifd(note.field_offset + 8, 'MakerNote',
                               tag_dict=makernote.nikon.TAGS_OLD)
             elif note.values[0:7] == [78, 105, 107, 111, 110, 0, 2]:
-                logger.debug("Looks like a labeled type 2 Nikon MakerNote")
+                logging.debug("Looks like a labeled type 2 Nikon MakerNote")
                 if note.values[12:14] != [0, 42] and note.values[12:14] != [42, 0]:
                     raise ValueError("Missing marker tag '42' in MakerNote.")
                     # skip the Makernote label and the TIFF header
@@ -399,7 +397,7 @@ class ExifHeader:
                               tag_dict=makernote.nikon.TAGS_NEW, relative=1)
             else:
                 # E99x or D1
-                logger.debug("Looks like an unlabeled type 2 Nikon MakerNote")
+                logging.debug("Looks like an unlabeled type 2 Nikon MakerNote")
                 self.dump_ifd(note.field_offset, 'MakerNote',
                               tag_dict=makernote.nikon.TAGS_NEW)
             return
@@ -457,12 +455,12 @@ class ExifHeader:
                       ('MakerNote Tag 0x0026', makernote.canon.AF_INFO_2),
                       ('MakerNote Tag 0x0093', makernote.canon.FILE_INFO)):
                 if i[0] in self.tags:
-                    logger.debug('Canon ' + i[0])
+                    logging.debug('Canon ' + i[0])
                     self._canon_decode_tag(self.tags[i[0]].values, i[1])
                     del self.tags[i[0]]
             if makernote.canon.CAMERA_INFO_TAG_NAME in self.tags:
                 tag = self.tags[makernote.canon.CAMERA_INFO_TAG_NAME]
-                logger.debug('Canon CameraInfo')
+                logging.debug('Canon CameraInfo')
                 self._canon_decode_camera_info(tag)
                 del self.tags[makernote.canon.CAMERA_INFO_TAG_NAME]
             return
@@ -485,9 +483,9 @@ class ExifHeader:
             else:
                 val = value[i]
             try:
-                logger.debug(" %s %s %s", i, name, hex(value[i]))
+                logging.debug(" %s %s %s", i, name, hex(value[i]))
             except TypeError:
-                logger.debug(" %s %s %s", i, name, value[i])
+                logging.debug(" %s %s %s", i, name, value[i])
 
             # it's not a real IFD Tag but we fake one to make everybody
             # happy. this will have a "proprietary" type
@@ -533,7 +531,7 @@ class ExifHeader:
                     tag_value = tag[2](tag_value)
                 else:
                     tag_value = tag[2].get(tag_value, tag_value)
-            logger.debug(" %s %s", tag_name, tag_value)
+            logging.debug(" %s %s", tag_name, tag_value)
 
             self.tags['MakerNote ' + tag_name] = IfdTag(str(tag_value), None,
                                                         0, None, None, None)
@@ -541,7 +539,7 @@ class ExifHeader:
     def parse_xmp(self, xmp_string):
         import xml.dom.minidom
 
-        logger.debug('XMP cleaning data')
+        logging.debug('XMP cleaning data')
 
         xml = xml.dom.minidom.parseString(xmp_string)
         pretty = xml.toprettyxml()
