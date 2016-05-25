@@ -5,7 +5,8 @@ from .metadata import wrap_dict, wrap_raw_json
 
 class Property(object):
     def __init__(self, type=str, name=None, default=None, enum=None,
-                 required=False, validator=None, wrap=False, none=None):
+                 required=False, validator=None, wrap=False, none=None,
+                 is_list=False):
         self.name = name
         self.type = enum if enum else type
         self.enum = enum
@@ -14,6 +15,7 @@ class Property(object):
         self.default = default
         self.wrap = wrap
         self.none = none
+        self.is_list = is_list
 
     def __property_config__(self, model_class, property_name):
         self.model_class = model_class
@@ -72,6 +74,10 @@ class Property(object):
         # PropertySet - Direct
         elif issubclass(self.type, PropertySet) and isinstance(value, dict):
             value = self.type(value)
+
+        # PropertySet - Direct List
+        elif issubclass(self.type, PropertySet) and self.is_list:
+            value = [self.type(list_value) for list_value in value]
 
         # Enum
         elif self.enum:

@@ -75,7 +75,7 @@ def get_status():
     if ImportJob.files == 0:
         progress = 0
     else:
-        progress = int((ImportJob.imported + ImportJob.failed) / ImportJob.files)
+        progress = int((ImportJob.imported + ImportJob.failed) / ImportJob.files * 100)
     return {
         '*schema': 'ImportStatus',
         'folder_name': ImportJob.folder_name,

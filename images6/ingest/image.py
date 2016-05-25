@@ -26,6 +26,8 @@ class JPEGImportModule(GenericImportModule):
         self.entry = create_entry(Entry(
             original_filename=os.path.basename(self.file_path),
             state=State.new,
+            import_folder=self.folder.name,
+            mime_type=self.mime_type,
         ))
         logging.debug('Created entry.\n%s', self.entry.to_json())
 
@@ -44,8 +46,8 @@ class JPEGImportModule(GenericImportModule):
 
         self.entry.metadata = metadata
 
-        logging.debug('Updating entry...\n%s', self.entry.to_json())
-        update_entry_by_id(self.entry.id, self.entry)
+        self.entry.state = State.pending
+        self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
     def clean_up(self):
@@ -132,9 +134,11 @@ class JPEGImportModule(GenericImportModule):
         with open(infile, 'rb') as f:
             exif = exifread.process_file(f)
 
+        # Orientation (rotation)
         orientation, mirror, angle = exif_orientation(exif)
+
+        # GPS Position
         lon, lat = exif_position(exif)
-        #logging.debug(exif)
 
         return {
             "Artist": exif_string(exif, "Image Artist"),
@@ -160,7 +164,7 @@ class JPEGImportModule(GenericImportModule):
             "SubjectDistanceRange": exif_int(exif, "EXIF SubjectDistanceRange"),
             "WhiteBalance": exif_string(exif, "WhiteBalance"),
             "Latitude": lat,
-            "Longitude": lon
+            "Longitude": lon,
         }
 
 register_import_module('image/jpeg', JPEGImportModule)
@@ -204,23 +208,26 @@ def _create_check(path_in, path_out, size=200, angle=None, mirror=None):
         img = Image.open(path_in)
         width, height = img.size
 
-        left = (width - size) / 2
-        top = (height - size) / 2
-        right = (width + size) / 2
-        bottom = (height + size) / 2
+        left = int((width - size) / 2)
+        top = int((height - size) / 2)
+        right = int((width + size) / 2)
+        bottom = int((height + size) / 2)
 
-        img.crop((left, top, right, bottom))
+        logging.debug('Cropping %i %i %i %i', left, top, right, bottom)
+        cropped = img.crop((left, top, right, bottom))
+        img.close()
 
         if mirror == 'H':
-            img = img.transpose(Image.FLIP_RIGHT_LEFT)
+            cropped = cropped.transpose(Image.FLIP_RIGHT_LEFT)
         elif mirror == 'V':
-            img = img.transpose(Image.FLIP_TOP_BOTTOM)
+            cropped = cropped.transpose(Image.FLIP_TOP_BOTTOM)
         if angle:
-            img = img.rotate(angle)
+            logging.debug('Rotating by %i degrees', angle)
+            cropped = cropped.rotate(angle)
 
-        img.save(out, "JPEG", quality=98)
-        img.close()
-        logging.info("Created check %s", path_out)
+        cropped.save(out, "JPEG", quality=98)
+        cropped.close()
+        logging.debug("Created check %s", path_out)
         return size, size
 
 
@@ -228,35 +235,24 @@ def _convert(path_in, path_out, longest_edge=1280, angle=None, mirror=None):
     os.makedirs(os.path.dirname(path_out), exist_ok=True)
 
     with open(path_out, 'w') as out:
-        im = Image.open(path_in)
-        width, height = im.size
+        img = Image.open(path_in)
+        width, height = img.size
         if width > height:
             scale = float(longest_edge) / float(width)
         else:
             scale = float(longest_edge) / float(height)
         w = int(width * scale)
         h = int(height * scale)
-        _resize(im, (w, h), False, out, angle, mirror)
-        im.close()
+        logging.debug('_resize %i %i %i', h, w, angle)
+        _resize(img, (w, h), out, angle, mirror)
         logging.info("Created image %s", path_out)
         return w, h
 
 
-def _crop(img, pos, box, out, angel, mirror):
-    '''Crop the image
-    @param img: Image - an Image-object
-    @param pos: (x, y) position to read from
-    @param box: (w, h) box size to read from
-    @param out: file-like object
-    @param angle: int - rotate with this angle
-    @param mirror: str - mirror in this direction, None, "H" or "V"
-    '''
-
-def _resize(img, box, fit, out, angle, mirror):
+def _resize(img, box, out, angle, mirror):
     '''Downsample the image.
     @param img: Image -  an Image-object
     @param box: tuple(x, y) - the bounding box of the result image
-    @param fit: boolean - crop the image to fill the box
     @param out: file-like-object - save the image into the output stream
     @param angle: int - rotate with this angle
     @param mirror: str - mirror in this direction, None, "H" or "V"
@@ -265,34 +261,23 @@ def _resize(img, box, fit, out, angle, mirror):
     factor = 1
     bw, bh = box
     iw, ih = img.size
-    while (iw*2/factor > 2*bw) and (ih*2/factor > 2*bh):
+    while (iw * 2 / factor > 2 * bw) and (ih * 2 / factor > 2 * bh):
         factor *= 2
     factor /= 2
     if factor > 1:
-        img.thumbnail((iw/factor, ih/factor), Image.NEAREST)
-
-    # Calculate the cropping box and get the cropped part
-    if fit:
-        x1 = y1 = 0
-        x2, y2 = img.size
-        wRatio = 1.0 * x2/box[0]
-        hRatio = 1.0 * y2/box[1]
-        if hRatio > wRatio:
-            y1 = int(y2/2-box[1]*wRatio/2)
-            y2 = int(y2/2+box[1]*wRatio/2)
-        else:
-            x1 = int(x2/2-box[0]*hRatio/2)
-            x2 = int(x2/2+box[0]*hRatio/2)
-        img = img.crop((x1, y1, x2, y2))
+        logging.debug('factor = %d: Scale down to %ix%i', factor, int(iw / factor), int(ih / factor))
+        img.thumbnail((iw / factor, ih / factor), Image.NEAREST)
 
     # Resize the image with best quality algorithm ANTI-ALIAS
+    logging.debug('Final scale down to %ix%i', box[0], box[1])
     img.thumbnail(box, Image.ANTIALIAS)
     if mirror == 'H':
         img = img.transpose(Image.FLIP_RIGHT_LEFT)
     elif mirror == 'V':
         img = img.transpose(Image.FLIP_TOP_BOTTOM)
     if angle:
-        img = img.rotate(angle)
+        logging.debug('Rotating by %i degrees', angle)
+        img = img.rotate(angle, resample=Image.BICUBIC, expand=True)
 
     # Save it into a file-like object
-    img.save(out, "JPEG", quality=85)
+    img.save(out, "JPEG", quality=90)
