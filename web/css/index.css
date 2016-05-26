@@ -1,0 +1,33 @@
+body {
+  background-color: #222;
+  color: #bbb;
+  font-family: arial;
+  margin-top: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  overflow: hidden;
+}
+
+a {
+  color: #ccc;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+div#menu {
+    width: 300pt;
+}
+
+div.menu_section {
+    margin: 5pt;
+}
+
+h2 {
+    margin: 5pt;
+
+}
+
+button {
+    width: 100%;
+}

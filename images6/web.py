@@ -7,6 +7,7 @@ class App:
     HTML = 'web'
     JS = os.path.join(HTML, 'js')
     CSS = os.path.join(HTML, 'css')
+    CSS_IMAGES = os.path.join(HTML, 'css', 'images')
 
     @classmethod
     def create(self):
@@ -24,6 +25,10 @@ class App:
         app.route(
             path='/css/<fn>.css',
             callback=lambda fn: bottle.static_file(fn + '.css', root=self.CSS),
+        )
+        app.route(
+            path='/css/images/<fn>.png',
+            callback=lambda fn: bottle.static_file(fn + '.png', root=self.CSS_IMAGES),
         )
 
         return app

@@ -73,7 +73,7 @@ def trig_import(name):
 
 def get_status():
     if ImportJob.files == 0:
-        progress = 0
+        progress = 100 
     else:
         progress = int((ImportJob.imported + ImportJob.failed) / ImportJob.files * 100)
     return {
