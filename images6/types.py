@@ -26,11 +26,14 @@ class Property(object):
         if model_instance is None:
             return self
 
-        if self.type in (dict, list):
+        if self.type in (dict, list) or self.is_list:
             try:
                 return getattr(model_instance, self.attr_name)
             except AttributeError:
-                value = self.type() if self.default is None else self.type(self.default)
+                if self.is_list:
+                    value = list()
+                else:
+                    value = self.type() if self.default is None else self.type(self.default)
                 setattr(model_instance, self.attr_name, value)
                 return value
         else:
