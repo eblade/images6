@@ -47,7 +47,7 @@ def Create(function, InputClass, pre=None):
         if o is None:
             raise bottle.HTTPError(400)
         result = function(o)
-        return result.to_json()
+        return result.to_dict()
     return f
 
 
@@ -56,7 +56,7 @@ def Fetch(function, pre=None):
         if callable(pre):
             pre()
         result = function()
-        return result.to_json()
+        return result.to_dict()
     return f
 
 
@@ -67,7 +67,7 @@ def FetchById(function, pre=None):
         if id is None:
             raise bottle.HTTPError(400)
         result = function(id)
-        return result.to_json()
+        return result.to_dict()
     return f
 
 
@@ -78,7 +78,7 @@ def FetchByKey(function, pre=None):
         if key is None:
             raise bottle.HTTPError(400)
         result = function(key)
-        return result.to_json()
+        return result.to_dict()
     return f
 
 
@@ -91,7 +91,7 @@ def FetchByQuery(function, QueryClass=None, pre=None):
         else:
             q = QueryClass.FromRequest()
             result = function(q)
-        return result.to_json()
+        return result.to_dict()
     return f
 
 
@@ -103,7 +103,7 @@ def UpdateById(function, InputClass, pre=None):
         if o is None:
             raise bottle.HTTPError(400)
         result = function(id, o)
-        return result.to_json()
+        return result.to_dict()
     return f
 
 

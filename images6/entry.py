@@ -51,6 +51,10 @@ class App:
             method='DELETE',
             callback=DeleteById(delete_entry_by_id),
         )
+        app.route(
+            path='/<id:int>/dl/<store>/<version:int>.<extension>',
+            callback=download,
+        )
 
         return app
 
@@ -90,15 +94,18 @@ class Variant(PropertySet):
     def __repr__(self):
         return '<Variant %s/%i (%s)>' % (self.purpose.value, self.version, self.mime_type)
 
-    def get_filename(self, id):
+    def get_extension(self):
         if self.mime_type == 'image/jpeg':
-            extension = 'jpg'
+            return 'jpg'
         else:
             extensions = mimetypes.guess_all_extensions(self.mime_type)
             if len(extensions) == 0:
-                extension = ''
+                return ''
             else:
-                extension = extensions[-1]
+                return extensions[-1]
+
+    def get_filename(self, id):
+        extension = self.get_extension()
         hex_id = '%08x' % (id)
         version = '_%i'  % self.version if self.version > 0 else ''
         filename = hex_id + version + extension
@@ -121,6 +128,8 @@ class Entry(PropertySet):
     urls = Property(dict)
 
     self_url = Property()
+    thumb_url = Property()
+    proxy_url = Property()
 
     def calculate_urls(self):
         self.self_url = '%s/%i' % (App.BASE, self.id)
@@ -129,9 +138,14 @@ class Entry(PropertySet):
         for variant in self.variants:
             if not variant.purpose.value in self.urls.keys():
                 self.urls[variant.purpose.value] = {}
-            self.urls[variant.purpose.value][variant.version] = '%s/%i/dl/%s/%i' % (
-                App.BASE, self.id, variant.store, variant.version
+            url = '%s/%i/dl/%s/%i.%s' % (
+                App.BASE, self.id, variant.store, variant.version, variant.get_extension()
             )
+            self.urls[variant.purpose.value][variant.version] = url
+            if variant.purpose is Purpose.proxy:
+                self.proxy_url = url
+            if variant.purpose is Purpose.thumb:
+                self.thumb_url = url
 
 
 class EntryFeed(PropertySet):
@@ -197,7 +211,9 @@ def get_entries(query=None):
 
 
 def get_entry_by_id(id):
-    return Entry.FromDict(current_system().database.get(id))
+    entry = Entry.FromDict(current_system().database.get(id))
+    entry.calculate_urls()
+    return entry
 
 
 def update_entry_by_id(id, ed):
@@ -214,3 +230,10 @@ def create_entry(ed):
 
 def delete_entry_by_id(id):
     current_system().database.delete(id)
+
+
+def download(id, store, version, extension):
+    entry = get_entry_by_id(id)
+    for variant in entry.variants:
+        if variant.store == store and variant.version == version and variant.get_extension() == extension:
+            return bottle.static_file(variant.get_filename(id), root=current_system().media_root)
