@@ -107,6 +107,20 @@ def UpdateById(function, InputClass, pre=None):
     return f
 
 
+def UpdateByIdAndQuery(function, QueryClass=None, pre=None):
+    def f(id):
+        if callable(pre):
+            pre()
+        if QueryClass is None:
+            result = function(id)
+        else:
+            q = QueryClass.FromRequest()
+            result = function(id, q)
+        return result.to_dict()
+    return f
+
+
+
 def DeleteById(function, pre=None):
     def f(id):
         if callable(pre):

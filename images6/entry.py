@@ -13,6 +13,7 @@ from .web import (
     FetchById,
     FetchByQuery,
     UpdateById,
+    UpdateByIdAndQuery,
     DeleteById,
 )
 
@@ -52,6 +53,11 @@ class App:
             callback=DeleteById(delete_entry_by_id),
         )
         app.route(
+            path='/<id:int>/state',
+            method='PUT',
+            callback=UpdateByIdAndQuery(update_entry_state, QueryClass=StateQuery),
+        )
+        app.route(
             path='/<id:int>/dl/<store>/<version:int>.<extension>',
             callback=download,
         )
@@ -67,7 +73,7 @@ class State(EnumProperty):
     new = 'new'
     pending = 'pending'
     keep = 'keep'
-    discard = 'discard'
+    purge = 'purge'
 
 
 class Access(EnumProperty):
@@ -126,13 +132,16 @@ class Entry(PropertySet):
     backups = Property(list)
 
     urls = Property(dict)
+    state_url = Property()
 
     self_url = Property()
     thumb_url = Property()
     proxy_url = Property()
+    check_url = Property()
 
     def calculate_urls(self):
         self.self_url = '%s/%i' % (App.BASE, self.id)
+        self.state_url = '%s/%i/state' % (App.BASE, self.id)
         self.urls = {}
         logging.info(self.variants)
         for variant in self.variants:
@@ -146,6 +155,8 @@ class Entry(PropertySet):
                 self.proxy_url = url
             if variant.purpose is Purpose.thumb:
                 self.thumb_url = url
+            if variant.purpose is Purpose.check:
+                self.check_url = url
 
 
 class EntryFeed(PropertySet):
@@ -185,6 +196,18 @@ class EntryQuery(PropertySet):
         )
 
 
+class StateQuery(PropertySet):
+    state = Property()
+
+    @classmethod
+    def FromRequest(self):
+        sq = StateQuery()
+        if bottle.request.query.state not in (None, ''):
+            sq.state = bottle.request.query.state
+        
+        return sq
+
+
 #####
 # API
 
@@ -219,6 +242,17 @@ def get_entry_by_id(id):
 def update_entry_by_id(id, ed):
     current_system().database.update(id, ed.to_dict())
     return get_entry_by_id(id)
+
+
+def update_entry_state(id, query):
+    try:
+        state = getattr(State, query.state)
+    except AttributeError:
+        raise bottle.HTTPError(400)
+
+    entry = get_entry_by_id(id)
+    entry.state = state
+    return update_entry_by_id(id, entry)
 
 
 def create_entry(ed):

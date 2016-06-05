@@ -202,6 +202,7 @@ def import_job(folder):
             folder.add_imported(file_path)
             logging.debug("Imported %s", full_path)
 
+        current_system().database.sort()
         ImportJob.status = 'done'
 
     except Exception as e:
