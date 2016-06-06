@@ -1,6 +1,7 @@
 $(function() {
     var scope = {
         mode: 'menu',
+        last_mode: 'menu',
         offset: 0,
         focus: 0,
         showing_metadata: false,
@@ -124,6 +125,7 @@ $(function() {
     };
 
     var load_browse = function(params) {
+        scope.mode = 'browse';
         params = params || Object();
         var offset = params.offset || 0;
         var page_size = params.page_size || 20;
@@ -160,7 +162,7 @@ $(function() {
                         });
                 });
                 if (offset === 0) {
-                    update_focus();
+                    update_focus({focus: 0});
                 }
                 scope.offset = offset + data.count;
                 scope.total_count += data.count;
@@ -169,7 +171,7 @@ $(function() {
     };
 
     var update_focus = function(params) {
-        params = params || Object();
+        params = params || new Object();
         var move = params.move || 0;
         var focus = params.focus;
 
@@ -217,15 +219,15 @@ $(function() {
         var proxy_url = params.proxy_url;
         var animate = params.animate === undefined ? true : params.animate;
 
-        scope.last_mode = scope.mode;
-        scope.mode = 'proxy';
-        scope.showing_metadata = false;
         $('#overlay_metadata').hide();
 
         $('#overlay').css('background-image', 'url(' + proxy_url + ')');
         if (animate) {
+            scope.last_mode = scope.mode;
             $('#overlay').fadeIn();
         }
+        scope.mode = 'proxy';
+        scope.showing_metadata = false;
         sync_overlay_buttons();
     };
 
@@ -389,6 +391,13 @@ $(function() {
                 } else {
                     hide_viewer();
                 }
+            }
+        } else if (event.which === 13) { // return
+            if (scope.mode === 'browse') {
+                var thumb = $('img.thumb')[scope.focus];
+                show_viewer({
+                    proxy_url: thumb.getAttribute('data-proxy-url'),
+                });
             }
         }
         // right: 39
