@@ -114,7 +114,7 @@ class Variant(PropertySet):
         extension = self.get_extension()
         hex_id = '%08x' % (id)
         version = '_%i'  % self.version if self.version > 0 else ''
-        filename = hex_id + version + extension
+        filename = hex_id + version + '.' + extension
         return os.path.join(self.store, filename)
 
 
