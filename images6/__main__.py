@@ -15,6 +15,7 @@ from .system import System
 from . import web
 from . import entry
 from . import importer
+from . import deleter
 from .ingest import image
 
 
@@ -41,6 +42,7 @@ if __name__ == '__main__':
     for module in (
         entry,
         importer,
+        deleter,
     ):
         logging.info(
             "Setting up %s on %s..." % (module.__name__, module.App.BASE)

@@ -227,3 +227,7 @@ class Database:
     
     def get_json_filename(self, id):
         return '%08x.json' % (id)
+
+    def get_ids_in_state(self, state):
+        return list([entry.get('id') for entry in self.entries 
+                     if entry.get('state') == state])

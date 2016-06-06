@@ -16,7 +16,7 @@ $(function() {
         $('#menu')
             .append('<h2>Browse</h2>')
             .append('<div id="menu_browse" class="menu_section"></div>')
-            .append('<h2>Import</h2>')
+            .append('<h2>Import/Purge</h2>')
             .append('<div id="menu_trig" class="menu_section"></div>');
         $.ajax({
             url: '/importer',
@@ -39,6 +39,21 @@ $(function() {
                             });
                         });
                 });
+                $('#menu_trig').append('<button id="menu_trig_purge">Purge</button><br/>');
+                $('#menu_trig_purge')
+                    .button()
+                    .click(function() {
+                        $.ajax({
+                            url: '/purger/trig',
+                            method: 'POST',
+                            success: function(data) {
+                                monitor_purge();
+                            },
+                            error: function(data) {
+                                alert('Error.');
+                            },
+                        });
+                    });
             },
         });
         $('#menu_browse')
@@ -63,6 +78,35 @@ $(function() {
                     $('#menu_trig').append('<div class="result failure">' + data.failed + ' failed</div>');
                 }
                 if (data.status === 'acquired' || data.status === 'scanning' || data.status === 'importing') {
+                    window.setTimeout(monitor_import, 1000);
+                } else {
+                    $('#menu_trig')
+                        .append('<br/><button>Fantastic</button>')
+                        .find('button')
+                        .button()
+                        .click(function() {
+                            load_menu();
+                        });
+                }
+            },
+            error: function(data) {
+            },
+        });
+    };
+
+    var monitor_purge = function() {
+        clear('menu');
+        $('#menu')
+            .append('<h2>Working</h2>')
+            .append('<div id="menu_trig" class="menu_section"></div>');
+        $.ajax({
+            url: '/purger/status',
+            success: function(data) {
+                $('#menu_trig').html('<div class="result">' + data.status + ' (' + data.progress + '%)</div>');
+                if (data.failed > 0) {
+                    $('#menu_trig').append('<div class="result failure">' + data.failed + ' failed</div>');
+                }
+                if (data.status === 'acquired' || data.status === 'reading' || data.status === 'deleting') {
                     window.setTimeout(monitor_import, 1000);
                 } else {
                     $('#menu_trig')
