@@ -9,7 +9,6 @@ $(function() {
 
     var clear = function(mode) {
         scope.mode = mode;
-        document.title = '*' + scope.mode;
         $('#content').html('<div id="' + mode + '"></div>');
     };
 
@@ -337,7 +336,6 @@ $(function() {
     $('#overlay_proxy').click(function() { show_proxy(); });
 
     $(document).keydown(function(event) {
-        document.title = scope.mode + ' ' + event.which;
         if (event.which === 37) { // left
             update_focus({move: -1});
         } else if (event.which === 39) { // right
