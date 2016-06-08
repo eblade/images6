@@ -32,7 +32,7 @@ $(function() {
                                 url: trigger.trig_url,
                                 method: 'POST',
                                 success: function(data) {
-                                    monitor('/importer/status', 'Importing...', 'scanning', 'importing');
+                                    monitor('/importer/status', 'importing...', 'scanning', 'importing');
                                 },
                                 error: function(data) {
                                     alert('Error.');
@@ -47,7 +47,7 @@ $(function() {
                             url: '/purger/trig',
                             method: 'POST',
                             success: function(data) {
-                                monitor('/purger/status', 'Purging...', 'reading', 'deleting');
+                                monitor('/purger/status', 'purging...', 'reading', 'deleting');
                             },
                             error: function(data) {
                                 alert('Error.');
@@ -97,16 +97,21 @@ $(function() {
                 date = data.date;
                 $('#day')
                     .html('<div class="day">' +
-                          '<div id="today" class="overlay_button wide">today</div>' +
-                          '<div id="prevday" class="overlay_button wide">previous</div>' +
-                          '<div id="nextday" class="overlay_button wide">next</div>' +
+                          '<div id="day_today" class="overlay_button">today</div>' +
+                          '<div id="day_prevday" class="overlay_button">prev</div>' +
+                          '<div id="day_nextday" class="overlay_button">next</div>' +
+                          '</div><div id="day_more_buttons">' +
+                          '<div id="day_back" class="overlay_button">back</div>' +
+                          '<div id="day_pick" class="overlay_button">pick</div>' +
                           '</div><div id="day_info">' +
-                          '<div id="thisday" class="overlay_button wide">' + date + '</div>' +
+                          '<div id="day_thisday" class="overlay_button">' + date + '</div>' +
                           '<div id="day_details"></div></div>');
-                $('#today').click(function() { load_day({'date': 'today', 'delta': '0'}); });
-                $('#prevday').click(function() { load_day({'date': date, 'delta': '-1'}); });
-                $('#thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
-                $('#nextday').click(function() { load_day({'date': date, 'delta': '1'}); });
+                $('#day_today').click(function() { load_day({'date': 'today', 'delta': '0'}); });
+                $('#day_prevday').click(function() { load_day({'date': date, 'delta': '-1'}); });
+                $('#day_thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
+                $('#day_nextday').click(function() { load_day({'date': date, 'delta': '1'}); });
+                $('#day_back').click(function() { load_menu(); });
+                $('#day_pick').click(function() { load_picker(); });
                 $('#day_details')
                     .append(data.count + ' entries');
                 $.each(data.entries, function(index, entry) {

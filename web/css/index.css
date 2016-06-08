@@ -43,7 +43,7 @@ div.progress_outer {
 
 div#progress {
    position: relative;
-   background: #38f;
+   background: #48a;
    top: 0;
    bottom: 0;
    left: 0; 
@@ -67,16 +67,23 @@ div.day {
     margin-left: 0pt;
 }
 
+div#day_more_buttons {
+    position: absolute;
+    top: 5pt;
+    left: 72pt;
+}
+
 div#day_info {
     position: absolute;
     top: 0pt;
-    left: 240pt;
+    left: 170pt;
 }
 
-div#thisday {
+div#day_thisday {
     font-size: 18pt;
     background: #111;
     text-align: left;
+    padding-top: 0;
     padding-left: 0;
     margin-left: 0;
 }
@@ -91,7 +98,7 @@ img.thumb {
 }
 
 img.pending {
-    border: 4pt solid #38f;
+    border: 4pt solid #48a;
 }
 
 img.keep {
