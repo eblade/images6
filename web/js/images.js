@@ -112,7 +112,7 @@ $(function() {
                 $('#day_back').click(function() { load_menu(); });
                 $('#day_pick').click(function() { load_picker(); });
                 $('#day_details')
-                    .append(data.count + ' entries');
+                    .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
                 $.each(data.entries, function(index, entry) {
                     $('#day')
                         .append('<img data-self-url="' + entry.self_url +
