@@ -28,7 +28,7 @@ class FileCopy(object):
         destination_folder = os.path.dirname(self.destination)
         os.makedirs(destination_folder, exist_ok=True)
 
-        while self.link:
+        while True:
             try:
                 if self.link:
                     logging.debug("Linking %s -> %s", self.source, self.destination)

@@ -225,6 +225,9 @@ class Database:
             return []
         return self.entries[offset:offset + page_size]
     
+    def get_day(self, date):
+        return list(reversed([entry for entry in self.entries if entry.get('taken_ts', '').startswith(date)]))
+
     def get_json_filename(self, id):
         return '%08x.json' % (id)
 

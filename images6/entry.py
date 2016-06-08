@@ -165,6 +165,7 @@ class EntryFeed(PropertySet):
     prev_link = Property()
     next_link = Property()
     offset = Property(int)
+    date = Property()
     entries = Property(list)
 
 
@@ -172,6 +173,8 @@ class EntryQuery(PropertySet):
     prev_offset = Property(int)
     offset = Property(int, default=0)
     page_size = Property(int, default=25, required=True)
+    date = Property()
+    delta = Property(int)
 
     @classmethod
     def FromRequest(self):
@@ -183,6 +186,10 @@ class EntryQuery(PropertySet):
             eq.offset = bottle.request.query.offset
         if bottle.request.query.page_size not in (None, ''):
             eq.page_size = bottle.request.query.page_size
+        if bottle.request.query.date not in (None, ''):
+            eq.date = bottle.request.query.date
+        if bottle.request.query.delta not in (None, ''):
+            eq.delta = int(bottle.request.query.delta)
 
         return eq
 
@@ -192,6 +199,8 @@ class EntryQuery(PropertySet):
                 ('prev_offset', self.prev_offset or ''),
                 ('offset', self.offset),
                 ('page_size', self.page_size),
+                ('date', self.date),
+                ('delta', str(self.delta)),
             )
         )
 
@@ -216,16 +225,33 @@ def get_entries(query=None):
     if query is None:
         offset = 0
         page_size = 25
+        date = None
+        delta = 0
+
     else:
         logging.info(query.to_query_string())
         offset = query.offset
         page_size = query.page_size
+        date = query.date
+        delta = query.delta
 
-    entry_data = current_system().database.get_page(offset, page_size)
+    if date is None:
+        entry_data = current_system().database.get_page(offset, page_size)
+
+    else:
+        if date == 'today':
+            date = datetime.date.today()
+        else:
+            date = (int(part) for part in date.split('-', 2))
+            date = datetime.date(*date)
+        date += datetime.timedelta(days=delta)
+        entry_data = current_system().database.get_day(date.isoformat())
+
     entries = [Entry.FromDict(entry) for entry in entry_data]
     for entry in entries:
         entry.calculate_urls()
     return EntryFeed(
+        date=date,
         count=len(entry_data),
         offset=offset,
         entries=entries,

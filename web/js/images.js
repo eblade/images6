@@ -9,6 +9,7 @@ $(function() {
 
     var clear = function(mode) {
         scope.mode = mode;
+        document.title = '*' + scope.mode;
         $('#content').html('<div id="' + mode + '"></div>');
     };
 
@@ -24,9 +25,8 @@ $(function() {
             success: function(data) {
                 $('#menu_trig').html('');
                 $.each(data.entries, function(index, trigger) {
-                    $('#menu_trig').append('<button id="menu_trig_' + trigger.name + '">Import from ' + trigger.name + '</button><br/>');
+                    $('#menu_trig').append('<div id="menu_trig_' + trigger.name + '" class="overlay_button wide">Import from ' + trigger.name + '</div>');
                     $('#menu_trig_' + trigger.name)
-                        .button()
                         .click(function() {
                             $.ajax({
                                 url: trigger.trig_url,
@@ -40,9 +40,8 @@ $(function() {
                             });
                         });
                 });
-                $('#menu_trig').append('<button id="menu_trig_purge">Purge</button><br/>');
+                $('#menu_trig').append('<div id="menu_trig_purge" class="overlay_button wide">Purge</div>');
                 $('#menu_trig_purge')
-                    .button()
                     .click(function() {
                         $.ajax({
                             url: '/purger/trig',
@@ -58,11 +57,16 @@ $(function() {
             },
         });
         $('#menu_browse')
-            .append('<button>Browse</button>')
-            .find('button')
-            .button()
+            .append('<div id="browse_button" class="overlay_button wide">Browse</div>')
+            .find('#browse_button')
             .click(function() {
                 load_browse();
+            });
+        $('#menu_browse')
+            .append('<div id="day_button" class="overlay_button wide">Day</div>')
+            .find('#day_button')
+            .click(function() {
+                load_day();
             });
     };
 
@@ -150,7 +154,6 @@ $(function() {
                                 '" class="thumb" id="thumb_' + real_index +
                                 '" src="' + entry.thumb_url +
                                 '" title="' + real_index + '"/>');
-                    //$('#browse').append('<div>' + real_index + ': ' + entry.id + ': ' + entry.taken_ts + '</div>');
                     $('#thumb_' + real_index)
                         .click(function(event) {
                             var id = parseInt(this.title);
@@ -166,6 +169,55 @@ $(function() {
                 }
                 scope.offset = offset + data.count;
                 scope.total_count += data.count;
+            },
+        });
+    };
+
+    var load_day = function(params) {
+        scope.mode = 'day';
+        params = params || Object();
+        var date = params.date || 'today';
+        var delta = params.delta || '0';
+        clear('day');
+        scope.focus = 0;
+        $.ajax({
+            url: '/entry?date=' + date + '&delta=' + delta,
+            success: function(data) {
+                date = data.date;
+                $('#day')
+                    .append('<div id="date" class="date"><span id="yesterday">&lt;&lt;</span> ' + date + ' <span id="tomorrow">&gt;&gt;</span></div>');
+                $('#yesterday')
+                    .click(function() {
+                        load_day({'date': date, 'delta': '-1'});
+                    });
+                $('#tomorrow')
+                    .click(function() {
+                        load_day({'date': date, 'delta': '1'});
+                    });
+                $('#day')
+                    .append('<div class="date_spacer"> </div>');
+                $.each(data.entries, function(index, entry) {
+                    $('#day')
+                        .append('<img data-self-url="' + entry.self_url +
+                                '" data-state="' + entry.state +
+                                '" data-state-url="' + entry.state_url +
+                                '" data-check-url="' + entry.check_url +
+                                '" data-proxy-url="' + entry.proxy_url +
+                                '" class="thumb ' + entry.state + '" id="thumb_' + index +
+                                '" src="' + entry.thumb_url +
+                                '" title="' + index + '"/>');
+                    $('#thumb_' + index)
+                        .click(function(event) {
+                            var id = parseInt(this.title);
+                            var thumb = $('img.thumb')[id]
+                            update_focus({focus: id});
+                            show_viewer({
+                                proxy_url: thumb.getAttribute('data-proxy-url'),
+                            });
+                        });
+                });
+                update_focus({focus: 0});
+                scope.total_count = data.count;
             },
         });
     };
@@ -204,7 +256,7 @@ $(function() {
                 }
                 $(thumb).addClass('selected');
                 $('html, body').animate({
-                    scrollTop: $(thumb).offset().top,
+                    scrollTop: $(thumb).offset().top - 200,
                 }, 200);
             } else {
                 $(thumb).removeClass('selected');
@@ -239,28 +291,27 @@ $(function() {
     var sync_overlay_buttons = function() {
         var thumb = $('img.thumb')[scope.focus];
         var state = thumb.getAttribute('data-state');
-        $('#overlay_state')
-            .html('Current state is ' + state)
-            .removeClass('keep')
-            .removeClass('purge')
-            .removeClass('pending')
-            .addClass(state);
         if (state === 'keep') {
-            $('#overlay_keep').hide();
+            $('#overlay_keep').addClass('keep');
         } else {
-            $('#overlay_keep').fadeIn();
+            $('#overlay_keep').removeClass('keep');
         }
         if (state === 'purge') {
-            $('#overlay_purge').hide();
+            $('#overlay_purge').addClass('purge');
         } else {
-            $('#overlay_purge').fadeIn();
+            $('#overlay_purge').removeClass('purge');
         }
         if (scope.mode === 'proxy') {
-            $('#overlay_proxy').hide();
-            $('#overlay_check').fadeIn();
+            $('#overlay_proxy').addClass('select');
+            $('#overlay_check').removeClass('select');
         } else if (scope.mode === 'check') {
-            $('#overlay_check').hide();
-            $('#overlay_proxy').fadeIn();
+            $('#overlay_check').addClass('select');
+            $('#overlay_proxy').removeClass('select');
+        }
+        if (scope.showing_metadata) {
+            $('#overlay_meta').addClass('select').addClass('extend');
+        } else {
+            $('#overlay_meta').removeClass('select').removeClass('extend');
         }
     };
 
@@ -314,6 +365,7 @@ $(function() {
 
     var toggle_metadata = function() {
         scope.showing_metadata = !scope.showing_metadata;
+        sync_overlay_buttons();
         if (scope.showing_metadata === true) {
             var thumb = $('img.thumb')[scope.focus];
             var url = thumb.getAttribute('data-self-url');
@@ -378,12 +430,13 @@ $(function() {
     });
 
     $(document).keydown(function(event) {
+        document.title = scope.mode + ' ' + event.which;
         if (event.which === 37) { // left
             update_focus({move: -1});
         } else if (event.which === 39) { // right
             update_focus({move: +1});
         } else if (event.which === 27) { // escape
-            if (scope.mode === 'browse') {
+            if (scope.mode === 'browse' || scope.mode === 'day') {
                 load_menu();
             } else if (scope.mode === 'proxy') {
                 if (scope.showing_metadata) {
@@ -393,7 +446,7 @@ $(function() {
                 }
             }
         } else if (event.which === 13) { // return
-            if (scope.mode === 'browse') {
+            if (scope.mode === 'browse' || scope.mode === 'day') {
                 var thumb = $('img.thumb')[scope.focus];
                 show_viewer({
                     proxy_url: thumb.getAttribute('data-proxy-url'),

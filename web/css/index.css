@@ -16,16 +16,9 @@ a {
 }
 
 div#menu {
-    margin: 0 auto;
-    width: 300pt;
 }
 
 div.menu_section {
-    width: 100%;
-    background-color: #333;
-    padding: 5pt;
-    margin-top: 5pt;
-    margin-bottom: 5pt;
 }
 
 h2 {
@@ -58,15 +51,49 @@ div.debug {
     background: blue;
 }
 
+div.date {
+    position: fixed;
+    background-color: rgba(0, 0, 0, 0.7);
+    top: -10pt;
+    left: 0;
+    width: 100%;
+    font-size: 32pt;
+    line-height: 50pt;
+    vertical-align: middle;
+    margin-top: 10pt;
+    margin-bottom: 10pt;
+    margin-left: 5pt;
+}
+
+div.date_spacer {
+    width: 100%;
+    margin: 0;
+    height: 55pt;
+}
+
 img.thumb {
-    height: 100pt;
-    margin-right: 2pt;
-    margin-bottom: 1pt;
-    border: 2pt solid #333;
+    height: 150pt;
+    margin-left: 5pt;
+    margin-right: 5pt;
+    margin-top: 5pt;
+    margin-bottom: 3pt;
+    border: 4pt solid #333;
+}
+
+img.pending {
+    border: 4pt solid #38f;
+}
+
+img.keep {
+    border: 4pt solid #333;
+}
+
+img.purge {
+    border: 4pt solid #f83;
 }
 
 img.selected {
-    border: 2pt solid #ccc;
+    border: 4pt solid #fff;
 }
 
 #overlay {
@@ -88,10 +115,7 @@ img.selected {
 }
 
 #overlay_close {
-    position: absolute;
-    top: 5pt;
-    right: 5pt;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: #888;
 }
 
 .overlay_button {
@@ -103,16 +127,39 @@ img.selected {
     font-weight: bold;
     width: 50pt;
     text-align: center;
+    height: 40pt;
+    line-height: 40pt;
+    vertical-align: middle;
 }
 
-#overlay_state {
+.overlay_toggle {
     margin-left: 5pt;
     margin-top: 5pt;
     padding: 8pt;
+    background-color: rgba(150, 150, 150, .8);
     color: white;
     font-weight: bold;
-    width: -moz-fit-content;
-    text-align: left;
+    width: 50pt;
+    text-align: center;
+    height: 40pt;
+    line-height: 40pt;
+    vertical-align: middle;
+}
+
+.select {
+    background-color: #48a;
+}
+
+.extend {
+    width: 56pt;
+}
+
+.wide {
+    width: 200pt;
+}
+
+.tight {
+    margin-top: 0;
 }
 
 .purge {
@@ -129,7 +176,7 @@ img.selected {
 
 #overlay_metadata {
     position: absolute;
-    top: 34pt;
+    top: 0pt;
     left: 72pt;
     margin-left: 5pt;
     margin-top: 5pt;
