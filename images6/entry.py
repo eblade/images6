@@ -166,6 +166,8 @@ class EntryFeed(PropertySet):
     next_link = Property()
     offset = Property(int)
     date = Property()
+    previous_date = Property()
+    next_date = Property()
     entries = Property(list)
 
 
@@ -237,6 +239,8 @@ def get_entries(query=None):
 
     if date is None:
         entry_data = current_system().database.get_page(offset, page_size)
+        before = None
+        after = None
 
     else:
         if date == 'today':
@@ -245,7 +249,8 @@ def get_entries(query=None):
             date = (int(part) for part in date.split('-', 2))
             date = datetime.date(*date)
         date += datetime.timedelta(days=delta)
-        entry_data = current_system().database.get_day(date.isoformat())
+        before, entry_data, after = \
+            current_system().database.get_day(date.isoformat())
 
     entries = [Entry.FromDict(entry) for entry in entry_data]
     for entry in entries:
@@ -256,6 +261,8 @@ def get_entries(query=None):
         offset=offset,
         entries=entries,
         total_count=current_system().database.count(),
+        previous_date=before,
+        next_date=after,
     )
 
 

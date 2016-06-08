@@ -226,7 +226,21 @@ class Database:
         return self.entries[offset:offset + page_size]
     
     def get_day(self, date):
-        return list(reversed([entry for entry in self.entries if entry.get('taken_ts', '').startswith(date)]))
+        that_day = list(reversed(
+            [(index, entry) for index, entry in enumerate(self.entries)
+             if entry.get('taken_ts', '').startswith(date)]
+        ))
+        if len(that_day) == 0:
+            return None, [], None
+        earliest = that_day[0][0]
+        latest = that_day[-1][0]
+        before = None if earliest == self.count() - 1 else earliest + 1
+        after = None if latest == 0 else latest - 1
+        if before is not None:
+            before = self.entries[before].get('taken_ts')[:10]
+        if after is not None:
+            after = self.entries[after].get('taken_ts')[:10]
+        return before, [e[1] for e in that_day], after
 
     def get_json_filename(self, id):
         return '%08x.json' % (id)

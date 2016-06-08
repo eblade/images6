@@ -94,6 +94,16 @@ $(function() {
             url: '/entry?date=' + date + '&delta=' + delta,
             success: function(data) {
                 date = data.date;
+                if (data.next_date !== null) {
+                    next = { date: data.next_date };
+                } else {
+                    next = { date: date, delta: 1 };
+                }
+                if (data.previous_date !== null) {
+                    previous = { date: data.previous_date };
+                } else {
+                    previous = { date: date, delta: -1 };
+                }
                 $('#day')
                     .html('<div class="day">' +
                           '<div id="day_today" class="overlay_button">today</div>' +
@@ -106,9 +116,9 @@ $(function() {
                           '<div id="day_thisday" class="overlay_button">' + date + '</div>' +
                           '<div id="day_details"></div></div>');
                 $('#day_today').click(function() { load_day({'date': 'today', 'delta': '0'}); });
-                $('#day_prevday').click(function() { load_day({'date': date, 'delta': '-1'}); });
+                $('#day_prevday').click(function() { load_day(previous); });
                 $('#day_thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
-                $('#day_nextday').click(function() { load_day({'date': date, 'delta': '1'}); });
+                $('#day_nextday').click(function() { load_day(next); });
                 $('#day_back').click(function() { load_menu(); });
                 $('#day_pick').click(function() { load_picker(); });
                 $('#day_details')
