@@ -16,23 +16,23 @@ $(function() {
     var load_menu = function() {
         clear('menu');
         $('#menu')
-            .append('<h2>Browse</h2>')
-            .append('<div id="menu_browse" class="menu_section"></div>')
-            .append('<h2>Import/Purge</h2>')
-            .append('<div id="menu_trig" class="menu_section"></div>');
+            .append('<div id="day_button" class="overlay_button wide">browse</div>')
+            .find('#day_button')
+            .click(function() {
+                load_day();
+            });
         $.ajax({
             url: '/importer',
             success: function(data) {
-                $('#menu_trig').html('');
                 $.each(data.entries, function(index, trigger) {
-                    $('#menu_trig').append('<div id="menu_trig_' + trigger.name + '" class="overlay_button wide">Import from ' + trigger.name + '</div>');
+                    $('#menu').append('<div id="menu_trig_' + trigger.name + '" class="overlay_button wide">import from ' + trigger.name + '</div>');
                     $('#menu_trig_' + trigger.name)
                         .click(function() {
                             $.ajax({
                                 url: trigger.trig_url,
                                 method: 'POST',
                                 success: function(data) {
-                                    monitor_import();
+                                    monitor('/importer/status', 'Importing...', 'scanning', 'importing');
                                 },
                                 error: function(data) {
                                     alert('Error.');
@@ -40,14 +40,14 @@ $(function() {
                             });
                         });
                 });
-                $('#menu_trig').append('<div id="menu_trig_purge" class="overlay_button wide">Purge</div>');
+                $('#menu').append('<div id="menu_trig_purge" class="overlay_button wide">purge</div>');
                 $('#menu_trig_purge')
                     .click(function() {
                         $.ajax({
                             url: '/purger/trig',
                             method: 'POST',
                             success: function(data) {
-                                monitor_purge();
+                                monitor('/purger/status', 'Purging...', 'reading', 'deleting');
                             },
                             error: function(data) {
                                 alert('Error.');
@@ -56,119 +56,30 @@ $(function() {
                     });
             },
         });
-        $('#menu_browse')
-            .append('<div id="browse_button" class="overlay_button wide">Browse</div>')
-            .find('#browse_button')
-            .click(function() {
-                load_browse();
-            });
-        $('#menu_browse')
-            .append('<div id="day_button" class="overlay_button wide">Day</div>')
-            .find('#day_button')
-            .click(function() {
-                load_day();
-            });
     };
 
-    var monitor_import = function() {
+    var monitor = function(url, caption, before, active) {
         clear('menu');
         $('#menu')
-            .append('<h2>Working</h2>')
-            .append('<div id="menu_trig" class="menu_section"></div>');
+            .append('<h2>' + caption + '</h2>')
+            .append('<div id="menu_result"></div>')
+            .append('<div class="progress_outer"><div id="progress"></div></div>')
+            .append('<div id="menu_failure"></div>');
         $.ajax({
             url: '/importer/status',
             success: function(data) {
-                $('#menu_trig').html('<div class="result">' + data.status + ' (' + data.progress + '%)</div>');
+                $('#menu_result').html(data.status + ' (' + data.progress + '%)');
                 if (data.failed > 0) {
-                    $('#menu_trig').append('<div class="result failure">' + data.failed + ' failed</div>');
+                    $('#menu_failure').html('<div class="result failure">' + data.failed + ' failed</div>');
                 }
-                if (data.status === 'acquired' || data.status === 'scanning' || data.status === 'importing') {
+                $('#progress').css('width', data.progress + '%');
+                if (data.status === 'acquired' || data.status === before || data.status === active) {
                     window.setTimeout(monitor_import, 1000);
                 } else {
-                    $('#menu_trig')
-                        .append('<br/><button>Fantastic</button>')
-                        .find('button')
-                        .button()
-                        .click(function() {
-                            load_menu();
-                        });
+                    $.wait(2000).then(load_menu);
                 }
             },
             error: function(data) {
-            },
-        });
-    };
-
-    var monitor_purge = function() {
-        clear('menu');
-        $('#menu')
-            .append('<h2>Working</h2>')
-            .append('<div id="menu_trig" class="menu_section"></div>');
-        $.ajax({
-            url: '/purger/status',
-            success: function(data) {
-                $('#menu_trig').html('<div class="result">' + data.status + ' (' + data.progress + '%)</div>');
-                if (data.failed > 0) {
-                    $('#menu_trig').append('<div class="result failure">' + data.failed + ' failed</div>');
-                }
-                if (data.status === 'acquired' || data.status === 'reading' || data.status === 'deleting') {
-                    window.setTimeout(monitor_import, 1000);
-                } else {
-                    $('#menu_trig')
-                        .append('<br/><button>Fantastic</button>')
-                        .find('button')
-                        .button()
-                        .click(function() {
-                            load_menu();
-                        });
-                }
-            },
-            error: function(data) {
-            },
-        });
-    };
-
-    var load_browse = function(params) {
-        scope.mode = 'browse';
-        params = params || Object();
-        var offset = params.offset || 0;
-        var page_size = params.page_size || 20;
-        if (offset === 0) {
-            clear('browse');
-            $('#browse').append('<div class="debug">total=<span id="scope_total_count"></span>, focus=<span id="scope_focus"></span>, offset=<span id="scope_offset"></span>');
-            scope.offset = 0;
-            scope.focus = 0;
-            scope.total_count = 0;
-        }
-        $.ajax({
-            url: '/entry?offset=' + offset + '&page_size=' + page_size,
-            success: function(data) {
-                $.each(data.entries, function(index, entry) {
-                    real_index = offset + index;
-                    $('#browse')
-                        .append('<img data-self-url="' + entry.self_url +
-                                '" data-state="' + entry.state +
-                                '" data-state-url="' + entry.state_url +
-                                '" data-check-url="' + entry.check_url +
-                                '" data-proxy-url="' + entry.proxy_url +
-                                '" class="thumb" id="thumb_' + real_index +
-                                '" src="' + entry.thumb_url +
-                                '" title="' + real_index + '"/>');
-                    $('#thumb_' + real_index)
-                        .click(function(event) {
-                            var id = parseInt(this.title);
-                            var thumb = $('img.thumb')[id]
-                            update_focus({focus: id});
-                            show_viewer({
-                                proxy_url: thumb.getAttribute('data-proxy-url'),
-                            });
-                        });
-                });
-                if (offset === 0) {
-                    update_focus({focus: 0});
-                }
-                scope.offset = offset + data.count;
-                scope.total_count += data.count;
             },
         });
     };
@@ -185,17 +96,19 @@ $(function() {
             success: function(data) {
                 date = data.date;
                 $('#day')
-                    .append('<div id="date" class="date"><span id="yesterday">&lt;&lt;</span> ' + date + ' <span id="tomorrow">&gt;&gt;</span></div>');
-                $('#yesterday')
-                    .click(function() {
-                        load_day({'date': date, 'delta': '-1'});
-                    });
-                $('#tomorrow')
-                    .click(function() {
-                        load_day({'date': date, 'delta': '1'});
-                    });
-                $('#day')
-                    .append('<div class="date_spacer"> </div>');
+                    .html('<div class="day">' +
+                          '<div id="today" class="overlay_button wide">today</div>' +
+                          '<div id="prevday" class="overlay_button wide">previous</div>' +
+                          '<div id="nextday" class="overlay_button wide">next</div>' +
+                          '</div><div id="day_info">' +
+                          '<div id="thisday" class="overlay_button wide">' + date + '</div>' +
+                          '<div id="day_details"></div></div>');
+                $('#today').click(function() { load_day({'date': 'today', 'delta': '0'}); });
+                $('#prevday').click(function() { load_day({'date': date, 'delta': '-1'}); });
+                $('#thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
+                $('#nextday').click(function() { load_day({'date': date, 'delta': '1'}); });
+                $('#day_details')
+                    .append(data.count + ' entries');
                 $.each(data.entries, function(index, entry) {
                     $('#day')
                         .append('<img data-self-url="' + entry.self_url +
@@ -256,7 +169,7 @@ $(function() {
                 }
                 $(thumb).addClass('selected');
                 $('html, body').animate({
-                    scrollTop: $(thumb).offset().top - 200,
+                    scrollTop: $(thumb).offset().top - 400,
                 }, 200);
             } else {
                 $(thumb).removeClass('selected');
@@ -418,17 +331,6 @@ $(function() {
     $('#overlay_check').click(function() { show_check(); });
     $('#overlay_proxy').click(function() { show_proxy(); });
 
-    $(window).scroll(function() {
-        if (scope.mode === 'browse') {
-            if ($(window).scrollTop() == $(document).height() - $(window).height()) {
-                load_browse({
-                    offset: scope.offset,
-                    page_size: 100,
-                });
-            }
-        }
-    });
-
     $(document).keydown(function(event) {
         document.title = scope.mode + ' ' + event.which;
         if (event.which === 37) { // left
@@ -458,6 +360,12 @@ $(function() {
         // up: 38
         // down: 40
     });
+
+    $.wait = function(ms) {
+        var defer = $.Deferred();
+        setTimeout(function() { defer.resolve(); }, ms);
+        return defer;
+    };
 
     load_menu();
     hide_viewer();

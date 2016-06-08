@@ -16,6 +16,8 @@ a {
 }
 
 div#menu {
+    margin-top: 10pt;
+    margin-left: 10pt;
 }
 
 div.menu_section {
@@ -29,19 +31,25 @@ button {
     margin: 5pt;
 }
 
-div.result {
-    left: 5pt;
-    right: 5pt;
-    width: 100%;
+div.progress_outer {
+    margin-top: 5pt;
+    width: 218pt;
     height: 30pt;
     text-align: center;
     vertical-align: middle;
-    line-height: 30pt;
-    font-size: 16pt;
-    color: white;
     background-color: #666;
     margin-bottom: 5pt;
 }
+
+div#progress {
+   position: relative;
+   background: #38f;
+   top: 0;
+   bottom: 0;
+   left: 0; 
+   height: 30pt;
+}
+
 
 div.failure {
     background-color: #932;
@@ -51,24 +59,26 @@ div.debug {
     background: blue;
 }
 
-div.date {
-    position: fixed;
-    background-color: rgba(0, 0, 0, 0.7);
-    top: -10pt;
+div.day {
     left: 0;
     width: 100%;
-    font-size: 32pt;
-    line-height: 50pt;
-    vertical-align: middle;
     margin-top: 10pt;
     margin-bottom: 10pt;
-    margin-left: 5pt;
+    margin-left: 0pt;
 }
 
-div.date_spacer {
-    width: 100%;
-    margin: 0;
-    height: 55pt;
+div#day_info {
+    position: absolute;
+    top: 0pt;
+    left: 240pt;
+}
+
+div#thisday {
+    font-size: 18pt;
+    background: #111;
+    text-align: left;
+    padding-left: 0;
+    margin-left: 0;
 }
 
 img.thumb {
@@ -102,7 +112,7 @@ img.selected {
     right: 0;
     top: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: #000;
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
