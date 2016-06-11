@@ -49,7 +49,7 @@ class App:
 
 def get_importers_dict():
     entries = []
-    for name in current_system().import_folders.keys():
+    for name in sorted(current_system().import_folders.keys()):
         entries.append({
             'name': name,
             'trig_url': get_trig_url(name),
