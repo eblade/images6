@@ -149,6 +149,50 @@ $(function() {
         });
     };
 
+    var load_picker = function(params) {
+        clear('picker');
+        $.ajax({
+            url: '/date',
+            success: function(data) {
+                var last_month = "";
+                var this_month = "";
+                $.each(data.entries, function(index, date) {
+                    this_month = ("" + date.date).substring(0, 7);
+                    if (this_month !== last_month) {
+                        var year = ("" + date.date).substring(0, 4);
+                        var month = {
+                            '01': 'january',
+                            '02': 'february',
+                            '03': 'march',
+                            '04': 'april',
+                            '05': 'may',
+                            '06': 'june',
+                            '07': 'july',
+                            '08': 'august',
+                            '09': 'september',
+                            '10': 'october',
+                            '11': 'november',
+                            '12': 'december',
+                        }[("" + date.date).substring(5, 7)];
+                        $('#picker').append('<h2>' + month + ' ' + year + '</h2>');
+                    }
+                    last_month = this_month;
+                    var day = ("" + date.date).substring(8, 10);
+                    var day_id = 'day-' + date.date;
+                    $('#picker')
+                        .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline">' + day + '</div>')
+                        .find('.overlay_button')
+                        .click(function() {
+                            load_day({ date: this.getAttribute('data-date') });
+                       });
+                });
+            },
+            error: function(data) {
+                $('#picker').append('<div class="failure">Errorz.</div>');
+            },
+        });
+    };
+
     var update_focus = function(params) {
         params = params || new Object();
         var move = params.move || 0;
