@@ -7,7 +7,6 @@ import os
 
 from .system import current_system
 from .types import PropertySet, Property, EnumProperty
-from .metadata import register_metadata_schema
 from .web import (
     Create,
     FetchById,
