@@ -65,7 +65,7 @@ $(function() {
             .append('<div class="progress_outer"><div id="progress"></div></div>')
             .append('<div id="menu_failure"></div>');
         $.ajax({
-            url: '/importer/status',
+            url: url,
             success: function(data) {
                 $('#menu_result').html(data.status + ' (' + data.progress + '%)');
                 if (data.failed > 0) {
@@ -73,7 +73,7 @@ $(function() {
                 }
                 $('#progress').css('width', data.progress + '%');
                 if (data.status === 'acquired' || data.status === before || data.status === active) {
-                    window.setTimeout(monitor_import, 1000);
+                    window.setTimeout(function() { monitor(url, caption, before, active); }, 1000);
                 } else {
                     $.wait(2000).then(load_menu);
                 }
