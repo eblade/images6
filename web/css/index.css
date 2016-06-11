@@ -207,3 +207,59 @@ img.selected {
     font-weight: bold;
     width: 300pt;
 }
+
+#day_info {
+    left: 0;
+    right: 5pt;
+}
+
+#date_info {
+    width: 100%;
+}
+
+#date_info_short {
+    border: 0;
+    border-bottom: 1pt dotted #333;
+    background: inherit;
+    color: inherit;
+    font: inherit;
+    padding-top: 5pt;
+    margin-bottom: 5pt;
+    width: 100%;
+    min-height: 2em;
+    font-size: 1.5em;
+}
+
+#date_info_full {
+    border: 0;
+    border-bottom: 1pt dotted #333;
+    background: inherit;
+    color: inherit;
+    font: inherit;
+    width: 100%;
+}
+
+.saving {
+    background-color: yellow;
+}
+
+.editing {
+    background-color: blue;
+}
+
+.error {
+    background-color: yellow;
+}
+
+.date_large {
+    display: inline-block;
+}
+
+.date_large_short {
+    display: inline-block;
+    padding: 3pt;
+    margin: 3pt;
+    vertical-align: top;
+    width: 100pt;
+    overflow: hidden;
+}

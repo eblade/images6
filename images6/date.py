@@ -6,10 +6,10 @@ import urllib
 from .system import current_system
 from .types import PropertySet, Property, EnumProperty
 from .web import (
-    FetchById,
+    FetchByKey,
     FetchByQuery,
-    UpdateById,
-    DeleteById,
+    UpdateByKey,
+    DeleteByKey,
 )
 
 
@@ -29,18 +29,18 @@ class App:
             callback=FetchByQuery(get_dates, QueryClass=DateQuery),
         )
         app.route(
-            path='/<date>',
-            callback=FetchById(get_date),
+            path='/<key>',
+            callback=FetchByKey(get_date),
         )
         app.route(
-            path='/<date>',
+            path='/<key>',
             method='PUT',
-            callback=UpdateById(update_date, Date),
+            callback=UpdateByKey(update_date, Date),
         )
         app.route(
-            path='/<date>',
+            path='/<key>',
             method='DELETE',
-            callback=DeleteById(delete_date),
+            callback=DeleteByKey(delete_date),
         )
 
         return app
@@ -55,6 +55,7 @@ class Date(PropertySet):
     short = Property()
     full = Property()
     mimetype = Property(default='text/plain')
+    only = Property()
 
     self_url = Property()
     date_url = Property()
@@ -123,14 +124,23 @@ def get_dates(query=None):
 
 
 def get_date(date):
-    date = Date.FromDict(current_system().database.get_date(date))
+    date = Date.FromDict(current_system().database.get_date_info(date))
     date.calculate_urls()
     return date
 
 
 def update_date(date, date_info):
-    current_system().database.update_date_info(date, date_info.to_dict())
-    return get_date_info(date)
+    old_date_info = current_system().database.get_date_info(date)
+    if date_info.only == 'short':
+        old_date_info['short'] = date_info.short
+        date_info = old_date_info
+    elif date_info.only == 'full':
+        old_date_info['full'] = date_info.full
+        date_info = old_date_info
+    else:
+        date_info = date_info.to_dict()
+    current_system().database.update_date_info(date, date_info)
+    return get_date(date)
 
 
 def delete_date(date):

@@ -271,7 +271,9 @@ class Database:
                          if entry.get('state') == state])
 
     def get_date_info(self, date):
-        return self.dates.get(date, {})
+        date_info = self.dates.get(date, {})
+        date_info['date'] = date
+        return date_info
 
     def get_dates(self, query_str=''):
         with self.lock:
@@ -296,7 +298,7 @@ class Database:
             with open(path, 'wb') as f:
                 s = json.dumps(new_date_info, indent=2, sort_keys=True)
                 f.write(s.encode('utf8'))
-            self.dates = dict(new_date_info)
+            self.dates[date] = dict(new_date_info)
 
     def delete_date_info(self, date):
         with self.lock:

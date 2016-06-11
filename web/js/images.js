@@ -106,15 +106,21 @@ $(function() {
                 }
                 $('#day')
                     .html('<div class="day">' +
-                          '<div id="day_today" class="overlay_button">today</div>' +
-                          '<div id="day_prevday" class="overlay_button">prev</div>' +
-                          '<div id="day_nextday" class="overlay_button">next</div>' +
-                          '</div><div id="day_more_buttons">' +
-                          '<div id="day_back" class="overlay_button">back</div>' +
-                          '<div id="day_pick" class="overlay_button">pick</div>' +
-                          '</div><div id="day_info">' +
-                          '<div id="day_thisday" class="overlay_button">' + date + '</div>' +
-                          '<div id="day_details"></div></div>');
+                              '<div id="day_today" class="overlay_button">today</div>' +
+                              '<div id="day_prevday" class="overlay_button">prev</div>' +
+                              '<div id="day_nextday" class="overlay_button">next</div>' +
+                              '</div><div id="day_more_buttons">' +
+                              '<div id="day_back" class="overlay_button">back</div>' +
+                              '<div id="day_pick" class="overlay_button">pick</div>' +
+                          '</div>' +
+                          '<div id="day_info">' +
+                              '<div id="day_thisday" class="overlay_button">' + date + '</div>' +
+                              '<div id="day_details"></div>' +
+                              '<div id="date_info">' +
+                                  '<input id="date_info_short" data-url="/date/' + date + '" data-name="short"/>' +
+                                  '<textarea id="date_info_full" data-url="/date/' + date + '" data-name="full"></textarea>' +
+                              '</div>' +
+                          '</div>');
                 $('#day_today').click(function() { load_day({'date': 'today', 'delta': '0'}); });
                 $('#day_prevday').click(function() { load_day(previous); });
                 $('#day_thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
@@ -123,6 +129,20 @@ $(function() {
                 $('#day_pick').click(function() { load_picker(); });
                 $('#day_details')
                     .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
+                autoSave('#date_info_short'); 
+                autoSave('#date_info_full'); 
+                //$('#date_info_full').click(function () {
+                //    makeEditable(document.getElementById('date_info_full')); 
+                //});
+                $.ajax({
+                    url: '/date/' + date,
+                    success: function(data) {
+                        $('#date_info_short').val(data.short);
+                        $('#date_info_full').html(data.full);
+                    },
+                    error: function(data) {
+                    },
+                })
                 $.each(data.entries, function(index, entry) {
                     $('#day')
                         .append('<img data-self-url="' + entry.self_url +
@@ -179,8 +199,18 @@ $(function() {
                     last_month = this_month;
                     var day = ("" + date.date).substring(8, 10);
                     var day_id = 'day-' + date.date;
+                    if (date.short) {
+                        $('#picker')
+                            .append('<div class="date_large">' + 
+                                    '<div id="' + day_id + 
+                                        '" data-date="' + date.date + 
+                                        '" class="overlay_button inline">' + day + '</div>' +
+                                    '<div class="date_large_short">' + date.short + '</div></div>');
+                    } else {
+                        $('#picker')
+                            .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline">' + day + '</div>');
+                    }
                     $('#picker')
-                        .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline">' + day + '</div>')
                         .find('.overlay_button')
                         .click(function() {
                             load_day({ date: this.getAttribute('data-date') });
@@ -390,26 +420,30 @@ $(function() {
     $('#overlay_proxy').click(function() { show_proxy(); });
 
     $(document).keydown(function(event) {
-        if (event.which === 37) { // left
-            update_focus({move: -1});
-        } else if (event.which === 39) { // right
-            update_focus({move: +1});
-        } else if (event.which === 27) { // escape
-            if (scope.mode === 'browse' || scope.mode === 'day') {
-                load_menu();
-            } else if (scope.mode === 'proxy') {
-                if (scope.showing_metadata) {
-                    toggle_metadata();
-                } else {
-                    hide_viewer();
+        if ($('input,textarea').is(':focus')) {
+            // let it be
+        } else {
+            if (event.which === 37) { // left
+                update_focus({move: -1});
+            } else if (event.which === 39) { // right
+                update_focus({move: +1});
+            } else if (event.which === 27) { // escape
+                if (scope.mode === 'browse' || scope.mode === 'day') {
+                    load_menu();
+                } else if (scope.mode === 'proxy') {
+                    if (scope.showing_metadata) {
+                        toggle_metadata();
+                    } else {
+                        hide_viewer();
+                    }
                 }
-            }
-        } else if (event.which === 13) { // return
-            if (scope.mode === 'browse' || scope.mode === 'day') {
-                var thumb = $('img.thumb')[scope.focus];
-                show_viewer({
-                    proxy_url: thumb.getAttribute('data-proxy-url'),
-                });
+            } else if (event.which === 13) { // return
+                if (scope.mode === 'browse' || scope.mode === 'day') {
+                    var thumb = $('img.thumb')[scope.focus];
+                    show_viewer({
+                        proxy_url: thumb.getAttribute('data-proxy-url'),
+                    });
+                }
             }
         }
         // right: 39
@@ -422,6 +456,29 @@ $(function() {
         var defer = $.Deferred();
         setTimeout(function() { defer.resolve(); }, ms);
         return defer;
+    };
+
+    var autoSave = function (id) {
+        $(id).change(function () {
+            $(id).removeClass('error').addClass('saving');
+            var url = $(id)[0].getAttribute('data-url');
+            var field = $(id)[0].getAttribute('data-name');
+            var data = new Object();
+            data['only'] = field;
+            data[field] = $(id).val();
+            $.ajax({
+                url: url,
+                method: 'PUT',
+                contentType: "application/json",
+                data: JSON.stringify(data),
+                success: function (data) {
+                    $(id).removeClass('saving');
+                },
+                error: function (data) {
+                    $(id).removeClass('saving').addClass('error');
+                },
+            });
+        })
     };
 
     load_menu();

@@ -107,6 +107,18 @@ def UpdateById(function, InputClass, pre=None):
     return f
 
 
+def UpdateByKey(function, InputClass, pre=None):
+    def f(key):
+        if callable(pre):
+            pre()
+        o = InputClass.FromDict(bottle.request.json)
+        if o is None:
+            raise bottle.HTTPError(400)
+        result = function(key, o)
+        return result.to_dict()
+    return f
+
+
 def UpdateByIdAndQuery(function, QueryClass=None, pre=None):
     def f(id):
         if callable(pre):
@@ -120,7 +132,6 @@ def UpdateByIdAndQuery(function, QueryClass=None, pre=None):
     return f
 
 
-
 def DeleteById(function, pre=None):
     def f(id):
         if callable(pre):
@@ -128,5 +139,16 @@ def DeleteById(function, pre=None):
         if id is None:
             raise bottle.HTTPError(400)
         function(id)
+        raise bottle.HTTPError(204)
+    return f
+
+
+def DeleteByKey(function, pre=None):
+    def f(key):
+        if callable(pre):
+            pre()
+        if key is None:
+            raise bottle.HTTPError(400)
+        function(key)
         raise bottle.HTTPError(204)
     return f
