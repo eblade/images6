@@ -132,7 +132,9 @@ class Database:
         self.lock = threading.Lock()
         self.root_path = root_path
         self.data_folder = os.path.join(self.root_path, 'data')
+        self.date_folder = os.path.join(self.root_path, 'date')
         os.makedirs(self.data_folder, exist_ok=True)
+        os.makedirs(self.date_folder, exist_ok=True)
 
         self.id_counter_file = os.path.join(self.root_path, 'id_counter')
         self.load_entries()
@@ -153,6 +155,7 @@ class Database:
             logging.info("Loading entries...")
             self.entries = []
             self.entries_by_id = {}
+            self.dates = {}
             for r, ds, fs in os.walk(self.data_folder):
                 for f in fs:
                     if f.endswith('.json'):
@@ -167,9 +170,23 @@ class Database:
     def _read_entry(self, entry):
         self.entries.append(entry)
         self.entries_by_id[entry.get('id')] = entry
+        date = (entry.get('taken_ts') or '')[:10]
+        self._load_date(date)
 
     def _sort(self):
         self.entries.sort(key=lambda e: e.get('taken_ts'), reverse=True)
+
+    def _load_date(self, date):
+        if not date:
+            return
+        if date not in self.dates.keys():
+            try:
+                path = os.path.join(self.date_folder, date + '.json')
+                with open(path, 'rb') as f:
+                    s = f.read().decode('utf8')
+                    self.dates[date] = json.loads(s)
+            except OSError:
+                self.dates[date] = {}
 
     def sort(self):
         with self.lock:
@@ -194,6 +211,9 @@ class Database:
                 f.write(s.encode('utf8'))
             os.remove(path)
             os.rename(tmp_path, path)
+
+            date = (new_entry.get('taken_ts') or '')[:10]
+            self._load_date(date)
 
     def create(self, id, new_entry):
         with self.lock:
@@ -246,5 +266,46 @@ class Database:
         return '%08x.json' % (id)
 
     def get_ids_in_state(self, state):
-        return list([entry.get('id') for entry in self.entries 
-                     if entry.get('state') == state])
+        with self.lock:
+            return list([entry.get('id') for entry in self.entries 
+                         if entry.get('state') == state])
+
+    def get_date_info(self, date):
+        return self.dates.get(date, {})
+
+    def get_dates(self, query_str=''):
+        with self.lock:
+            result = []
+            for date in reversed(sorted(self.dates.keys())):
+                if not date.startswith(query_str):
+                    continue
+                date_info = self.dates[date]
+                post = dict(date_info)
+                post['date'] = date
+                result.append(post)
+            return result
+
+    def update_date_info(self, date, new_date_info):
+        new_date_info = dict(
+            short=new_date_info.get('short'),
+            full=new_date_info.get('full'),
+            mimetype=new_date_info.get('mimetype', 'text/plain'),
+        )
+        with self.lock:
+            path = os.path.join(self.date_folder, date + '.json')
+            with open(path, 'wb') as f:
+                s = json.dumps(new_date_info, indent=2, sort_keys=True)
+                f.write(s.encode('utf8'))
+            self.dates = dict(new_date_info)
+
+    def delete_date_info(self, date):
+        with self.lock:
+            path = os.path.join(self.date_folder, date + '.json')
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            try:
+                del self.dates[date]
+            except KeyError:
+                pass
