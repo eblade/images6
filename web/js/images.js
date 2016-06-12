@@ -15,8 +15,14 @@ $(function() {
     var load_menu = function() {
         clear('menu');
         $('#menu')
-            .append('<div id="day_button" class="overlay_button wide">browse</div>')
-            .find('#day_button')
+            .append('<div id="picker_button" class="overlay_button wide">browse</div>')
+            .find('#picker_button')
+            .click(function() {
+                load_picker();
+            });
+        $('#menu')
+            .append('<div id="today_button" class="overlay_button wide">today</div>')
+            .find('#today_button')
             .click(function() {
                 load_day();
             });
@@ -110,8 +116,10 @@ $(function() {
                               '<div id="day_prevday" class="overlay_button">prev</div>' +
                               '<div id="day_nextday" class="overlay_button">next</div>' +
                               '</div><div id="day_more_buttons">' +
-                              '<div id="day_back" class="overlay_button">back</div>' +
+                              '<div id="day_back" class="overlay_button">menu</div>' +
                               '<div id="day_pick" class="overlay_button">pick</div>' +
+                              '<div id="day_purge" class="overlay_button">purge</div>' +
+                          '</div>' +
                           '</div>' +
                           '<div id="day_info">' +
                               '<div id="day_thisday" class="overlay_button">' + date + '</div>' +
@@ -127,6 +135,7 @@ $(function() {
                 $('#day_nextday').click(function() { load_day(next); });
                 $('#day_back').click(function() { load_menu(); });
                 $('#day_pick').click(function() { load_picker(); });
+                $('#day_purge').click(function() { purge_pending(); });
                 $('#day_details')
                     .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
                 autoSave('#date_info_short'); 
@@ -204,11 +213,11 @@ $(function() {
                             .append('<div class="date_large">' + 
                                     '<div id="' + day_id + 
                                         '" data-date="' + date.date + 
-                                        '" class="overlay_button inline">' + day + '</div>' +
+                                        '" class="overlay_button inline larger">' + day + '</div>' +
                                     '<div class="date_large_short">' + date.short + '</div></div>');
                     } else {
                         $('#picker')
-                            .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline">' + day + '</div>');
+                            .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline larger">' + day + '</div>');
                     }
                     $('#picker')
                         .find('.overlay_button')
@@ -240,10 +249,6 @@ $(function() {
             scope.focus = scope.total_count - 1;
         }
 
-        $('#scope_total_count').html(scope.total_count);
-        $('#scope_focus').html(scope.focus);
-        $('#scope_offset').html(scope.offset);
-
         $('.thumb').each(function(index, thumb) {
             if (index === scope.focus) {
                 if (scope.mode === 'check') {
@@ -265,6 +270,27 @@ $(function() {
         });
 
 
+    };
+
+    var purge_pending = function() {
+        $('.thumb').each(function(index, thumb) {
+            var state = thumb.getAttribute('data-state');
+            if (state == 'pending') {
+                var url = thumb.getAttribute('data-state-url');
+                $.ajax({
+                    url: url + '?state=purge&soft=yes',
+                    method: 'PUT',
+                    success: function(data) {
+                        thumb.setAttribute('data-state', 'purge');
+                    },
+                    error: function(data) {
+                        alert("Unabled to purge " + id);
+                    },
+                });
+                $(thumb).addClass('purge');
+            }
+        });
+        $('#day_thisday').click();
     };
 
     var show_viewer = function(params) {
@@ -436,6 +462,8 @@ $(function() {
                     } else {
                         hide_viewer();
                     }
+                } else if (scope.mode === 'picker') {
+                    load_menu();
                 }
             } else if (event.which === 13) { // return
                 if (scope.mode === 'browse' || scope.mode === 'day') {

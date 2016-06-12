@@ -208,12 +208,15 @@ class EntryQuery(PropertySet):
 
 class StateQuery(PropertySet):
     state = Property()
+    soft = Property(bool, default=False)
 
     @classmethod
     def FromRequest(self):
         sq = StateQuery()
         if bottle.request.query.state not in (None, ''):
             sq.state = bottle.request.query.state
+        if bottle.request.query.soft not in (None, ''):
+            sq.soft = bottle.request.query.state == 'yes'
         
         return sq
 
@@ -283,6 +286,10 @@ def update_entry_state(id, query):
         raise bottle.HTTPError(400)
 
     entry = get_entry_by_id(id)
+
+    if query.soft and entry.state != 'pending':
+        return entry
+
     entry.state = state
     return update_entry_by_id(id, entry)
 
