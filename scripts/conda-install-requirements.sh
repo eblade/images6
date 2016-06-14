@@ -1,2 +1,3 @@
 #!/bin/bash
-conda install requests bottle pillow
+conda install requests pillow
+pip install bottle

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+CONFIG_FILE="$1"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+cd "$SCRIPT_DIR"
+cd ..
+
+source activate images6
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+
+python3 -m images6 -c "$CONFIG_FILE" &
+sleep 1
+firefox http://localhost:8888
