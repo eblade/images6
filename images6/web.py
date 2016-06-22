@@ -7,7 +7,8 @@ class App:
     HTML = 'web'
     JS = os.path.join(HTML, 'js')
     CSS = os.path.join(HTML, 'css')
-    CSS_IMAGES = os.path.join(HTML, 'css', 'images')
+    GRAPHICS = os.path.join(HTML, 'graphics')
+
 
     @classmethod
     def create(self):
@@ -19,6 +20,10 @@ class App:
             callback=lambda: bottle.static_file('index.html', root=self.HTML),
         )
         app.route(
+            path='/favicon.png',
+            callback=lambda: bottle.static_file('images6.png', root='.'),
+        )
+        app.route(
             path='/js/<fn>.js',
             callback=lambda fn: bottle.static_file(fn + '.js', root=self.JS),
         )
@@ -27,8 +32,12 @@ class App:
             callback=lambda fn: bottle.static_file(fn + '.css', root=self.CSS),
         )
         app.route(
-            path='/css/images/<fn>.png',
-            callback=lambda fn: bottle.static_file(fn + '.png', root=self.CSS_IMAGES),
+            path='/graphics/<fn>.png',
+            callback=lambda fn: bottle.static_file(fn + '.png', root=self.GRAPHICS),
+        )
+        app.route(
+            path='/graphics/<fn>.json',
+            callback=lambda fn: bottle.static_file(fn + '.json', root=self.GRAPHICS),
         )
 
         return app

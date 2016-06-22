@@ -17,6 +17,7 @@ from . import entry
 from . import date
 from . import importer
 from . import deleter
+from . import publish
 from .ingest import image
 
 
@@ -45,6 +46,7 @@ if __name__ == '__main__':
         date,
         importer,
         deleter,
+        publish,
     ):
         logging.info(
             "Setting up %s on %s..." % (module.__name__, module.App.BASE)
