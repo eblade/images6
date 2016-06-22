@@ -412,7 +412,7 @@ $(function() {
                     row('Taken', data.metadata.DateTimeOriginal);
                     row('Digitized', data.metadata.DateTimeDigitized);
                     row('Colorspace', data.metadata.ColorSpace);
-                    row('Exposure time', data.metadata.ExposureTime[0] + ' / ' + data.metadata.ExposureTime[1]);
+                    row('Exposure', data.metadata.ExposureTime[0] + ' / ' + data.metadata.ExposureTime[1]);
                     if (data.metadata.FNumber[0] === 0) {
                         row('Aperture', 'unknown');
                     } else {
@@ -425,8 +425,10 @@ $(function() {
                     row('Flash', data.metadata.Flash);
                     row('ID', data.id);
                     row('State', data.state);
-                    row('Import folder', data.import_folder);
-                    row('Import filename', data.original_filename);
+                    row('Folder', data.import_folder);
+                    row('Filename', data.original_filename);
+                    row('Proxy', '<a href="' + data.proxy_url + '?download=yes">download</a>');
+                    row('Original', '<a href="' + data.original_url + '?download=yes">download</a>');
                 },
                 error: function(data) {
                     $('#metadata').html('no metadata, apparently');
@@ -445,40 +447,42 @@ $(function() {
     $('#overlay_check').click(function() { show_check(); });
     $('#overlay_proxy').click(function() { show_proxy(); });
 
-    $(document).keydown(function(event) {
-        if ($('input,textarea').is(':focus')) {
-            // let it be
-        } else {
-            if (event.which === 37) { // left
-                update_focus({move: -1});
-            } else if (event.which === 39) { // right
-                update_focus({move: +1});
-            } else if (event.which === 27) { // escape
-                if (scope.mode === 'browse' || scope.mode === 'day') {
-                    load_menu();
-                } else if (scope.mode === 'proxy') {
-                    if (scope.showing_metadata) {
-                        toggle_metadata();
-                    } else {
-                        hide_viewer();
+    var bind_keys = function() {
+        $(document).keydown(function(event) {
+            if ($('input,textarea').is(':focus')) {
+                // let it be
+            } else {
+                if (event.which === 37) { // left
+                    update_focus({move: -1});
+                } else if (event.which === 39) { // right
+                    update_focus({move: +1});
+                } else if (event.which === 27) { // escape
+                    if (scope.mode === 'browse' || scope.mode === 'day') {
+                        load_menu();
+                    } else if (scope.mode === 'proxy') {
+                        if (scope.showing_metadata) {
+                            toggle_metadata();
+                        } else {
+                            hide_viewer();
+                        }
+                    } else if (scope.mode === 'picker') {
+                        load_menu();
                     }
-                } else if (scope.mode === 'picker') {
-                    load_menu();
-                }
-            } else if (event.which === 13) { // return
-                if (scope.mode === 'browse' || scope.mode === 'day') {
-                    var thumb = $('img.thumb')[scope.focus];
-                    show_viewer({
-                        proxy_url: thumb.getAttribute('data-proxy-url'),
-                    });
+                } else if (event.which === 13) { // return
+                    if (scope.mode === 'browse' || scope.mode === 'day') {
+                        var thumb = $('img.thumb')[scope.focus];
+                        show_viewer({
+                            proxy_url: thumb.getAttribute('data-proxy-url'),
+                        });
+                    }
                 }
             }
-        }
-        // right: 39
-        // left: 37
-        // up: 38
-        // down: 40
-    });
+            // right: 39
+            // left: 37
+            // up: 38
+            // down: 40
+        });
+    };
 
     $.wait = function(ms) {
         var defer = $.Deferred();
@@ -509,6 +513,9 @@ $(function() {
         })
     };
 
-    load_menu();
     hide_viewer();
+
+    $.Images = $.Images || {};
+    $.Images.bind_keys = bind_keys;
+    $.Images.load_menu = load_menu;
 });
