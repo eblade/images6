@@ -300,6 +300,8 @@ def update_entry_state(id, query):
 def create_entry(ed):
     id = current_system().database.next_id()
     ed.id = id
+    if ed.taken_ts is None:
+        ed.taken_ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     current_system().database.create(id, ed.to_dict())
     return get_entry_by_id(id)
 
