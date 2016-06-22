@@ -134,6 +134,7 @@ class Entry(PropertySet):
     state_url = Property()
 
     self_url = Property()
+    original_url = Property()
     thumb_url = Property()
     proxy_url = Property()
     check_url = Property()
@@ -150,11 +151,13 @@ class Entry(PropertySet):
                 App.BASE, self.id, variant.store, variant.version, variant.get_extension()
             )
             self.urls[variant.purpose.value][variant.version] = url
-            if variant.purpose is Purpose.proxy:
+            if variant.purpose is Purpose.original:
+                self.original_url = url
+            elif variant.purpose is Purpose.proxy:
                 self.proxy_url = url
-            if variant.purpose is Purpose.thumb:
+            elif variant.purpose is Purpose.thumb:
                 self.thumb_url = url
-            if variant.purpose is Purpose.check:
+            elif variant.purpose is Purpose.check:
                 self.check_url = url
 
 
@@ -216,7 +219,7 @@ class StateQuery(PropertySet):
         if bottle.request.query.state not in (None, ''):
             sq.state = bottle.request.query.state
         if bottle.request.query.soft not in (None, ''):
-            sq.soft = bottle.request.query.state == 'yes'
+            sq.soft = bottle.request.query.soft == 'yes'
         
         return sq
 
@@ -306,7 +309,8 @@ def delete_entry_by_id(id):
 
 
 def download(id, store, version, extension):
+    download = bottle.request.query.download == 'yes'
     entry = get_entry_by_id(id)
     for variant in entry.variants:
         if variant.store == store and variant.version == version and variant.get_extension() == extension:
-            return bottle.static_file(variant.get_filename(id), root=current_system().media_root)
+            return bottle.static_file(variant.get_filename(id), download=download, root=current_system().media_root)
