@@ -290,7 +290,7 @@ def update_entry_state(id, query):
 
     entry = get_entry_by_id(id)
 
-    if query.soft and entry.state != 'pending':
+    if query.soft and entry.state != State.pending:
         return entry
 
     entry.state = state
