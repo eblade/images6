@@ -33,6 +33,7 @@ button {
 
 div.progress_outer {
     margin-top: 5pt;
+    margin-left: 5pt;
     width: 218pt;
     height: 30pt;
     text-align: center;
@@ -50,6 +51,13 @@ div#progress {
    height: 30pt;
 }
 
+div#menu_result {
+    margin-left: 5pt;
+}
+
+div#menu_failure {
+    margin-left: 5pt;
+}
 
 div.failure {
     background-color: #932;
@@ -202,7 +210,7 @@ img.selected {
 
 #overlay_metadata {
     position: absolute;
-    top: 0pt;
+    top: 5pt;
     left: 72pt;
     margin-left: 5pt;
     margin-top: 5pt;
