@@ -1,3 +1,2 @@
 #!/bin/bash
-conda install requests pillow
-pip install bottle
+conda install requests pillow, cherrypy

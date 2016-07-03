@@ -58,4 +58,5 @@ if __name__ == '__main__':
     app.run(
         host=system.server_host,
         port=system.server_port,
+        server='cherrypy',
     )

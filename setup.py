@@ -36,7 +36,7 @@ setup(
     install_requires=[
         "pillow>=2.5.1",
         "bottle>0.12.7",
-        "sqlalchemy>=1.0.0",
+        "cherrypy",
     ],
     classifiers=classifiers,
 )
