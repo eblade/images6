@@ -53,6 +53,7 @@ class System:
     def setup_server(self):
         self.server_host = self.config['Server']['host']
         self.server_port = int(self.config['Server']['port'])
+        self.server_adapter = self.config['Server'].get('adapter', 'cherrypy')
 
     def setup_database(self):
         self.database_root = os.path.join(self.root, 'database')

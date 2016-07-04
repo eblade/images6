@@ -139,11 +139,16 @@ class Entry(PropertySet):
     proxy_url = Property()
     check_url = Property()
 
+    def get_filename(self, purpose):
+        variants = [variant for variant in self.variants if variant.purpose == Purpose(purpose)]
+        if len(variants) == 0:
+            return None
+        return sorted(variants, key=lambda variant: variant.version).pop().get_filename(self.id)
+
     def calculate_urls(self):
         self.self_url = '%s/%i' % (App.BASE, self.id)
         self.state_url = '%s/%i/state' % (App.BASE, self.id)
         self.urls = {}
-        logging.info(self.variants)
         for variant in self.variants:
             if not variant.purpose.value in self.urls.keys():
                 self.urls[variant.purpose.value] = {}
@@ -178,7 +183,7 @@ class EntryQuery(PropertySet):
     offset = Property(int, default=0)
     page_size = Property(int, default=25, required=True)
     date = Property()
-    delta = Property(int)
+    delta = Property(int, default=0)
 
     @classmethod
     def FromRequest(self):
