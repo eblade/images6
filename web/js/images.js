@@ -140,9 +140,6 @@ $(function() {
                     .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
                 autoSave('#date_info_short'); 
                 autoSave('#date_info_full'); 
-                //$('#date_info_full').click(function () {
-                //    makeEditable(document.getElementById('date_info_full')); 
-                //});
                 $.ajax({
                     url: '/date/' + date,
                     success: function(data) {
@@ -223,7 +220,7 @@ $(function() {
                         .find('#' + day_id)
                         .click(function() {
                             load_day({ date: this.getAttribute('data-date') });
-                       });
+                        });
                 });
             },
             error: function(data) {
