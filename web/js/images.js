@@ -220,7 +220,7 @@ $(function() {
                             .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline larger">' + day + '</div>');
                     }
                     $('#picker')
-                        .find('.overlay_button')
+                        .find('#' + day_id)
                         .click(function() {
                             load_day({ date: this.getAttribute('data-date') });
                        });
