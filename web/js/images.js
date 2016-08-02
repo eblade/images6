@@ -467,7 +467,7 @@ $(function() {
                 url: url,
                 success: function(data) {
                     var table = $('#publisher')
-                        .html('<div class="small_button" id="flickr">to flickr</div><table></table>')
+                        .html('<div class="small_button" id="flickr">to flickr</div><hr/><table></table>')
                         .find('table');
 
                     $.each(data.backups, function(index, backup) {

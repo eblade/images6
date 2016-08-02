@@ -162,8 +162,8 @@ img.selected {
     margin-right: 5pt;
     margin-top: 5pt;
     margin-bottom: 5pt;
-    padding: 8pt;
-    background-color: black;
+    padding: 1pt;
+    background-color: #555;
     color: white;
     font-weight: bold;
     width: 150pt;
@@ -185,6 +185,10 @@ img.selected {
     height: 40pt;
     line-height: 40pt;
     vertical-align: middle;
+}
+
+hr {
+    border: 1pt solid white;
 }
 
 .select {
