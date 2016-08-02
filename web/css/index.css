@@ -158,6 +158,21 @@ img.selected {
     vertical-align: middle;
 }
 
+.small_button {
+    margin-right: 5pt;
+    margin-top: 5pt;
+    margin-bottom: 5pt;
+    padding: 8pt;
+    background-color: black;
+    color: white;
+    font-weight: bold;
+    width: 150pt;
+    text-align: center;
+    height: 40pt;
+    line-height: 40pt;
+    vertical-align: middle;
+}
+
 .overlay_toggle {
     margin-left: 5pt;
     margin-top: 5pt;
@@ -208,7 +223,7 @@ img.selected {
     background-color: #248;
 }
 
-#overlay_metadata {
+.overlay_popup {
     position: absolute;
     top: 5pt;
     left: 72pt;
@@ -219,6 +234,7 @@ img.selected {
     color: white;
     font-weight: bold;
     width: 300pt;
+    min-height: 400pt;
 }
 
 #day_info {

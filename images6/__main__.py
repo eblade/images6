@@ -21,6 +21,9 @@ from . import deleter
 from . import publish
 from .ingest import image
 
+from . import plugin
+from .plugins import flickr
+
 
 if __name__ == '__main__':
     # Options
@@ -48,8 +51,8 @@ if __name__ == '__main__':
     command, args = args.command[0], args.command[1:]
     if command == 'serve':
 
-        # Web-Apps
-        logging.info("*** Setting up Web-Apps...")
+        # Apps
+        logging.info("*** Setting up apps...")
         app = web.App.create()
         for module in (
             entry,
@@ -57,12 +60,18 @@ if __name__ == '__main__':
             importer,
             deleter,
             publish,
+            plugin,
         ):
             logging.info(
                 "Setting up %s on %s..." % (module.__name__, module.App.BASE)
             )
             app.mount(module.App.BASE, module.App.create())
-        logging.info("*** Done setting up Web-apps.")
+            if hasattr(module.App, 'run'):
+                logging.info(
+                    "Setting up %s backend..." % (module.__name__)
+                )
+                module.App.run(workers=system.plugin_workers)
+        logging.info("*** Done setting up apps.")
 
         # Serve the Web-App
         app.run(

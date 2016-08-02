@@ -5,6 +5,7 @@ $(function() {
         offset: 0,
         focus: 0,
         showing_metadata: false,
+        showing_publish: false,
     };
 
     var clear = function(mode) {
@@ -296,6 +297,7 @@ $(function() {
         var animate = params.animate === undefined ? true : params.animate;
 
         $('#overlay_metadata').hide();
+        $('#overlay_publisher').hide();
 
         $('#overlay').css('background-image', 'url(' + proxy_url + ')');
         if (animate) {
@@ -304,6 +306,7 @@ $(function() {
         }
         scope.mode = 'proxy';
         scope.showing_metadata = false;
+        scope.showing_publish = false;
         sync_overlay_buttons();
     };
 
@@ -336,6 +339,11 @@ $(function() {
             $('#overlay_meta').addClass('select').addClass('extend');
         } else {
             $('#overlay_meta').removeClass('select').removeClass('extend');
+        }
+        if (scope.showing_publish) {
+            $('#overlay_publish').addClass('select').addClass('extend');
+        } else {
+            $('#overlay_publish').removeClass('select').removeClass('extend');
         }
     };
 
@@ -389,6 +397,10 @@ $(function() {
 
     var toggle_metadata = function() {
         scope.showing_metadata = !scope.showing_metadata;
+        if (scope.showing_metadata) {
+            scope.showing_publish = false;
+            $('#overlay_publisher').fadeOut();
+        }
         sync_overlay_buttons();
         if (scope.showing_metadata === true) {
             var thumb = $('img.thumb')[scope.focus];
@@ -404,6 +416,8 @@ $(function() {
                     var row = function(key, value) {
                         $(table).append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                     };
+                    row('Title', data.title);
+                    row('Description', data.description);
                     row('Artist', data.metadata.Artist);
                     row('Copyright', data.metadata.Copyright);
                     row('Taken', data.metadata.DateTimeOriginal);
@@ -437,10 +451,66 @@ $(function() {
 
     };
 
+    var toggle_publish = function() {
+        scope.showing_publish = !scope.showing_publish;
+        if (scope.showing_publish) {
+            scope.showing_metadata = false;
+            $('#overlay_metadata').fadeOut();
+        }
+        sync_overlay_buttons();
+        if (scope.showing_publish === true) {
+            var thumb = $('img.thumb')[scope.focus];
+            var url = thumb.getAttribute('data-self-url');
+            $('#overlay_publisher').fadeIn();
+            $('#publisher').html('loading...');
+            $.ajax({
+                url: url,
+                success: function(data) {
+                    var table = $('#publisher')
+                        .html('<div class="small_button" id="flickr">to flickr</div><table></table>')
+                        .find('table');
+
+                    $.each(data.backups, function(index, backup) {
+                        $(table).append(
+                                '<tr><td>' + backup.method +
+                                '</td><td>' + backup.key + '</td></tr>'
+                        );
+                    });
+
+                    $('#flickr')
+                        .click(function() {
+                            $.ajax({
+                                url: '/plugin/flickr/trig',
+                                method: 'post',
+                                contentType: "application/json",
+                                data: JSON.stringify({
+                                    '*schema': 'FlickrOptions',
+                                    entry_id: data.id,
+                                }),
+                                success: function(data) {
+                                    $('#flickr').html('sent to flickr');
+                                }, 
+                                error: function(data) {
+                                    $('#flickr').html('flickr error');
+                                },
+                            });
+                        });
+                },
+                error: function(data) {
+                    $('#publisher').html('Error!');
+                },
+            });
+        } else {
+            $('#overlay_publisher').fadeOut();
+        }
+
+    };
+
     $('#overlay_close').click(function() { hide_viewer(); });
     $('#overlay_keep').click(function() { keep(scope.focus); });
     $('#overlay_purge').click(function() { purge(scope.focus); });
     $('#overlay_meta').click(function() { toggle_metadata(scope.focus); });
+    $('#overlay_publish').click(function() { toggle_publish(scope.focus); });
     $('#overlay_check').click(function() { show_check(); });
     $('#overlay_proxy').click(function() { show_proxy(); });
 
@@ -459,6 +529,8 @@ $(function() {
                     } else if (scope.mode === 'proxy') {
                         if (scope.showing_metadata) {
                             toggle_metadata();
+                        } else if (scope.showing_publish) {
+                            toggle_publish();
                         } else {
                             hide_viewer();
                         }

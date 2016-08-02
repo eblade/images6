@@ -26,6 +26,7 @@ class System:
         self.setup_import()
         self.setup_server()
         self.setup_database()
+        self.setup_plugins()
 
         current_system.system = self
         logging.info("System registered.")
@@ -58,6 +59,15 @@ class System:
     def setup_database(self):
         self.database_root = os.path.join(self.root, 'database')
         self.database = Database(self.database_root)
+
+    def setup_plugins(self):
+        self.plugin_workers = self.config['Plugin'].getint('workers')
+        self.plugin_config = {}
+        for section in self.config.sections():
+            if section.startswith("Plugin:"):
+                method = section[7:]
+                self.plugin_config[method] = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                logging.info('Loaded plugin config for %s.', method)
 
 
 class ImportFolder:

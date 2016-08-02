@@ -117,6 +117,12 @@ class Variant(PropertySet):
         return os.path.join(self.store, filename)
 
 
+class Backup(PropertySet):
+    method = Property()
+    key = Property()
+    url = Property()
+
+
 class Entry(PropertySet):
     id = Property(int)
     mime_type = Property()
@@ -128,7 +134,9 @@ class Entry(PropertySet):
     tags = Property(list)
     taken_ts = Property()
     metadata = Property(wrap=True)
-    backups = Property(list)
+    backups = Property(type=Backup, is_list=True)
+    title = Property()
+    description = Property()
 
     urls = Property(dict)
     state_url = Property()
