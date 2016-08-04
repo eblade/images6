@@ -9,6 +9,20 @@ body {
   margin-bottom: 0px;
 }
 
+#backgroud {
+
+}
+
+#day_view {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding-top: 5pt;
+    background-color: black;
+}
+
 a {
   color: #ccc;
   text-decoration: none;
@@ -29,6 +43,7 @@ h2 {
 
 button {
     margin: 5pt;
+    cursor: pointer;
 }
 
 div.progress_outer {
@@ -77,7 +92,7 @@ div.day {
 
 div#day_more_buttons {
     position: absolute;
-    top: 5pt;
+    top: 10pt;
     left: 72pt;
 }
 
@@ -156,6 +171,7 @@ img.selected {
     height: 40pt;
     line-height: 40pt;
     vertical-align: middle;
+    cursor: pointer;
 }
 
 div.copy {
@@ -170,6 +186,7 @@ div.copy {
     line-height: 40pt;
     vertical-align: middle;
     display: inline-block;
+    cursor: pointer;
 }
 
 div.download {

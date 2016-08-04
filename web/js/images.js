@@ -8,25 +8,11 @@ $(function() {
         showing_copies: false,
     };
 
-    var clear = function(mode) {
-        scope.mode = mode;
-        $('#content').html('<div id="' + mode + '"></div>');
-    };
-
     var load_menu = function() {
-        clear('menu');
-        $('#menu')
-            .append('<div id="picker_button" class="overlay_button wide">browse</div>')
-            .find('#picker_button')
-            .click(function() {
-                load_picker();
-            });
-        $('#menu')
-            .append('<div id="today_button" class="overlay_button wide">today</div>')
-            .find('#today_button')
-            .click(function() {
-                load_day();
-            });
+        scope.mode = 'menu';
+        $('#background')
+            .html('<div id="menu"></div>');
+        load_picker();
         $.ajax({
             url: '/importer',
             success: function(data) {
@@ -65,9 +51,9 @@ $(function() {
     };
 
     var monitor = function(url, caption, before, active) {
-        clear('menu');
-        $('#menu')
-            .append('<h2>' + caption + '</h2>')
+        scope.mode = 'monitor';
+        $('#background')
+            .html('<h2>' + caption + '</h2>')
             .append('<div id="menu_result"></div>')
             .append('<div class="progress_outer"><div id="progress"></div></div>')
             .append('<div id="menu_failure"></div>');
@@ -86,16 +72,17 @@ $(function() {
                 }
             },
             error: function(data) {
+                scope.mode = 'menu';
             },
         });
     };
 
     var load_day = function(params) {
         scope.mode = 'day';
+        $('#day_view').show();
         params = params || Object();
         var date = params.date || 'today';
         var delta = params.delta || '0';
-        clear('day');
         scope.focus = 0;
         $.ajax({
             url: '/entry?date=' + date + '&delta=' + delta,
@@ -111,15 +98,13 @@ $(function() {
                 } else {
                     previous = { date: date, delta: -1 };
                 }
-                $('#day')
+                $('#day_view')
                     .html('<div class="day">' +
-                              '<div id="day_today" class="overlay_button">today</div>' +
-                              '<div id="day_prevday" class="overlay_button">prev</div>' +
-                              '<div id="day_nextday" class="overlay_button">next</div>' +
-                              '</div><div id="day_more_buttons">' +
-                              '<div id="day_back" class="overlay_button">menu</div>' +
-                              '<div id="day_pick" class="overlay_button">pick</div>' +
+                              '<div id="day_prevday" class="overlay_button">&lt;&lt;</div>' +
                               '<div id="day_purge" class="overlay_button">purge</div>' +
+                              '<div id="day_back" class="overlay_button">back</div>' +
+                          '</div><div id="day_more_buttons">' +
+                              '<div id="day_nextday" class="overlay_button">&gt;&gt;</div>' +
                           '</div>' +
                           '</div>' +
                           '<div id="day_info">' +
@@ -134,8 +119,7 @@ $(function() {
                 $('#day_prevday').click(function() { load_day(previous); });
                 $('#day_thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
                 $('#day_nextday').click(function() { load_day(next); });
-                $('#day_back').click(function() { load_menu(); });
-                $('#day_pick').click(function() { load_picker(); });
+                $('#day_back').click(function() { hide_day(); });
                 $('#day_purge').click(function() { purge_pending(); });
                 $('#day_details')
                     .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
@@ -151,7 +135,7 @@ $(function() {
                     },
                 })
                 $.each(data.entries, function(index, entry) {
-                    $('#day')
+                    $('#day_view')
                         .append('<img data-self-url="' + entry.self_url +
                                 '" data-state="' + entry.state +
                                 '" data-state-url="' + entry.state_url +
@@ -177,7 +161,6 @@ $(function() {
     };
 
     var load_picker = function(params) {
-        clear('picker');
         $.ajax({
             url: '/date',
             success: function(data) {
@@ -201,23 +184,23 @@ $(function() {
                             '11': 'november',
                             '12': 'december',
                         }[("" + date.date).substring(5, 7)];
-                        $('#picker').append('<h2>' + month + ' ' + year + '</h2>');
+                        $('#background').append('<h2>' + month + ' ' + year + '</h2>');
                     }
                     last_month = this_month;
                     var day = ("" + date.date).substring(8, 10);
                     var day_id = 'day-' + date.date;
                     if (date.short) {
-                        $('#picker')
+                        $('#background')
                             .append('<div class="date_large">' + 
                                     '<div id="' + day_id + 
                                         '" data-date="' + date.date + 
                                         '" class="overlay_button inline larger">' + day + '</div>' +
                                     '<div class="date_large_short">' + date.short + '</div></div>');
                     } else {
-                        $('#picker')
+                        $('#background')
                             .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline larger">' + day + '</div>');
                     }
-                    $('#picker')
+                    $('#background')
                         .find('#' + day_id)
                         .click(function() {
                             load_day({ date: this.getAttribute('data-date') });
@@ -225,7 +208,7 @@ $(function() {
                 });
             },
             error: function(data) {
-                $('#picker').append('<div class="failure">Errorz.</div>');
+                $('#background').append('<div class="failure">Errorz.</div>');
             },
         });
     };
@@ -259,8 +242,8 @@ $(function() {
                     });
                 }
                 $(thumb).addClass('selected');
-                $('html, body').animate({
-                    scrollTop: $(thumb).offset().top - 400,
+                $('#day_view').animate({
+                    top: -$(thumb).position().top + 270,
                 }, 200);
             } else {
                 $(thumb).removeClass('selected');
@@ -308,6 +291,12 @@ $(function() {
         scope.showing_metadata = false;
         scope.showing_copies = false;
         sync_overlay_buttons();
+    };
+
+    var hide_day = function() {
+        scope.mode = 'menu';
+        $('#overlay').hide();
+        $('#day_view').hide();
     };
 
     var hide_viewer = function() {
@@ -558,8 +547,8 @@ $(function() {
                 } else if (event.which === 39) { // right
                     update_focus({move: +1});
                 } else if (event.which === 27) { // escape
-                    if (scope.mode === 'browse' || scope.mode === 'day') {
-                        load_menu();
+                    if (scope.mode === 'day') {
+                        hide_day();
                     } else if (scope.mode === 'proxy') {
                         if (scope.showing_metadata) {
                             toggle_metadata();
@@ -568,11 +557,9 @@ $(function() {
                         } else {
                             hide_viewer();
                         }
-                    } else if (scope.mode === 'picker') {
-                        load_menu();
                     }
                 } else if (event.which === 13) { // return
-                    if (scope.mode === 'browse' || scope.mode === 'day') {
+                    if (scope.mode === 'day') {
                         var thumb = $('img.thumb')[scope.focus];
                         show_viewer({
                             proxy_url: thumb.getAttribute('data-proxy-url'),
@@ -616,6 +603,7 @@ $(function() {
         })
     };
 
+    hide_day();
     hide_viewer();
 
     $.Images = $.Images || {};
