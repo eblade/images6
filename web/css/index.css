@@ -158,19 +158,34 @@ img.selected {
     vertical-align: middle;
 }
 
-.small_button {
-    margin-right: 5pt;
-    margin-top: 5pt;
+div.copy {
+    margin-right: 6pt;
     margin-bottom: 5pt;
-    padding: 1pt;
-    background-color: #555;
+    padding: 8pt;
     color: white;
     font-weight: bold;
-    width: 150pt;
+    width: 50pt;
     text-align: center;
     height: 40pt;
     line-height: 40pt;
     vertical-align: middle;
+    display: inline-block;
+}
+
+div.download {
+    background-color: #284;
+}
+
+div.invoke {
+    background-color: #830;
+}
+
+div.next {
+    background-color: #284;
+}
+
+div.none {
+    background-color: rgba(150, 150, 150, 1);
 }
 
 .overlay_toggle {

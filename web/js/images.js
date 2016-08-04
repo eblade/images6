@@ -5,7 +5,7 @@ $(function() {
         offset: 0,
         focus: 0,
         showing_metadata: false,
-        showing_publish: false,
+        showing_copies: false,
     };
 
     var clear = function(mode) {
@@ -297,7 +297,7 @@ $(function() {
         var animate = params.animate === undefined ? true : params.animate;
 
         $('#overlay_metadata').hide();
-        $('#overlay_publisher').hide();
+        $('#overlay_copies').hide();
 
         $('#overlay').css('background-image', 'url(' + proxy_url + ')');
         if (animate) {
@@ -306,7 +306,7 @@ $(function() {
         }
         scope.mode = 'proxy';
         scope.showing_metadata = false;
-        scope.showing_publish = false;
+        scope.showing_copies = false;
         sync_overlay_buttons();
     };
 
@@ -336,14 +336,14 @@ $(function() {
             $('#overlay_proxy').removeClass('select');
         }
         if (scope.showing_metadata) {
-            $('#overlay_meta').addClass('select').addClass('extend');
+            $('#toggle_metadata').addClass('select').addClass('extend');
         } else {
-            $('#overlay_meta').removeClass('select').removeClass('extend');
+            $('#toggle_metadata').removeClass('select').removeClass('extend');
         }
-        if (scope.showing_publish) {
-            $('#overlay_publish').addClass('select').addClass('extend');
+        if (scope.showing_copies) {
+            $('#toggle_copies').addClass('select').addClass('extend');
         } else {
-            $('#overlay_publish').removeClass('select').removeClass('extend');
+            $('#toggle_copies').removeClass('select').removeClass('extend');
         }
     };
 
@@ -398,8 +398,8 @@ $(function() {
     var toggle_metadata = function() {
         scope.showing_metadata = !scope.showing_metadata;
         if (scope.showing_metadata) {
-            scope.showing_publish = false;
-            $('#overlay_publisher').fadeOut();
+            scope.showing_copies = false;
+            $('#overlay_copies').fadeOut();
         }
         sync_overlay_buttons();
         if (scope.showing_metadata === true) {
@@ -451,34 +451,69 @@ $(function() {
 
     };
 
-    var toggle_publish = function() {
-        scope.showing_publish = !scope.showing_publish;
-        if (scope.showing_publish) {
+    var toggle_copies = function() {
+        scope.showing_copies = !scope.showing_copies;
+        if (scope.showing_copies) {
             scope.showing_metadata = false;
             $('#overlay_metadata').fadeOut();
         }
         sync_overlay_buttons();
-        if (scope.showing_publish === true) {
+        if (scope.showing_copies === true) {
             var thumb = $('img.thumb')[scope.focus];
             var url = thumb.getAttribute('data-self-url');
-            $('#overlay_publisher').fadeIn();
-            $('#publisher').html('loading...');
+            $('#overlay_copies').fadeIn();
+            $('#copies').html('loading...');
             $.ajax({
                 url: url,
                 success: function(data) {
-                    var table = $('#publisher')
-                        .html('<div class="small_button" id="flickr">to flickr</div><hr/><table></table>')
-                        .find('table');
+                    $('#copies').html('');
 
-                    $.each(data.backups, function(index, backup) {
-                        $(table).append(
-                                '<tr><td>' + backup.method +
-                                '</td><td>' + backup.key + '</td></tr>'
-                        );
+                    var has_original = false,
+                        has_proxy = false,
+                        has_raw = false,
+                        has_flickr = false;
+
+                    var copy = function(key, style, callback) {
+                        var id = 'copy_' + key;
+                        $('#copies')
+                            .append('<div class="copy ' + style + '" id="' + id + '">' + key + '</div>');
+
+                        if (callback) {
+                            $('#' + id).click(callback);
+                        }
+                    };
+
+                    $.each(data.variants, function(index, variant) {
+                        if (variant.purpose === 'original') { has_original = true; }
+                        if (variant.purpose === 'proxy') { has_proxy = true; }
+                        if (variant.purpose === 'raw') { has_raw = true; }
                     });
 
-                    $('#flickr')
-                        .click(function() {
+                    if (has_original) {
+                        copy('original', 'download', function() {
+                            location.href = data.original_url + '?download=yes';
+                        });
+                    }
+                    if (has_proxy) {
+                        copy('proxy', 'download', function() {
+                            location.href = data.proxy_url + '?download=yes';
+                        });
+                    }
+                    if (has_raw) {
+                        copy('raw', 'invoke', function() { alert('OPEN RAW!')});
+                    } else {
+                        copy('raw', 'none', function() { alert('GET RAW!')});
+                    }
+
+                    $.each(data.backups, function(index, backup) {
+                        if (backup.method === 'flickr') {
+                            has_flickr = true;
+                            copy('flickr', 'next', function() { alert(backup.key); });
+                        }
+                    });
+
+                    if (!has_flickr) {
+                        copy('flickr', 'none', function() {
                             $.ajax({
                                 url: '/plugin/flickr/trig',
                                 method: 'post',
@@ -488,20 +523,21 @@ $(function() {
                                     entry_id: data.id,
                                 }),
                                 success: function(data) {
-                                    $('#flickr').html('sent to flickr');
+                                    $('#copy_flickr').html('sent');
                                 }, 
                                 error: function(data) {
-                                    $('#flickr').html('flickr error');
+                                    $('#copy_flickr').html('error');
                                 },
                             });
                         });
+                    }
                 },
                 error: function(data) {
-                    $('#publisher').html('Error!');
+                    $('#copies').html('Error!');
                 },
             });
         } else {
-            $('#overlay_publisher').fadeOut();
+            $('#overlay_copies').fadeOut();
         }
 
     };
@@ -509,8 +545,8 @@ $(function() {
     $('#overlay_close').click(function() { hide_viewer(); });
     $('#overlay_keep').click(function() { keep(scope.focus); });
     $('#overlay_purge').click(function() { purge(scope.focus); });
-    $('#overlay_meta').click(function() { toggle_metadata(scope.focus); });
-    $('#overlay_publish').click(function() { toggle_publish(scope.focus); });
+    $('#toggle_metadata').click(function() { toggle_metadata(scope.focus); });
+    $('#toggle_copies').click(function() { toggle_copies(scope.focus); });
     $('#overlay_check').click(function() { show_check(); });
     $('#overlay_proxy').click(function() { show_proxy(); });
 
@@ -529,8 +565,8 @@ $(function() {
                     } else if (scope.mode === 'proxy') {
                         if (scope.showing_metadata) {
                             toggle_metadata();
-                        } else if (scope.showing_publish) {
-                            toggle_publish();
+                        } else if (scope.showing_copies) {
+                            toggle_copies();
                         } else {
                             hide_viewer();
                         }
