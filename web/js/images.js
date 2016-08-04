@@ -438,8 +438,6 @@ $(function() {
                     row('State', data.state);
                     row('Folder', data.import_folder);
                     row('Filename', data.original_filename);
-                    row('Proxy', '<a href="' + data.proxy_url + '?download=yes">download</a>');
-                    row('Original', '<a href="' + data.original_url + '?download=yes">download</a>');
                 },
                 error: function(data) {
                     $('#metadata').html('no metadata, apparently');
