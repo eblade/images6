@@ -1,2 +1,3 @@
 #!/bin/bash
-conda install requests pillow, cherrypy
+conda install requests pillow cherrypy
+pip install flickrapi

@@ -35,7 +35,6 @@ setup(
     packages=packages_,
     install_requires=[
         "pillow>=2.5.1",
-        "bottle>0.12.7",
         "cherrypy",
         "flickrapi",
     ],
