@@ -7,10 +7,6 @@ import logging
 import shutil
 
 
-################################################################################
-# Standard File Copyer Class
-
-
 class FileCopy(object):
     def __init__(
             self,
@@ -48,3 +44,25 @@ class FileCopy(object):
         if self.remove_source:
             logging.debug("Removing source %s", self.source)
             os.remove(self.source)
+
+
+class FolderScanner(object):
+    def __init__(self, basepath, extensions=None):
+        self.basepath = basepath
+        if extensions is None:
+            self.extensions = None
+        else:
+            self.extensions = [e.lower() for e in extensions]
+            self.extensions = [e if e.startswith('.') else ('.' + e) for e in self.extensions]
+            self.extensions.extend([e.upper() for e in self.extensions])
+        logging.debug('Scanning for file-extensions %s', str(self.extensions))
+
+    def scan(self):
+        for relative_path, directories, files in os.walk(self.basepath):
+            for f in files:
+                if self.extensions is None or any(map(lambda e: f.endswith(e), self.extensions)):
+                    path = os.path.relpath(os.path.join(relative_path, f), self.basepath)
+                    if not path.startswith('.'):
+                        yield path
+
+

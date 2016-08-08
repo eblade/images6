@@ -85,6 +85,8 @@ class Purpose(EnumProperty):
     proxy = 'proxy'
     thumb = 'thumb'
     check = 'check'
+    raw = 'raw'
+    derivative = 'derivative'
 
 
 class Variant(PropertySet):
@@ -102,6 +104,8 @@ class Variant(PropertySet):
     def get_extension(self):
         if self.mime_type == 'image/jpeg':
             return 'jpg'
+        elif self.purpose is Purpose.raw:
+            return self.mime_type.split('/')[1]
         else:
             extensions = mimetypes.guess_all_extensions(self.mime_type)
             if len(extensions) == 0:
@@ -146,6 +150,8 @@ class Entry(PropertySet):
     thumb_url = Property()
     proxy_url = Property()
     check_url = Property()
+    raw_url = Property()
+    derivative_url = Property()
 
     def get_filename(self, purpose):
         variants = [variant for variant in self.variants if variant.purpose == Purpose(purpose)]
@@ -172,6 +178,10 @@ class Entry(PropertySet):
                 self.thumb_url = url
             elif variant.purpose is Purpose.check:
                 self.check_url = url
+            elif variant.purpose is Purpose.raw:
+                self.raw_url = url
+            elif variant.purpose is Purpose.derivative:
+                self.derivative_url = url
 
 
 class EntryFeed(PropertySet):

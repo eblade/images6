@@ -22,7 +22,7 @@ from . import publish
 from .ingest import image
 
 from . import plugin
-from .plugins import flickr
+from .plugins import flickr, raw
 
 
 if __name__ == '__main__':

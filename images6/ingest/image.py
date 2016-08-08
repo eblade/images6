@@ -72,7 +72,7 @@ class JPEGImportModule(GenericImportModule):
         )
         filecopy.run()
         self.full_original_file_path = filecopy.destination
-        original.file_size = os.path.getsize(filecopy.destination)
+        original.size = os.path.getsize(filecopy.destination)
         self.entry.variants.append(original)
 
     def fix_taken_ts(self, metadata):

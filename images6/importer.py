@@ -13,6 +13,7 @@ from .web import ResourceBusy
 from .system import current_system
 from .entry import Entry, create_entry, update_entry_by_id
 from .metadata import wrap_raw_json
+from .localfile import FolderScanner
 
 
 re_clean = re.compile(r'[^A-Za-z0-9_\-\.]')
@@ -114,24 +115,6 @@ class GenericImportModule(object):
         self.mime_type = mime_type
 
 
-# LOCAL FOLDER SCANNER
-######################
-
-
-class FolderScanner(object):
-    def __init__(self, basepath, ext=None):
-        self.basepath = basepath
-        self.ext = ext
-
-    def scan(self):
-        for r, ds, fs in os.walk(self.basepath):
-            for f in fs:
-                if not self.ext or f.split('.')[-1].lower() in self.ext:
-                    p = os.path.relpath(os.path.join(r, f), self.basepath)
-                    if not p.startswith('.'):
-                        yield p
-
-
 # IMPORT MANAGER
 ################
 
@@ -165,7 +148,7 @@ def import_job(folder):
         ImportJob.imported = 0
         ImportJob.failed = 0
 
-        scanner = FolderScanner(folder.path, ext='jpg')
+        scanner = FolderScanner(folder.path, extensions=['.jpg', '.jpeg'])
         for filepath in scanner.scan():
             if not folder.is_known(filepath):
                 folder.add_to_import(filepath)

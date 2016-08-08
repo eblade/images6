@@ -489,7 +489,23 @@ $(function() {
                     if (has_raw) {
                         copy('raw', 'invoke', function() { alert('OPEN RAW!')});
                     } else {
-                        copy('raw', 'none', function() { alert('GET RAW!')});
+                        copy('raw', 'none', function() {
+                            $.ajax({
+                                url: '/plugin/rawfetch/trig',
+                                method: 'post',
+                                contentType: "application/json",
+                                data: JSON.stringify({
+                                    '*schema': 'RawFetchOptions',
+                                    entry_id: data.id,
+                                }),
+                                success: function(data) {
+                                    $('#copy_raw').html('fetching');
+                                }, 
+                                error: function(data) {
+                                    $('#copy_raw').html('error');
+                                },
+                            });
+                        });
                     }
 
                     $.each(data.backups, function(index, backup) {
