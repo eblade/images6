@@ -1,10 +1,9 @@
 import logging
 import bottle
 from datetime import datetime
+from jsonobject import PropertySet, Property, EnumProperty, register_schema
 
 from .system import current_system
-from .types import PropertySet, Property, EnumProperty
-from .metadata import register_metadata_schema
 from .web import App as MainApp
 
 
@@ -61,4 +60,4 @@ class Publication(PropertySet):
     pages = Property(type=Page, is_list=True)
 
 
-register_metadata_schema(Publication)
+register_schema(Publication)

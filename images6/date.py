@@ -2,9 +2,9 @@ import logging
 import bottle
 import datetime
 import urllib
+from jsonobject import PropertySet, Property, EnumProperty
 
 from .system import current_system
-from .types import PropertySet, Property, EnumProperty
 from .web import (
     FetchByKey,
     FetchByQuery,

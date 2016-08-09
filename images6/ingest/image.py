@@ -5,14 +5,13 @@ import os
 from PIL import Image
 import exifread
 from datetime import datetime
+from jsonobject import PropertySet, Property, register_schema
 
 from ..system import current_system
 from ..importer import GenericImportModule, register_import_module
 from ..localfile import FileCopy
 from ..entry import Entry, Variant, create_entry, update_entry_by_id, delete_entry_by_id, State, Access, Purpose
 from ..exif import exif_position, exif_orientation, exif_string, exif_int, exif_ratio
-from ..types import PropertySet, Property
-from ..metadata import register_metadata_schema
 
 
 
@@ -198,7 +197,7 @@ class JPEGMetadata(PropertySet):
     Longitude = Property()
 
 
-register_metadata_schema(JPEGMetadata)
+register_schema(JPEGMetadata)
 
 
 def _create_check(path_in, path_out, size=200, angle=None, mirror=None):

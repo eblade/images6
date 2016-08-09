@@ -1,10 +1,9 @@
 import os
 import logging
+from jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
 from ..plugin import GenericPlugin, register_plugin
-from ..metadata import register_metadata_schema
-from ..types import PropertySet, Property
 from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Backup
 
 
@@ -16,7 +15,7 @@ class FlickrOptions(PropertySet):
     is_public = Property(bool, default=True)
 
 
-register_metadata_schema(FlickrOptions)
+register_schema(FlickrOptions)
 
 
 class FlickrPlugin(GenericPlugin):

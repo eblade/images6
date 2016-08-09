@@ -1,10 +1,9 @@
 import os
 import logging
+from jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
 from ..plugin import GenericPlugin, register_plugin
-from ..metadata import register_metadata_schema
-from ..types import PropertySet, Property
 from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Variant
 from ..localfile import FileCopy, FolderScanner
 
@@ -13,7 +12,7 @@ class RawFetchOptions(PropertySet):
     entry_id = Property(int)
 
 
-register_metadata_schema(RawFetchOptions)
+register_schema(RawFetchOptions)
 
 
 class RawFetcherPlugin(GenericPlugin):

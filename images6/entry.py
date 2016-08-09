@@ -4,9 +4,9 @@ import datetime
 import urllib
 import mimetypes
 import os
+from jsonobject import PropertySet, Property, EnumProperty
 
 from .system import current_system
-from .types import PropertySet, Property, EnumProperty
 from .web import (
     Create,
     FetchById,

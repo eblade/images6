@@ -3,9 +3,9 @@ import bottle
 import threading
 import time
 
+from jsonobject import wrap_dict
 
 from .multi import Pool
-from .metadata import wrap_dict
 from .system import current_system
 
 

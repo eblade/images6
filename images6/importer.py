@@ -7,12 +7,12 @@ import re
 import base64
 import bottle
 
+from jsonobject import wrap_raw_json
 from threading import Thread, Event, Lock
 
 from .web import ResourceBusy
 from .system import current_system
 from .entry import Entry, create_entry, update_entry_by_id
-from .metadata import wrap_raw_json
 from .localfile import FolderScanner
 
 
