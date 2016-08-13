@@ -4,8 +4,15 @@ import datetime
 import urllib
 import mimetypes
 import os
-from jsonobject import PropertySet, Property, EnumProperty
+from jsonobject import (
+    PropertySet,
+    Property,
+    EnumProperty,
+    wrap_dict,
+    get_schema,
+)
 
+from .plugin import trig_plugin
 from .system import current_system
 from .web import (
     Create,
@@ -13,6 +20,7 @@ from .web import (
     FetchByQuery,
     UpdateById,
     UpdateByIdAndQuery,
+    PatchById,
     DeleteById,
 )
 
@@ -42,6 +50,16 @@ class App:
             callback=UpdateById(update_entry_by_id, Entry),
         )
         app.route(
+            path='/<id:int>/metadata',
+            method='PATCH',
+            callback=PatchById(patch_entry_metadata_by_id),
+        )
+        app.route(
+            path='/<id:int>',
+            method='PATCH',
+            callback=PatchById(patch_entry_by_id),
+        )
+        app.route(
             path='/',
             method='POST',
             callback=Create(create_entry, Entry),
@@ -59,6 +77,10 @@ class App:
         app.route(
             path='/<id:int>/dl/<store>/<version:int>.<extension>',
             callback=download,
+        )
+        app.route(
+            path='/<id:int>/dl/<store>.<extension>',
+            callback=download_latest,
         )
 
         return app
@@ -154,16 +176,22 @@ class Entry(PropertySet):
     derivative_url = Property()
 
     def get_filename(self, purpose):
-        variants = [variant for variant in self.variants if variant.purpose == Purpose(purpose)]
+        variants = [variant for variant in self.variants
+                    if variant.purpose == Purpose(purpose)]
         if len(variants) == 0:
             return None
-        return sorted(variants, key=lambda variant: variant.version).pop().get_filename(self.id)
+        return sorted(
+            variants,
+            key=lambda variant: variant.version
+        ).pop().get_filename(self.id)
 
     def get_next_version(self, purpose):
-        variants = [variant for variant in self.variants if variant.purpose == Purpose(purpose)]
+        variants = [variant for variant in self.variants
+                    if variant.purpose == Purpose(purpose)]
         if len(variants) == 0:
             return 0
-        return max([variant.version for variant in self.variants]) + 1
+        return max([variant.version for variant in self.variants
+                    if variant.purpose is purpose]) + 1
 
     def calculate_urls(self):
         self.self_url = '%s/%i' % (App.BASE, self.id)
@@ -173,7 +201,11 @@ class Entry(PropertySet):
             if not variant.purpose.value in self.urls.keys():
                 self.urls[variant.purpose.value] = {}
             url = '%s/%i/dl/%s/%i.%s' % (
-                App.BASE, self.id, variant.store, variant.version, variant.get_extension()
+                App.BASE,
+                self.id,
+                variant.store,
+                variant.version,
+                variant.get_extension()
             )
             self.urls[variant.purpose.value][variant.version] = url
             if variant.purpose is Purpose.original:
@@ -326,6 +358,36 @@ def update_entry_state(id, query):
     return update_entry_by_id(id, entry)
 
 
+def patch_entry_metadata_by_id(id, patch):
+    entry = get_entry_by_id(id)
+    
+    metadata_dict = entry.metadata.to_dict()
+    metadata_dict.update(patch)
+    metadata = wrap_dict(metadata_dict)
+    entry.metadata = metadata
+    logging.info(entry.to_json())
+    current_system().database.update(id, entry.to_dict())
+
+    if 'Angle' in patch:
+        options = get_schema('ImageProxyOptions')()
+        options.entry_id = id
+        trig_plugin('imageproxy', options)
+
+    return get_entry_by_id(id)
+
+
+def patch_entry_by_id(id, patch):
+    entry = get_entry_by_id(id)
+    
+    for key, value in patch.items():
+        if key in ('title', 'description'):
+            setattr(entry, key. value)
+
+    logging.info(metadata.to_json())
+    #current_system().database.update(id, entry.to_dict())
+    return get_entry_by_id(id)
+
+
 def create_entry(ed):
     id = current_system().database.next_id()
     ed.id = id
@@ -344,4 +406,31 @@ def download(id, store, version, extension):
     entry = get_entry_by_id(id)
     for variant in entry.variants:
         if variant.store == store and variant.version == version and variant.get_extension() == extension:
-            return bottle.static_file(variant.get_filename(id), download=download, root=current_system().media_root)
+            return bottle.static_file(
+                variant.get_filename(id),
+                download=download,
+                root=current_system().media_root
+            )
+
+    raise HTTPError(404)
+
+
+def download_latest(id, store, extension):
+    download = bottle.request.query.download == 'yes'
+    entry = get_entry_by_id(id)
+    choicen = None
+    for variant in entry.variants:
+        if variant.store == store and variant.get_extension() == extension:
+            if choicen is None:
+                choicen = variant
+            elif choicen.version < variant.version:
+                choicen = variant
+
+    if choicen is not None:
+        return bottle.static_file(
+            choicen.get_filename(id),
+            download=download,
+            root=current_system().media_root
+        )
+    else:
+        raise HTTPError(404)

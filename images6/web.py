@@ -116,6 +116,18 @@ def UpdateById(function, InputClass, pre=None):
     return f
 
 
+def PatchById(function, pre=None):
+    def f(id):
+        if callable(pre):
+            pre()
+        o = bottle.request.json
+        if o is None:
+            raise bottle.HTTPError(400)
+        result = function(id, o)
+        return result.to_dict()
+    return f
+
+
 def UpdateByKey(function, InputClass, pre=None):
     def f(key):
         if callable(pre):

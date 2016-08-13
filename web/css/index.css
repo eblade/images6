@@ -217,6 +217,12 @@ div.none {
     height: 40pt;
     line-height: 40pt;
     vertical-align: middle;
+    cursor: pointer;
+}
+
+div.editable_row {
+    color: #f84;
+    cursor: pointer;
 }
 
 hr {

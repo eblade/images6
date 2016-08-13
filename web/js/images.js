@@ -251,8 +251,6 @@ $(function() {
                 $(thumb).removeClass('selected');
             }
         });
-
-
     };
 
     var purge_pending = function() {
@@ -386,8 +384,12 @@ $(function() {
         sync_overlay_buttons();
     };
 
-    var toggle_metadata = function() {
-        scope.showing_metadata = !scope.showing_metadata;
+    var toggle_metadata = function(showing_metadata) {
+        if (showing_metadata === undefined) {
+            scope.showing_metadata = !scope.showing_metadata;
+        } else {
+            scope.showing_metadata = showing_metadata;
+        }
         if (scope.showing_metadata) {
             scope.showing_copies = false;
             $('#overlay_copies').fadeOut();
@@ -407,28 +409,60 @@ $(function() {
                     var row = function(key, value) {
                         $(table).append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                     };
+                    var crow = function(key, value, choices) {
+                        $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +'" class="editable_row">' + value + '</div></td></tr>');
+                        $('#erow_' + key)
+                            .click(function() {
+                                $('#metadata')
+                                    .html('<h3>Edit ' + key + '</h3><fieldset id="crow"><legend>Select a new value</legend></fieldset>');
+                                $.each(choices, function(index, choice) {
+                                    $('#crow')
+                                        .append('<input type="radio" name="crow" value="' + choice + '" ' + (choice == value ? 'checked' : '') +  '/>' + choice + '</br>');
+                                });
+                                $('#metadata')
+                                    .append('<button id="crow_save">Save</button>');
+                                $('#crow_save')
+                                    .click(function() {
+                                        $.ajax({
+                                            url: '/entry/' + data.id + '/metadata',
+                                            method: 'patch',
+                                            contentType: "application/json",
+                                            data: JSON.stringify({
+                                                'Angle': $('input[name="crow"]:checked').val(),
+                                            }),
+                                            success: function(data) {
+                                                toggle_metadata(true);
+                                            }, 
+                                            error: function(data) {
+                                                $('#metadata').html('error');
+                                            },
+                                        });
+                                    });
+                            });
+                    };
                     row('Title', data.title);
                     row('Description', data.description);
                     row('Artist', data.metadata.Artist);
-                    row('Copyright', data.metadata.Copyright);
                     row('Taken', data.metadata.DateTimeOriginal);
                     row('Digitized', data.metadata.DateTimeDigitized);
-                    row('Colorspace', data.metadata.ColorSpace);
-                    row('Exposure', data.metadata.ExposureTime[0] + ' / ' + data.metadata.ExposureTime[1]);
                     if (data.metadata.FNumber[0] === 0) {
                         row('Aperture', 'unknown');
                     } else {
                         row('Aperture', 'F ' + data.metadata.FNumber[0] + ' / ' + data.metadata.FNumber[1]);
                     }
+                    row('ISO', data.metadata.ISOSpeedRatings);
                     row('Focal length', data.metadata.FocalLength[0] + ' / ' + data.metadata.FocalLength[1]);
                     row('35mm equiv.', data.metadata.FocalLengthIn35mmFilm);
                     row('Geometry', data.metadata.Geometry[0] + ' x ' + data.metadata.Geometry[1]);
-                    row('ISO', data.metadata.ISOSpeedRatings);
+                    row('Colorspace', data.metadata.ColorSpace);
+                    row('Exposure', data.metadata.ExposureTime[0] + ' / ' + data.metadata.ExposureTime[1]);
+                    crow('Angle', data.metadata.Angle, [-270, -180, -90, 0, 90, 180, 270]);
                     row('Flash', data.metadata.Flash);
                     row('ID', data.id);
-                    row('State', data.state);
+                    row('Copyright', data.metadata.Copyright);
                     row('Folder', data.import_folder);
                     row('Filename', data.original_filename);
+                    row('State', data.state);
                 },
                 error: function(data) {
                     $('#metadata').html('no metadata, apparently');
@@ -568,8 +602,8 @@ $(function() {
     $('#overlay_close').click(function() { hide_viewer(); });
     $('#overlay_keep').click(function() { keep(scope.focus); });
     $('#overlay_purge').click(function() { purge(scope.focus); });
-    $('#toggle_metadata').click(function() { toggle_metadata(scope.focus); });
-    $('#toggle_copies').click(function() { toggle_copies(scope.focus); });
+    $('#toggle_metadata').click(function() { toggle_metadata(); });
+    $('#toggle_copies').click(function() { toggle_copies(); });
     $('#overlay_check').click(function() { show_check(); });
     $('#overlay_proxy').click(function() { show_proxy(); });
 
