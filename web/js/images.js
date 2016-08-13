@@ -220,6 +220,8 @@ $(function() {
 
         if (focus === undefined) {
             scope.focus += move;
+        } else if (focus === -1) {
+            scope.focus = scope.total_count - 1;
         } else {
             scope.focus = focus;
         }
@@ -575,11 +577,25 @@ $(function() {
         $(document).keydown(function(event) {
             if ($('input,textarea').is(':focus')) {
                 // let it be
-            } else {
+            } else if (scope.mode !== 'menu') {
                 if (event.which === 37) { // left
                     update_focus({move: -1});
+                    event.preventDefault();
                 } else if (event.which === 39) { // right
                     update_focus({move: +1});
+                    event.preventDefault();
+                } else if (event.which === 38) { // up
+                    update_focus({move: -10});
+                    event.preventDefault();
+                } else if (event.which === 40) { // down
+                    update_focus({move: +10});
+                    event.preventDefault();
+                } else if (event.which === 36) { // home
+                    update_focus({focus: 0});
+                    event.preventDefault();
+                } else if (event.which === 35) { // end
+                    update_focus({focus: -1});
+                    event.preventDefault();
                 } else if (event.which === 27) { // escape
                     if (scope.mode === 'day') {
                         hide_day();
@@ -598,6 +614,7 @@ $(function() {
                         show_viewer({
                             proxy_url: thumb.getAttribute('data-proxy-url'),
                         });
+                        event.preventDefault();
                     }
                 }
             }
