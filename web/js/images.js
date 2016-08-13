@@ -485,6 +485,24 @@ $(function() {
                         copy('proxy', 'download', function() {
                             location.href = data.proxy_url + '?download=yes';
                         });
+                    } else if (has_original) {
+                        copy('proxy', 'none', function() {
+                            $.ajax({
+                                url: '/plugin/imageproxy/trig',
+                                method: 'post',
+                                contentType: "application/json",
+                                data: JSON.stringify({
+                                    '*schema': 'ImageProxyOptions',
+                                    entry_id: data.id,
+                                }),
+                                success: function(data) {
+                                    $('#copy_proxy').html('creating');
+                                }, 
+                                error: function(data) {
+                                    $('#copy_proxy').html('error');
+                                },
+                            });
+                        });
                     }
                     if (has_raw) {
                         copy('raw', 'invoke', function() { alert('OPEN RAW!')});

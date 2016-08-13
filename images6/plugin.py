@@ -70,8 +70,8 @@ def get_plugins_dict():
     }
 
 
-def trig_plugin(method):
-    payload = wrap_dict(bottle.request.json)
+def trig_plugin(method, payload=None):
+    payload = payload or wrap_dict(bottle.request.json)
     print(payload.to_json())
     if payload is None:
         raise bottle.HTTPError(400)

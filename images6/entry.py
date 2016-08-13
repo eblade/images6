@@ -159,6 +159,12 @@ class Entry(PropertySet):
             return None
         return sorted(variants, key=lambda variant: variant.version).pop().get_filename(self.id)
 
+    def get_next_version(self, purpose):
+        variants = [variant for variant in self.variants if variant.purpose == Purpose(purpose)]
+        if len(variants) == 0:
+            return 0
+        return max([variant.version for variant in self.variants]) + 1
+
     def calculate_urls(self):
         self.self_url = '%s/%i' % (App.BASE, self.id)
         self.state_url = '%s/%i/state' % (App.BASE, self.id)
