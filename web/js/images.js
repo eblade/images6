@@ -616,12 +616,20 @@ $(function() {
                         });
                         event.preventDefault();
                     }
+                } else if (event.which === 77) { // m
+                    toggle_metadata();
+                } else if (event.which === 70) { // f
+                    toggle_copies();
+                } else if (event.which === 75) { // k
+                    keep(scope.focus);
+                } else if (event.which === 88) { // x
+                    purge(scope.focus);
+                } else if (event.which === 80) { // p
+                    show_proxy();
+                } else if (event.which === 67) { // c
+                    show_check();
                 }
             }
-            // right: 39
-            // left: 37
-            // up: 38
-            // down: 40
         });
     };
 
