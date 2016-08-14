@@ -123,8 +123,8 @@ $(function() {
                 $('#day_purge').click(function() { purge_pending(); });
                 $('#day_details')
                     .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
-                autoSave('#date_info_short'); 
-                autoSave('#date_info_full'); 
+                autoSave('#date_info_short');
+                autoSave('#date_info_full');
                 $.ajax({
                     url: '/date/' + date,
                     success: function(data) {
@@ -191,9 +191,9 @@ $(function() {
                     var day_id = 'day-' + date.date;
                     if (date.short) {
                         $('#background')
-                            .append('<div class="date_large">' + 
-                                    '<div id="' + day_id + 
-                                        '" data-date="' + date.date + 
+                            .append('<div class="date_large">' +
+                                    '<div id="' + day_id +
+                                        '" data-date="' + date.date +
                                         '" class="overlay_button inline larger">' + day + '</div>' +
                                     '<div class="date_large_short">' + date.short + '</div></div>');
                     } else {
@@ -409,30 +409,26 @@ $(function() {
                     var row = function(key, value) {
                         $(table).append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
                     };
-                    var crow = function(key, value, choices) {
-                        $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +'" class="editable_row">' + value + '</div></td></tr>');
+                    var srow = function(key, value, patch_key, in_metadata) {
+                        $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +
+                                        '" class="editable_row">' + value + '</div></td></tr>');
                         $('#erow_' + key)
                             .click(function() {
                                 $('#metadata')
-                                    .html('<h3>Edit ' + key + '</h3><fieldset id="crow"><legend>Select a new value</legend></fieldset>');
-                                $.each(choices, function(index, choice) {
-                                    $('#crow')
-                                        .append('<input type="radio" name="crow" value="' + choice + '" ' + (choice == value ? 'checked' : '') +  '/>' + choice + '</br>');
-                                });
-                                $('#metadata')
-                                    .append('<button id="crow_save">Save</button>');
-                                $('#crow_save')
+                                    .html('<h3>Edit ' + key + '</h3><input type="text" name="srow" value="' + value +
+                                          '"/><br/><button id="srow_save">Save</button>');
+                                $('#srow_save')
                                     .click(function() {
+                                        var patch = {};
+                                        patch[patch_key] = $('input[name="srow"]').val(),
                                         $.ajax({
-                                            url: '/entry/' + data.id + '/metadata',
+                                            url: '/entry/' + data.id + (in_metadata ? '/metadata' : ''),
                                             method: 'patch',
                                             contentType: "application/json",
-                                            data: JSON.stringify({
-                                                'Angle': $('input[name="crow"]:checked').val(),
-                                            }),
+                                            data: JSON.stringify(patch),
                                             success: function(data) {
                                                 toggle_metadata(true);
-                                            }, 
+                                            },
                                             error: function(data) {
                                                 $('#metadata').html('error');
                                             },
@@ -440,9 +436,42 @@ $(function() {
                                     });
                             });
                     };
-                    row('Title', data.title);
-                    row('Description', data.description);
-                    row('Artist', data.metadata.Artist);
+                    var crow = function(key, value, choices) {
+                        $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +
+                                        '" class="editable_row">' + value + '</div></td></tr>');
+                        $('#erow_' + key)
+                            .click(function() {
+                                $('#metadata')
+                                    .html('<h3>Edit ' + key + '</h3><fieldset id="crow"><legend>Select a new value</legend></fieldset>');
+                                $.each(choices, function(index, choice) {
+                                    $('#crow')
+                                        .append('<input type="radio" name="crow" value="' + choice +
+                                                '" ' + (choice == value ? 'checked' : '') +  '/>' + choice + '</br>');
+                                });
+                                $('#metadata')
+                                    .append('<button id="crow_save">Save</button>');
+                                $('#crow_save')
+                                    .click(function() {
+                                        var patch = {};
+                                        patch[key] = $('input[name="crow"]').val(),
+                                        $.ajax({
+                                            url: '/entry/' + data.id + '/metadata',
+                                            method: 'patch',
+                                            contentType: "application/json",
+                                            data: JSON.stringify(patch),
+                                            success: function(data) {
+                                                toggle_metadata(true);
+                                            },
+                                            error: function(data) {
+                                                $('#metadata').html('error');
+                                            },
+                                        });
+                                    });
+                            });
+                    };
+                    srow('Title', data.title, 'title', false);
+                    srow('Description', data.description, 'description', false);
+                    srow('Artist', data.metadata.Artist, 'Artist', true);
                     row('Taken', data.metadata.DateTimeOriginal);
                     row('Digitized', data.metadata.DateTimeDigitized);
                     if (data.metadata.FNumber[0] === 0) {
@@ -459,7 +488,7 @@ $(function() {
                     crow('Angle', data.metadata.Angle, [-270, -180, -90, 0, 90, 180, 270]);
                     row('Flash', data.metadata.Flash);
                     row('ID', data.id);
-                    row('Copyright', data.metadata.Copyright);
+                    srow('Copyright', data.metadata.Copyright, 'Copyright', true);
                     row('Folder', data.import_folder);
                     row('Filename', data.original_filename);
                     row('State', data.state);
@@ -533,7 +562,7 @@ $(function() {
                                 }),
                                 success: function(data) {
                                     $('#copy_proxy').html('creating');
-                                }, 
+                                },
                                 error: function(data) {
                                     $('#copy_proxy').html('error');
                                 },
@@ -554,7 +583,7 @@ $(function() {
                                 }),
                                 success: function(data) {
                                     $('#copy_raw').html('fetching');
-                                }, 
+                                },
                                 error: function(data) {
                                     $('#copy_raw').html('error');
                                 },
@@ -581,7 +610,7 @@ $(function() {
                                 }),
                                 success: function(data) {
                                     $('#copy_flickr').html('sent');
-                                }, 
+                                },
                                 error: function(data) {
                                     $('#copy_flickr').html('error');
                                 },

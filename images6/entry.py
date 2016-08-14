@@ -377,14 +377,15 @@ def patch_entry_metadata_by_id(id, patch):
 
 
 def patch_entry_by_id(id, patch):
+    logging.info(patch)
     entry = get_entry_by_id(id)
     
     for key, value in patch.items():
         if key in ('title', 'description'):
-            setattr(entry, key. value)
+            setattr(entry, key, value)
 
-    logging.info(metadata.to_json())
-    #current_system().database.update(id, entry.to_dict())
+    logging.info(entry.to_json())
+    current_system().database.update(id, entry.to_dict())
     return get_entry_by_id(id)
 
 

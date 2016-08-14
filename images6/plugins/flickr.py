@@ -32,8 +32,8 @@ class FlickrPlugin(GenericPlugin):
         flickr.authenticate_via_browser(perms='write')
         response = flickr.upload(
             filename=os.path.join(current_system().media_root, entry.get_filename(Purpose.original)),
-            title=payload.title or '',
-            description=payload.description or '',
+            title=payload.title or entry.title or '',
+            description=payload.description or entry.description or '',
             is_public=payload.is_public,
             format='etree',
         )
