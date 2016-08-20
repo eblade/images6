@@ -27,31 +27,50 @@ class FlickrPlugin(GenericPlugin):
 
         entry = get_entry_by_id(payload.entry_id)
 
+        flickr_backup = None
+        for backup in entry.backups:
+            if backup.method == 'flickr':
+                flickr_backup = backup
+
         import flickrapi
         flickr = flickrapi.FlickrAPI(api_key=self.key, secret=self.secret)
         flickr.authenticate_via_browser(perms='write')
-        response = flickr.upload(
-            filename=os.path.join(current_system().media_root, entry.get_filename(Purpose.original)),
-            title=payload.title or entry.title or '',
-            description=payload.description or entry.description or '',
-            is_public=payload.is_public,
-            format='etree',
-        )
-        photo_id = response.find('photoid').text
 
-        backup = Backup(
-            method='flickr',
-            key=photo_id,
-        )
-        logging.info('Backup\n%s', backup.to_json())
+        if flickr_backup is None:
+            logging.debug('Uploading to flickr')
+            response = flickr.upload(
+                filename=os.path.join(current_system().media_root, entry.get_filename(Purpose.original)),
+                title=payload.title or entry.title or '',
+                description=payload.description or entry.description or '',
+                is_public=payload.is_public,
+                format='etree',
+            )
+            photo_id = response.find('photoid').text
 
-        entry.backups.append(backup)
-        if entry.title is None:
-            entry.title = payload.title
-        if entry.description is None:
-            entry.description = payload.description
-        
-        update_entry_by_id(entry.id, entry)
+            flickr_backup = Backup(
+                method='flickr',
+                key=photo_id,
+            )
+            logging.info('Backup\n%s', flickr_backup.to_json())
+
+            entry.backups.append(flickr_backup)
+
+            if entry.title is None:
+                entry.title = payload.title
+            if entry.description is None:
+                entry.description = payload.description
+            
+            update_entry_by_id(entry.id, entry)
+
+        else:
+            logging.debug('Replacing image on flickr')
+            logging.info('Backup\n%s', flickr_backup.to_json())
+            response = flickr.replace(
+                filename=os.path.join(current_system().media_root, entry.get_filename(Purpose.original)),
+                photo_id=flickr_backup.key,
+                format='etree',
+            )
+
         logging.info('Done with flickr export.')
 
 
