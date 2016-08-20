@@ -11,6 +11,7 @@ $(function() {
     var load_menu = function() {
         scope.mode = 'menu';
         $('#background')
+            .show()
             .html('<div id="menu"></div>');
         load_picker();
         $.ajax({
@@ -24,7 +25,7 @@ $(function() {
                                 url: trigger.trig_url,
                                 method: 'POST',
                                 success: function(data) {
-                                    monitor('/importer/status', 'importing...', 'scanning', 'importing');
+                                    monitor('/importer/status', 'importing', 'scanning', 'importing');
                                 },
                                 error: function(data) {
                                     alert('Error.');
@@ -39,7 +40,7 @@ $(function() {
                             url: '/purger/trig',
                             method: 'POST',
                             success: function(data) {
-                                monitor('/purger/status', 'purging...', 'reading', 'deleting');
+                                monitor('/purger/status', 'purging', 'reading', 'deleting');
                             },
                             error: function(data) {
                                 alert('Error.');
@@ -54,27 +55,31 @@ $(function() {
         scope.mode = 'monitor';
         $('#background')
             .html('<h2>' + caption + '</h2>')
-            .append('<div id="menu_result"></div>')
+            //.append('<div id="menu_result"></div>')
             .append('<div class="progress_outer"><div id="progress"></div></div>')
             .append('<div id="menu_failure"></div>');
-        $.ajax({
-            url: url,
-            success: function(data) {
-                $('#menu_result').html(data.status + ' (' + data.progress + '%)');
-                if (data.failed > 0) {
-                    $('#menu_failure').html('<div class="result failure">' + data.failed + ' failed</div>');
-                }
-                $('#progress').css('width', data.progress + '%');
-                if (data.status === 'acquired' || data.status === before || data.status === active) {
-                    window.setTimeout(function() { monitor(url, caption, before, active); }, 1000);
-                } else {
-                    $.wait(2000).then(load_menu);
-                }
-            },
-            error: function(data) {
-                scope.mode = 'menu';
-            },
-        });
+        var poll = function() {
+            $.ajax({
+                url: url,
+                success: function(data) {
+                    //$('#menu_result').html(data.status + ' (' + data.progress + '%)');
+                    if (data.failed > 0) {
+                        $('#menu_failure').html('<div class="result failure">' + data.failed + ' failed</div>');
+                    }
+                    $('#progress').css('width', data.progress + '%');
+                    if (data.status === 'acquired' || data.status === before || data.status === active) {
+                        window.setTimeout(function() { poll(); }, 1000);
+                    } else {
+                        $('#background').fadeOut(400)
+                        $.wait(500).then(load_menu);
+                    }
+                },
+                error: function(data) {
+                    scope.mode = 'menu';
+                },
+            });
+        };
+        poll();
     };
 
     var load_day = function(params) {
@@ -453,7 +458,7 @@ $(function() {
                                 $('#crow_save')
                                     .click(function() {
                                         var patch = {};
-                                        patch[key] = $('input[name="crow"]').val(),
+                                        patch[key] = $('input[name="crow"]').val();
                                         $.ajax({
                                             url: '/entry/' + data.id + '/metadata',
                                             method: 'patch',
@@ -485,7 +490,7 @@ $(function() {
                     row('Geometry', data.metadata.Geometry[0] + ' x ' + data.metadata.Geometry[1]);
                     row('Colorspace', data.metadata.ColorSpace);
                     row('Exposure', data.metadata.ExposureTime[0] + ' / ' + data.metadata.ExposureTime[1]);
-                    crow('Angle', data.metadata.Angle, [-270, -180, -90, 0, 90, 180, 270]);
+                    srow('Angle', data.metadata.Angle, 'Angle', true);
                     row('Flash', data.metadata.Flash);
                     row('ID', data.id);
                     srow('Copyright', data.metadata.Copyright, 'Copyright', true);
@@ -570,7 +575,9 @@ $(function() {
                         });
                     }
                     if (has_raw) {
-                        copy('raw', 'invoke', function() { alert('OPEN RAW!')});
+                        copy('raw', 'download', function() {
+                            location.href = data.raw_url + '?download=yes';
+                        });
                     } else {
                         copy('raw', 'none', function() {
                             $.ajax({
@@ -594,29 +601,27 @@ $(function() {
                     $.each(data.backups, function(index, backup) {
                         if (backup.method === 'flickr') {
                             has_flickr = true;
-                            copy('flickr', 'next', function() { alert(backup.key); });
+                            //copy('flickr', 'next', function() { alert(backup.key); });
                         }
                     });
 
-                    if (!has_flickr) {
-                        copy('flickr', 'none', function() {
-                            $.ajax({
-                                url: '/plugin/flickr/trig',
-                                method: 'post',
-                                contentType: "application/json",
-                                data: JSON.stringify({
-                                    '*schema': 'FlickrOptions',
-                                    entry_id: data.id,
-                                }),
-                                success: function(data) {
-                                    $('#copy_flickr').html('sent');
-                                },
-                                error: function(data) {
-                                    $('#copy_flickr').html('error');
-                                },
-                            });
+                    copy('flickr', has_flickr ? 'next' : 'none', function() {
+                        $.ajax({
+                            url: '/plugin/flickr/trig',
+                            method: 'post',
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                '*schema': 'FlickrOptions',
+                                entry_id: data.id,
+                            }),
+                            success: function(data) {
+                                $('#copy_flickr').html('sent');
+                            },
+                            error: function(data) {
+                                $('#copy_flickr').html('error');
+                            },
                         });
-                    }
+                    });
                 },
                 error: function(data) {
                     $('#copies').html('Error!');
