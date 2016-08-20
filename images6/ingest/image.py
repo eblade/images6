@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import exifread
 from datetime import datetime
 from jsonobject import PropertySet, Property, register_schema
@@ -14,6 +15,7 @@ from ..entry import (
     Access,
     Purpose,
     create_entry,
+    get_entry_by_id,
     update_entry_by_id,
     delete_entry_by_id,
 )
@@ -30,29 +32,46 @@ from ..plugins.imageproxy import ImageProxyOptions
 
 class JPEGImportModule(GenericImportModule):
     def run(self):
+        self.new = False
         self.full_source_file_path = self.folder.get_full_path(self.file_path)
         logging.debug('Import %s', self.full_source_file_path)
         self.system = current_system()
+        
+        # Try to se if there is an entry to match it with
+        file_name = os.path.basename(self.file_path)
+        m = re.search(r'^[0-9a-f]{8}', file_name)
+        print(file_name, m)
 
-        logging.debug('Creating entry...')
-        self.entry = create_entry(Entry(
-            original_filename=os.path.basename(self.file_path),
-            state=State.new,
-            import_folder=self.folder.name,
-            mime_type=self.mime_type,
-        ))
-        logging.debug('Created entry.\n%s', self.entry.to_json())
+        if m is None:
+            logging.debug('Creating entry...')
+            self.entry = create_entry(Entry(
+                original_filename=os.path.basename(self.file_path),
+                state=State.new,
+                import_folder=self.folder.name,
+                mime_type=self.mime_type,
+            ))
+            logging.debug('Created entry.\n%s', self.entry.to_json())
+            self.new = True
+
+        else:
+            hex_id = m.group(0)
+            logging.debug('Converting hex %s into decimal', hex_id)
+            entry_id = int(hex_id, 16)
+            logging.debug('Using entry %s (%d)', hex_id, entry_id)
+            self.entry = get_entry_by_id(entry_id)
 
         self.create_original()
         logging.debug('Created original.')
 
-        metadata = JPEGMetadata(**(self.analyse()))
-        self.fix_taken_ts(metadata)
-        logging.debug('Read metadata.')
+        if self.new:
+            metadata = JPEGMetadata(**(self.analyse()))
+            self.fix_taken_ts(metadata)
+            logging.debug('Read metadata.')
 
-        self.entry.metadata = metadata
+            self.entry.metadata = metadata
 
-        self.entry.state = State.pending
+            self.entry.state = State.pending
+
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
@@ -62,7 +81,8 @@ class JPEGImportModule(GenericImportModule):
 
     def clean_up(self):
         logging.debug('Cleaning up...')
-        delete_entry_by_id(self.entry.id)
+        if self.new:
+            delete_entry_by_id(self.entry.id)
         logging.debug('Cleaned up.')
 
     def create_original(self):
@@ -70,6 +90,7 @@ class JPEGImportModule(GenericImportModule):
             store='original',
             mime_type=self.mime_type,
             purpose=Purpose.original,
+            version=self.entry.get_next_version(Purpose.original),
         )
         filecopy = FileCopy(
             source=self.full_source_file_path,

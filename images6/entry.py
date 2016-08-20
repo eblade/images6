@@ -4,6 +4,7 @@ import datetime
 import urllib
 import mimetypes
 import os
+import json
 from jsonobject import (
     PropertySet,
     Property,
@@ -360,12 +361,13 @@ def update_entry_state(id, query):
 
 def patch_entry_metadata_by_id(id, patch):
     entry = get_entry_by_id(id)
+    logging.debug('Metadata Patch for %d: \n%s', id, json.dumps(patch, indent=2))
     
     metadata_dict = entry.metadata.to_dict()
     metadata_dict.update(patch)
     metadata = wrap_dict(metadata_dict)
     entry.metadata = metadata
-    logging.info(entry.to_json())
+    logging.debug(entry.to_json())
     current_system().database.update(id, entry.to_dict())
 
     if 'Angle' in patch:
@@ -377,7 +379,7 @@ def patch_entry_metadata_by_id(id, patch):
 
 
 def patch_entry_by_id(id, patch):
-    logging.info(patch)
+    logging.debug('Patch for %d: \n%s', id, json.dumps(patch, indent=2))
     entry = get_entry_by_id(id)
     
     for key, value in patch.items():
