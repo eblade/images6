@@ -182,12 +182,12 @@ class Database:
         self.entries.append(entry)
         self.entries_by_id[entry.get('id')] = entry
         date = (entry.get('taken_ts') or '')[:10]
-        self._load_date(date)
+        self._load_date(date, entry)
 
     def _sort(self):
         self.entries.sort(key=lambda e: e.get('taken_ts'), reverse=True)
 
-    def _load_date(self, date):
+    def _load_date(self, date, entry):
         if not date:
             return
         if date not in self.dates.keys():
@@ -195,9 +195,19 @@ class Database:
                 path = os.path.join(self.date_folder, date + '.json')
                 with open(path, 'rb') as f:
                     s = f.read().decode('utf8')
-                    self.dates[date] = json.loads(s)
+                    date_data = json.loads(s)
+                    date_data['entries'] = {
+                        entry['id']: entry['state']
+                    }
+                    self.dates[date] = date_data
             except OSError:
-                self.dates[date] = {}
+                self.dates[date] = {
+                    'entries': {
+                        entry['id']: entry['state'],
+                    },
+                }
+        else:
+            self.dates[date]['entries'][entry['id']] = entry['state']
 
     def sort(self):
         with self.lock:
@@ -224,7 +234,7 @@ class Database:
             os.rename(tmp_path, path)
 
             date = (new_entry.get('taken_ts') or '')[:10]
-            self._load_date(date)
+            self._load_date(date, new_entry)
 
     def create(self, id, new_entry):
         with self.lock:
@@ -247,6 +257,13 @@ class Database:
                 self.get_json_filename(id)
             )
             os.remove(path)
+            date = (entry.get('taken_ts') or '')[:10]
+            date_info = self.dates.get(date)
+            if date_info is not None:
+                try:
+                    del date_info['entries'][id]
+                except KeyError:
+                    pass
 
     def count(self):
         return len(self.entries)

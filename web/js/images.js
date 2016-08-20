@@ -18,7 +18,7 @@ $(function() {
             url: '/importer',
             success: function(data) {
                 $.each(data.entries, function(index, trigger) {
-                    $('#menu').append('<div id="menu_trig_' + trigger.name + '" class="overlay_button wide">import from ' + trigger.name + '</div>');
+                    $('#menu').append('<div id="menu_trig_' + trigger.name + '" class="overlay_button wide inline">import from ' + trigger.name + '</div>');
                     $('#menu_trig_' + trigger.name)
                         .click(function() {
                             $.ajax({
@@ -33,7 +33,7 @@ $(function() {
                             });
                         });
                 });
-                $('#menu').append('<div id="menu_trig_purge" class="overlay_button wide">purge</div>');
+                $('#menu').append('<div id="menu_trig_purge" class="overlay_button wide inline">purge</div>');
                 $('#menu_trig_purge')
                     .click(function() {
                         $.ajax({
@@ -171,10 +171,17 @@ $(function() {
             success: function(data) {
                 var last_month = "";
                 var this_month = "";
+                var last_year = "";
+                var this_year = "";
                 $.each(data.entries, function(index, date) {
                     this_month = ("" + date.date).substring(0, 7);
+                    this_year = ("" + date.date).substring(0, 4);
+                    if (this_year !== last_year) {
+                        last_month = '';
+                        last_year = this_year;
+                        $('#background').append('<div class="year">' + this_year + '</div>');
+                    }
                     if (this_month !== last_month) {
-                        var year = ("" + date.date).substring(0, 4);
                         var month = {
                             '01': 'january',
                             '02': 'february',
@@ -189,21 +196,31 @@ $(function() {
                             '11': 'november',
                             '12': 'december',
                         }[("" + date.date).substring(5, 7)];
-                        $('#background').append('<h2>' + month + ' ' + year + '</h2>');
+                        $('#background').append('<h2>' + month + '</h2>');
                     }
                     last_month = this_month;
                     var day = ("" + date.date).substring(8, 10);
                     var day_id = 'day-' + date.date;
+                    var date_css = 'normal';
+                    if (date.count === 0) {
+                        date_css = 'empty';
+                    } else if (date.count_per_state.pending > 0) {
+                        date_css = 'pending';
+                    } else if (date.count_per_state.purge > 0) {
+                        date_css = 'purge';
+                    }
                     if (date.short) {
                         $('#background')
                             .append('<div class="date_large">' +
                                     '<div id="' + day_id +
                                         '" data-date="' + date.date +
-                                        '" class="overlay_button inline larger">' + day + '</div>' +
+                                        '" class="date_block ' + date_css + '">' + day + '</div>' +
                                     '<div class="date_large_short">' + date.short + '</div></div>');
                     } else {
                         $('#background')
-                            .append('<div id="' + day_id + '" data-date="' + date.date + '" class="overlay_button inline larger">' + day + '</div>');
+                            .append('<div id="' + day_id +
+                                    '" data-date="' + date.date +
+                                    '" class="date_block ' + date_css + '">' + day + '</div>');
                     }
                     $('#background')
                         .find('#' + day_id)
