@@ -1,24 +1,32 @@
 $(function() {
-    var scope = {
-        mode: 'menu',
-        last_mode: 'menu',
-        offset: 0,
-        focus: 0,
-        showing_metadata: false,
-        showing_copies: false,
-    };
+    var
+        feed_div = '#date_feed',
+        scope = {
+            offset: 0,
+            focus: 0,
+            showing_viewer: false,
+            showing_metadata: false,
+            showing_copies: false,
+            mode:  'proxy',
+            date: null,
+        };
 
-    var load_day = function(params) {
-        scope.mode = 'day';
-        $('#day_view').show();
+    var load_date = function(params) {
         params = params || Object();
         var date = params.date || 'today';
         var delta = params.delta || '0';
+        var override = params.override || false;
         scope.focus = 0;
+        if (document.location.hash !== '#' + date) {
+            document.location.hash = '#' + date;
+        } else if (!override) {
+            return;
+        }
         $.ajax({
-            url: '/entry?date=' + date + '&delta=' + delta,
+            url: '../entry?date=' + date + '&delta=' + delta,
             success: function(data) {
                 date = data.date;
+                scope.date = date;
                 if (data.next_date !== null) {
                     next = { date: data.next_date };
                 } else {
@@ -29,33 +37,21 @@ $(function() {
                 } else {
                     previous = { date: date, delta: -1 };
                 }
-                $('#day_view')
-                    .html('<div class="day">' +
-                              '<div id="day_prevday" class="overlay_button">&lt;&lt;</div>' +
-                              '<div id="day_purge" class="overlay_button">purge</div>' +
-                              '<div id="day_back" class="overlay_button">back</div>' +
-                          '</div><div id="day_more_buttons">' +
-                              '<div id="day_nextday" class="overlay_button">&gt;&gt;</div>' +
-                          '</div>' +
-                          '</div>' +
-                          '<div id="day_info">' +
-                              '<div id="day_thisday" class="overlay_button">' + date + '</div>' +
-                              '<div id="day_details"></div>' +
-                              '<div id="date_info">' +
-                                  '<input id="date_info_short" data-url="/date/' + date + '" data-name="short"/>' +
-                                  '<textarea id="date_info_full" data-url="/date/' + date + '" data-name="full"></textarea>' +
-                              '</div>' +
-                          '</div>');
-                $('#day_today').click(function() { load_day({'date': 'today', 'delta': '0'}); });
-                $('#day_prevday').click(function() { load_day(previous); });
-                $('#day_thisday').click(function() { load_day({'date': date, 'delta': '0'}); });
-                $('#day_nextday').click(function() { load_day(next); });
-                $('#day_back').click(function() { hide_day(); });
-                $('#day_purge').click(function() { purge_pending(); });
-                $('#day_details')
-                    .append(data.count + (data.count === 1 ? ' entry' : ' entries'));
-                autoSave('#date_info_short');
-                autoSave('#date_info_full');
+                $('#date_this')
+                    .html(date)
+                    .click(function() { load_date({'date': 'today', 'delta': '0'}); });
+                $('#date_prev')
+                    .click(function() { load_date(previous); });
+                $('#date_next')
+                    .click(function() { load_date(next); });
+                $('#date_back')
+                    .click(function() { back_to_index(); });
+                $('#date_purge')
+                    .click(function() { purge_pending(); });
+                $('#date_details')
+                    .html(data.count + (data.count === 1 ? ' entry' : ' entries'));
+                $.Images.autosave('#date_info_short');
+                $.Images.autosave('#date_info_full');
                 $.ajax({
                     url: '/date/' + date,
                     success: function(data) {
@@ -66,7 +62,7 @@ $(function() {
                     },
                 })
                 $.each(data.entries, function(index, entry) {
-                    $('#day_view')
+                    $('#date_feed')
                         .append('<img data-self-url="' + entry.self_url +
                                 '" data-state="' + entry.state +
                                 '" data-state-url="' + entry.state_url +
@@ -157,60 +153,58 @@ $(function() {
         var proxy_url = params.proxy_url;
         var animate = params.animate === undefined ? true : params.animate;
 
-        $('#overlay_metadata').hide();
-        $('#overlay_copies').hide();
+        $('#viewer_metadata').hide();
+        $('#viewer_copies').hide();
 
-        $('#overlay').css('background-image', 'url(' + proxy_url + ')');
+        $('#viewer_overlay').css('background-image', 'url(' + proxy_url + ')');
         if (animate) {
-            scope.last_mode = scope.mode;
-            $('#overlay').fadeIn();
+            $('#viewer_overlay').fadeIn();
         }
         scope.mode = 'proxy';
+        scope.showing_viewer = true;
         scope.showing_metadata = false;
         scope.showing_copies = false;
         sync_overlay_buttons();
     };
 
-    var hide_day = function() {
-        scope.mode = 'menu';
-        $('#overlay').hide();
-        $('#day_view').hide();
+    var back_to_index = function() {
+        document.location = '../#' + scope.date;
     };
 
     var hide_viewer = function() {
-        scope.mode = scope.last_mode;
-        $('#overlay').hide();
+        scope.showing_viewer = false;
+        $('#viewer_overlay').hide();
     };
 
     var sync_overlay_buttons = function() {
         var thumb = $('img.thumb')[scope.focus];
         var state = thumb.getAttribute('data-state');
         if (state === 'keep') {
-            $('#overlay_keep').addClass('keep');
+            $('#viewer_keep').addClass('toggle_state_keep');
         } else {
-            $('#overlay_keep').removeClass('keep');
+            $('#viewer_keep').removeClass('toggle_state_keep');
         }
         if (state === 'purge') {
-            $('#overlay_purge').addClass('purge');
+            $('#viewer_purge').addClass('toggle_state_purge');
         } else {
-            $('#overlay_purge').removeClass('purge');
+            $('#viewer_purge').removeClass('toggle_state_purge');
         }
         if (scope.mode === 'proxy') {
-            $('#overlay_proxy').addClass('select');
-            $('#overlay_check').removeClass('select');
+            $('#viewer_proxy').addClass('toggle_selected');
+            $('#viewer_check').removeClass('toggle_selected');
         } else if (scope.mode === 'check') {
-            $('#overlay_check').addClass('select');
-            $('#overlay_proxy').removeClass('select');
+            $('#viewer_check').addClass('toggle_selected');
+            $('#viewer_proxy').removeClass('toggle_selected');
         }
         if (scope.showing_metadata) {
-            $('#toggle_metadata').addClass('select').addClass('extend');
+            $('#viewer_toggle_metadata').addClass('toggle_selected').addClass('toggle_extended');
         } else {
-            $('#toggle_metadata').removeClass('select').removeClass('extend');
+            $('#viewer_toggle_metadata').removeClass('toggle_selected').removeClass('toggle_extended');
         }
         if (scope.showing_copies) {
-            $('#toggle_copies').addClass('select').addClass('extend');
+            $('#viewer_toggle_copies').addClass('toggle_selected').addClass('toggle_extended');
         } else {
-            $('#toggle_copies').removeClass('select').removeClass('extend');
+            $('#viewer_toggle_copies').removeClass('toggle_selected').removeClass('toggle_extended');
         }
     };
 
@@ -249,7 +243,7 @@ $(function() {
     var show_check = function() {
         var thumb = $('img.thumb')[scope.focus];
         var url = thumb.getAttribute('data-check-url');
-        $('#overlay').css('background-image', 'url(' + url + ')');
+        $('#viewer_overlay').css('background-image', 'url(' + url + ')');
         scope.mode = 'check';
         sync_overlay_buttons();
     };
@@ -257,7 +251,7 @@ $(function() {
     var show_proxy = function() {
         var thumb = $('img.thumb')[scope.focus];
         var url = thumb.getAttribute('data-proxy-url');
-        $('#overlay').css('background-image', 'url(' + url + ')');
+        $('#viewer_overlay').css('background-image', 'url(' + url + ')');
         scope.mode = 'proxy';
         sync_overlay_buttons();
     };
@@ -270,63 +264,51 @@ $(function() {
         }
         if (scope.showing_metadata) {
             scope.showing_copies = false;
-            $('#overlay_copies').fadeOut();
+            $('#viewer_copies').fadeOut();
         }
         sync_overlay_buttons();
         if (scope.showing_metadata === true) {
             var thumb = $('img.thumb')[scope.focus];
             var url = thumb.getAttribute('data-self-url');
-            $('#overlay_metadata').fadeIn();
-            $('#metadata').html('loading...');
+            $('#viewer_metadata').fadeIn();
+            $('#viewer_metadata_content').html('loading...');
             $.ajax({
                 url: url,
                 success: function(data) {
-                    var table = $('#metadata')
-                        .html('<table></table>')
-                        .find('table');
+                    $('#viewer_metadata_content')
+                        .html('');
                     var row = function(key, value) {
-                        $(table).append('<tr><td>' + key + '</td><td>' + value + '</td></tr>');
+                        value = value || '-';
+                        $('#viewer_metadata_content')
+                            .append('<div class="viewer_metadata_key">' + key + '</div>' +
+                                    '<div class="viewer_metadata_value">' + value + '</div>');
                     };
                     var srow = function(key, value, patch_key, in_metadata) {
-                        $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +
-                                        '" class="editable_row">' + value + '</div></td></tr>');
-                        $('#erow_' + key)
-                            .click(function() {
-                                $('#metadata')
-                                    .html('<h3>Edit ' + key + '</h3><input type="text" name="srow" value="' + value +
-                                          '"/><br/><button id="srow_save">Save</button>');
-                                $('#srow_save')
-                                    .click(function() {
-                                        var patch = {};
-                                        patch[patch_key] = $('input[name="srow"]').val(),
-                                        $.ajax({
-                                            url: '/entry/' + data.id + (in_metadata ? '/metadata' : ''),
-                                            method: 'patch',
-                                            contentType: "application/json",
-                                            data: JSON.stringify(patch),
-                                            success: function(data) {
-                                                toggle_metadata(true);
-                                            },
-                                            error: function(data) {
-                                                $('#metadata').html('error');
-                                            },
-                                        });
-                                    });
-                            });
+                        value = value === null ? '' : value;
+                        var
+                            url = '/entry/' + data.id + (in_metadata ? '/metadata' : ''),
+                            id = 'autosave_' + patch_key;
+                        $('#viewer_metadata_content')
+                            .append('<div class="viewer_metadata_key">' + key + '</div>' +
+                                    '<div class="viewer_metadata_editable">' +
+                                    '<input id="' + id + '" value="' + value + '" ' +
+                                           'data-url="' + url + '" ' +
+                                           'data-name="' + patch_key + '"/></div>');
+                        autosave('#' + id);
                     };
                     var crow = function(key, value, choices) {
                         $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +
                                         '" class="editable_row">' + value + '</div></td></tr>');
                         $('#erow_' + key)
                             .click(function() {
-                                $('#metadata')
+                                $('#viewer_metadata_content')
                                     .html('<h3>Edit ' + key + '</h3><fieldset id="crow"><legend>Select a new value</legend></fieldset>');
                                 $.each(choices, function(index, choice) {
                                     $('#crow')
                                         .append('<input type="radio" name="crow" value="' + choice +
                                                 '" ' + (choice == value ? 'checked' : '') +  '/>' + choice + '</br>');
                                 });
-                                $('#metadata')
+                                $('#viewer_metadata_content')
                                     .append('<button id="crow_save">Save</button>');
                                 $('#crow_save')
                                     .click(function() {
@@ -341,7 +323,7 @@ $(function() {
                                                 toggle_metadata(true);
                                             },
                                             error: function(data) {
-                                                $('#metadata').html('error');
+                                                $('#viewer_metadata_content').html('error');
                                             },
                                         });
                                     });
@@ -372,11 +354,11 @@ $(function() {
                     row('State', data.state);
                 },
                 error: function(data) {
-                    $('#metadata').html('no metadata, apparently');
+                    $('#viewer_metadata_content').html('no metadata, apparently');
                 },
             });
         } else {
-            $('#overlay_metadata').fadeOut();
+            $('#viewer_metadata').fadeOut();
         }
 
     };
@@ -385,18 +367,18 @@ $(function() {
         scope.showing_copies = !scope.showing_copies;
         if (scope.showing_copies) {
             scope.showing_metadata = false;
-            $('#overlay_metadata').fadeOut();
+            $('#viewer_metadata').fadeOut();
         }
         sync_overlay_buttons();
         if (scope.showing_copies === true) {
             var thumb = $('img.thumb')[scope.focus];
             var url = thumb.getAttribute('data-self-url');
-            $('#overlay_copies').fadeIn();
-            $('#copies').html('loading...');
+            $('#viewer_copies').fadeIn();
+            $('#viewer_copies_content').html('loading...');
             $.ajax({
                 url: url,
                 success: function(data) {
-                    $('#copies').html('');
+                    $('#viewer_copies_content').html('');
 
                     var has_original = false,
                         has_proxy = false,
@@ -405,7 +387,7 @@ $(function() {
 
                     var copy = function(key, style, callback) {
                         var id = 'copy_' + key;
-                        $('#copies')
+                        $('#viewer_copies_content')
                             .append('<div class="copy ' + style + '" id="' + id + '">' + key + '</div>');
 
                         if (callback) {
@@ -497,110 +479,105 @@ $(function() {
                     });
                 },
                 error: function(data) {
-                    $('#copies').html('Error!');
+                    $('#viewer_copies_content').html('Error!');
                 },
             });
         } else {
-            $('#overlay_copies').fadeOut();
+            $('#viewer_copies').fadeOut();
         }
 
     };
 
-    $('#overlay_close').click(function() { hide_viewer(); });
-    $('#overlay_keep').click(function() { keep(scope.focus); });
-    $('#overlay_purge').click(function() { purge(scope.focus); });
-    $('#toggle_metadata').click(function() { toggle_metadata(); });
-    $('#toggle_copies').click(function() { toggle_copies(); });
-    $('#overlay_check').click(function() { show_check(); });
-    $('#overlay_proxy').click(function() { show_proxy(); });
+    $('#viewer_keep').click(function() { keep(scope.focus); });
+    $('#viewer_purge').click(function() { purge(scope.focus); });
+    $('#viewer_toggle_metadata').click(function() { toggle_metadata(); });
+    $('#viewer_toggle_copies').click(function() { toggle_copies(); });
+    $('#viewer_check').click(function() { show_check(); });
+    $('#viewer_proxy').click(function() { show_proxy(); });
+    $('#viewer_close').click(function() { hide_viewer(); });
 
     var bind_keys = function() {
         $(document).keydown(function(event) {
             if ($('input,textarea').is(':focus')) {
                 // let it be
-            } else if (scope.mode !== 'menu') {
+            } else {
                 if (event.which === 37) { // left
                     update_focus({move: -1});
                     event.preventDefault();
                 } else if (event.which === 39) { // right
                     update_focus({move: +1});
                     event.preventDefault();
-                } else if (event.which === 38) { // up
-                    update_focus({move: -10});
-                    event.preventDefault();
-                } else if (event.which === 40) { // down
-                    update_focus({move: +10});
-                    event.preventDefault();
                 } else if (event.which === 36) { // home
                     update_focus({focus: 0});
                     event.preventDefault();
-                } else if (event.which === 35) { // end
-                    update_focus({focus: -1});
-                    event.preventDefault();
-                } else if (event.which === 27) { // escape
-                    if (scope.mode === 'day') {
-                        hide_day();
-                    } else if (scope.mode === 'proxy') {
-                        if (scope.showing_metadata) {
-                            toggle_metadata();
-                        } else if (scope.showing_copies) {
-                            toggle_copies();
-                        } else {
-                            hide_viewer();
-                        }
-                    }
-                } else if (event.which === 13) { // return
-                    if (scope.mode === 'day') {
+                    } else if (event.which === 35) { // end
+                        update_focus({focus: -1});
+                        event.preventDefault();
+                } else if (scope.showing_viewer === false) {
+                    if (event.which === 27) { // escape
+                        back_to_index();
+                        event.preventDefault();
+                    } else if (event.which === 13) { // return
                         var thumb = $('img.thumb')[scope.focus];
                         show_viewer({
                             proxy_url: thumb.getAttribute('data-proxy-url'),
                         });
                         event.preventDefault();
                     }
-                } else if (event.which === 77) { // m
-                    toggle_metadata();
-                } else if (event.which === 70) { // f
-                    toggle_copies();
-                } else if (event.which === 75) { // k
-                    keep(scope.focus);
-                } else if (event.which === 88) { // x
-                    purge(scope.focus);
-                } else if (event.which === 80) { // p
-                    show_proxy();
-                } else if (event.which === 67) { // c
-                    show_check();
+                } else if (scope.showing_viewer === true) {
+                    if (event.which === 38) { // up
+                        event.preventDefault();
+                    } else if (event.which === 40) { // down
+                        event.preventDefault();
+                    } else if (event.which === 27) { // escape
+                        if (scope.showing_metadata === true) {
+                            toggle_metadata();
+                        } else if (scope.showing_copies === true) {
+                            toggle_copies();
+                        } else {
+                            hide_viewer();
+                        }
+                    } else if (event.which === 77) { // m
+                        toggle_metadata();
+                    } else if (event.which === 70) { // f
+                        toggle_copies();
+                    } else if (event.which === 75) { // k
+                        keep(scope.focus);
+                    } else if (event.which === 88) { // x
+                        purge(scope.focus);
+                    } else if (event.which === 80) { // p
+                        show_proxy();
+                    } else if (event.which === 67) { // c
+                        show_check();
+                    }
                 }
             }
         });
     };
 
-    var autoSave = function (id) {
+    var autosave = function (id) {
         $(id).change(function () {
-            $(id).removeClass('error').addClass('saving');
+            $(id).removeClass('autosave_error').addClass('autosave_saving');
             var url = $(id)[0].getAttribute('data-url');
             var field = $(id)[0].getAttribute('data-name');
             var data = new Object();
-            data['only'] = field;
             data[field] = $(id).val();
             $.ajax({
                 url: url,
-                method: 'PUT',
+                method: 'PATCH',
                 contentType: "application/json",
                 data: JSON.stringify(data),
                 success: function (data) {
-                    $(id).removeClass('saving');
+                    $(id).removeClass('autosave_saving');
                 },
                 error: function (data) {
-                    $(id).removeClass('saving').addClass('error');
+                    $(id).removeClass('autosave_saving').addClass('autosave_error');
                 },
             });
         })
     };
 
-    hide_day();
-    hide_viewer();
-
     $.Images = $.Images || {};
+    $.Images.load_date = load_date;
     $.Images.bind_keys = bind_keys;
-    $.Images.load_menu = load_menu;
 });

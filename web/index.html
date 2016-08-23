@@ -1,40 +1,18 @@
 <!doctype html>
 <html>
     <head>
-        <title>Images6</title>
-        <link rel="stylesheet" type="text/css" href="css/index.css"/>
+        <title>Images6/Index</title>
+        <link rel="stylesheet" type="text/css" href="css/images.common.css"/>
+        <link rel="stylesheet" type="text/css" href="css/images.index.css"/>
         <script src="js/jquery.min.js"></script>
-        <script type="text/javascript">
-            $.ajaxSetup({
-                beforeSend: function (xhr) {
-                    xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-                },
-            });
-        </script>
-        <script src="js/images.js"></script>
-        <script src="js/viewer.js"></script>
+        <script src="js/jquery.ba-hashchange.js"></script>
+        <script src="js/images.common.js"></script>
+        <script src="js/images.index.js"></script>
     </head>
     <body>
-        <div id="background">
+        <div id="index_menu">
         </div>
-        <div id="day_view">
-        </div>
-        <div id="overlay">
-            <div id="overlay_keep" class="overlay_toggle">keep</div>
-            <div id="overlay_purge" class="overlay_toggle tight">purge</div>
-            <div id="toggle_metadata" class="overlay_toggle">meta</div>
-            <div id="toggle_copies" class="overlay_toggle">copies</div>
-            <div id="overlay_proxy" class="overlay_toggle">proxy</div>
-            <div id="overlay_check" class="overlay_toggle tight">check</div>
-            <div id="overlay_close" class="overlay_button">back</div>
-            <div id="overlay_metadata" class="overlay_popup">
-                <h3>Metadata</h3>
-                <div id="metadata"></div>
-            </div>
-            <div id="overlay_copies" class="overlay_popup">
-                <h3>Copies</h3>
-                <div id="copies"></div>
-            </div>
+        <div id="index_feed">
         </div>
     </body>
 </html>

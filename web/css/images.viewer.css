@@ -1,0 +1,105 @@
+.viewer_toggle {
+    margin-left: 5pt;
+    margin-top: 5pt;
+    padding: 8pt;
+    background-color: rgba(150, 150, 150, .8);
+    color: white;
+    font-weight: bold;
+    width: 50pt;
+    text-align: center;
+    height: 40pt;
+    line-height: 40pt;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.viewer_popup {
+    position: absolute;
+    top: 5pt;
+    left: 72pt;
+    margin-left: 5pt;
+    margin-top: 5pt;
+    padding: 8pt;
+    background-color: #48a;
+    color: white;
+    font-weight: bold;
+    width: 300pt;
+    min-height: 400pt;
+}
+
+.viewer_tight {
+    margin-top: 0;
+}
+
+#viewer_overlay {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding-top: 5pt;
+    background-color: #000;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: none;
+}
+
+#viewer_proxy {
+    max-width: 100%;
+    max-height: 100%;
+    height: inherit !important;
+}
+
+.viewer_copy {
+    margin-right: 6pt;
+    margin-bottom: 5pt;
+    padding: 8pt;
+    color: white;
+    font-weight: bold;
+    width: 50pt;
+    text-align: center;
+    height: 40pt;
+    line-height: 40pt;
+    vertical-align: middle;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.viewer_download {
+    background-color: #284;
+}
+
+.viewer_invoke {
+    background-color: #830;
+}
+
+.vierer_next {
+    background-color: #284;
+}
+
+.viewer_none {
+    background-color: rgba(150, 150, 150, 1);
+}
+
+.toggle_selected {
+    background-color: #48a;
+}
+
+.toggle_extended {
+    width: 56pt;
+}
+
+.xxwide {
+    width: 200pt;
+}
+
+.toggle_state_purge {
+    background-color: #843;
+    border-color: #843;
+}
+
+.toggle_state_keep {
+    background-color: #284;
+}
+

@@ -39,6 +39,10 @@ class App:
             path='/graphics/<fn>.json',
             callback=lambda fn: bottle.static_file(fn + '.json', root=self.GRAPHICS),
         )
+        app.route(
+            path='/view/date',
+            callback=lambda: bottle.static_file('date.html', root=self.HTML),
+        )
 
         return app
 
