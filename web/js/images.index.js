@@ -5,7 +5,7 @@ $(function() {
 
     var load_menu = function() {
         $.ajax({
-            url: '/importer',
+            url: 'importer',
             success: function(data) {
                 $.each(data.entries, function(index, trigger) {
                     $(menu_div)
@@ -19,7 +19,7 @@ $(function() {
                                 url: trigger.trig_url,
                                 method: 'POST',
                                 success: function(data) {
-                                    monitor('/importer/status', 'importing', 'scanning', 'importing',
+                                    monitor('importer/status', 'importing', 'scanning', 'importing',
                                         feed_div, function() {
                                             load_index(feed_div);
                                             $(feed_div).fadeIn(400)
@@ -39,10 +39,10 @@ $(function() {
                     .click(function() {
                         $(menu_div).hide();
                         $.ajax({
-                            url: '/purger/trig',
+                            url: 'purger/trig',
                             method: 'POST',
                             success: function(data) {
-                                monitor('/purger/status', 'purging', 'reading', 'deleting',
+                                monitor('purger/status', 'purging', 'reading', 'deleting',
                                     feed_div, function() {
                                         load_index(feed_div);
                                         $(feed_div).fadeIn(400)
@@ -91,7 +91,7 @@ $(function() {
         $(feed_div)
             .html('');
         $.ajax({
-            url: '/date',
+            url: 'date',
             success: function(data) {
                 var
                     last_month = "",
@@ -165,7 +165,7 @@ $(function() {
     };
 
     var load_date = function(date) {
-        this.window.location = '/view/date#' + date;
+        this.window.location = 'view-date#' + date;
     };
 
     var scroll_to = function(id) {

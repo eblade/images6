@@ -99,7 +99,7 @@ class State(EnumProperty):
 
 
 class Access(EnumProperty):
-    private = 'private' 
+    private = 'private'
     public = 'public'
 
 
@@ -282,7 +282,7 @@ class StateQuery(PropertySet):
             sq.state = bottle.request.query.state
         if bottle.request.query.soft not in (None, ''):
             sq.soft = bottle.request.query.soft == 'yes'
-        
+
         return sq
 
 
@@ -362,7 +362,7 @@ def update_entry_state(id, query):
 def patch_entry_metadata_by_id(id, patch):
     entry = get_entry_by_id(id)
     logging.debug('Metadata Patch for %d: \n%s', id, json.dumps(patch, indent=2))
-    
+
     metadata_dict = entry.metadata.to_dict()
     metadata_dict.update(patch)
     metadata = wrap_dict(metadata_dict)
@@ -381,7 +381,7 @@ def patch_entry_metadata_by_id(id, patch):
 def patch_entry_by_id(id, patch):
     logging.debug('Patch for %d: \n%s', id, json.dumps(patch, indent=2))
     entry = get_entry_by_id(id)
-    
+
     for key, value in patch.items():
         if key in ('title', 'description'):
             setattr(entry, key, value)

@@ -90,10 +90,6 @@
     width: 56pt;
 }
 
-.xxwide {
-    width: 200pt;
-}
-
 .toggle_state_purge {
     background-color: #843;
     border-color: #843;
@@ -103,3 +99,21 @@
     background-color: #284;
 }
 
+.viewer_metadata_key {
+    margin-top: 3pt;
+    margin-bottom: 2pt;
+}
+
+.viewer_metadata_value {
+    font-size: 18pt;
+    font-weight: normal;
+}
+
+.viewer_metadata_editable input {
+    width: 100%;
+    background-color: #368;
+    border: 0;
+    font-family: monospace, lucida;
+    font-size: 18pt;
+    color: white;
+}

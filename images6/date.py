@@ -2,6 +2,7 @@ import logging
 import bottle
 import datetime
 import urllib
+import json
 from jsonobject import PropertySet, Property, EnumProperty
 
 from .system import current_system
@@ -9,6 +10,7 @@ from .web import (
     FetchByKey,
     FetchByQuery,
     UpdateByKey,
+    PatchByKey,
     DeleteByKey,
 )
 
@@ -39,6 +41,11 @@ class App:
         )
         app.route(
             path='/<key>',
+            method='PATCH',
+            callback=PatchByKey(patch_date),
+        )
+        app.route(
+            path='/<key>',
             method='DELETE',
             callback=DeleteByKey(delete_date),
         )
@@ -55,7 +62,6 @@ class Date(PropertySet):
     short = Property()
     full = Property()
     mimetype = Property(default='text/plain')
-    only = Property()
 
     count = Property(int, default=0)
     count_per_state = Property(dict)
@@ -84,7 +90,7 @@ class Date(PropertySet):
                 n_keep += 1
             elif state == 'purge':
                 n_purge += 1
-        
+
         self.count = n_all
         self.count_per_state = {
             'new': n_new,
@@ -143,7 +149,7 @@ def get_dates(query=None):
         else:
             query_str = '%04d-%02d-' % (query.year, query.month)
 
-    dates = [Date.FromDict(date) for date 
+    dates = [Date.FromDict(date) for date
              in current_system().database.get_dates(query_str)]
     [date.calculate_urls() for date in dates]
     return DateFeed(
@@ -159,17 +165,21 @@ def get_date(date):
 
 
 def update_date(date, date_info):
-    old_date_info = current_system().database.get_date_info(date)
-    if date_info.only == 'short':
-        old_date_info['short'] = date_info.short
-        date_info = old_date_info
-    elif date_info.only == 'full':
-        old_date_info['full'] = date_info.full
-        date_info = old_date_info
-    else:
-        date_info = date_info.to_dict()
+    date_info.calculate_urls()
+    date_info = date_info.to_dict()
     current_system().database.update_date_info(date, date_info)
     return get_date(date)
+
+
+def patch_date(date, patch):
+    logging.debug('Patch for %s: \n%s', date, json.dumps(patch, indent=2))
+    date_info = get_date(date)
+
+    for key, value in patch.items():
+        if key in ('short', 'full'):
+            setattr(date_info, key, value)
+
+    return update_date(date, date_info)
 
 
 def delete_date(date):

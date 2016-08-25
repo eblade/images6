@@ -23,7 +23,7 @@ $(function() {
             return;
         }
         $.ajax({
-            url: '../entry?date=' + date + '&delta=' + delta,
+            url: 'entry?date=' + date + '&delta=' + delta,
             success: function(data) {
                 date = data.date;
                 scope.date = date;
@@ -56,7 +56,9 @@ $(function() {
                     url: '/date/' + date,
                     success: function(data) {
                         $('#date_info_short').val(data.short);
+                        $('#date_info_short')[0].setAttribute('data-url', '/date/' + date);
                         $('#date_info_full').html(data.full);
+                        $('#date_info_full')[0].setAttribute('data-url', '/date/' + date);
                     },
                     error: function(data) {
                     },
@@ -168,7 +170,7 @@ $(function() {
     };
 
     var back_to_index = function() {
-        document.location = '../#' + scope.date;
+        document.location = '/#' + scope.date;
     };
 
     var hide_viewer = function() {
@@ -283,7 +285,7 @@ $(function() {
                             .append('<div class="viewer_metadata_key">' + key + '</div>' +
                                     '<div class="viewer_metadata_value">' + value + '</div>');
                     };
-                    var srow = function(key, value, patch_key, in_metadata) {
+                    var srow = function(key, value, patch_key, in_metadata, valid_values) {
                         value = value === null ? '' : value;
                         var
                             url = '/entry/' + data.id + (in_metadata ? '/metadata' : ''),
@@ -294,64 +296,28 @@ $(function() {
                                     '<input id="' + id + '" value="' + value + '" ' +
                                            'data-url="' + url + '" ' +
                                            'data-name="' + patch_key + '"/></div>');
-                        autosave('#' + id);
+                        $.Images.autosave('#' + id, valid_values !== undefined ? function(value) {
+                            return valid_values.indexOf(value) !== -1;
+                        } : undefined);
                     };
-                    var crow = function(key, value, choices) {
-                        $(table).append('<tr><td>' + key + '</td><td><div id="erow_' + key +
-                                        '" class="editable_row">' + value + '</div></td></tr>');
-                        $('#erow_' + key)
-                            .click(function() {
-                                $('#viewer_metadata_content')
-                                    .html('<h3>Edit ' + key + '</h3><fieldset id="crow"><legend>Select a new value</legend></fieldset>');
-                                $.each(choices, function(index, choice) {
-                                    $('#crow')
-                                        .append('<input type="radio" name="crow" value="' + choice +
-                                                '" ' + (choice == value ? 'checked' : '') +  '/>' + choice + '</br>');
-                                });
-                                $('#viewer_metadata_content')
-                                    .append('<button id="crow_save">Save</button>');
-                                $('#crow_save')
-                                    .click(function() {
-                                        var patch = {};
-                                        patch[key] = $('input[name="crow"]').val();
-                                        $.ajax({
-                                            url: '/entry/' + data.id + '/metadata',
-                                            method: 'patch',
-                                            contentType: "application/json",
-                                            data: JSON.stringify(patch),
-                                            success: function(data) {
-                                                toggle_metadata(true);
-                                            },
-                                            error: function(data) {
-                                                $('#viewer_metadata_content').html('error');
-                                            },
-                                        });
-                                    });
-                            });
-                    };
+                    row('ID', data.id);
                     srow('Title', data.title, 'title', false);
                     srow('Description', data.description, 'description', false);
                     srow('Artist', data.metadata.Artist, 'Artist', true);
                     row('Taken', data.metadata.DateTimeOriginal);
-                    row('Digitized', data.metadata.DateTimeDigitized);
                     if (data.metadata.FNumber[0] === 0) {
                         row('Aperture', 'unknown');
                     } else {
-                        row('Aperture', 'F ' + data.metadata.FNumber[0] + ' / ' + data.metadata.FNumber[1]);
+                        row('Aperture', 'f' + data.metadata.FNumber[0] + '/' + data.metadata.FNumber[1]);
                     }
                     row('ISO', data.metadata.ISOSpeedRatings);
-                    row('Focal length', data.metadata.FocalLength[0] + ' / ' + data.metadata.FocalLength[1]);
+                    row('Focal length', data.metadata.FocalLength[0] + '/' + data.metadata.FocalLength[1]);
                     row('35mm equiv.', data.metadata.FocalLengthIn35mmFilm);
                     row('Geometry', data.metadata.Geometry[0] + ' x ' + data.metadata.Geometry[1]);
-                    row('Colorspace', data.metadata.ColorSpace);
-                    row('Exposure', data.metadata.ExposureTime[0] + ' / ' + data.metadata.ExposureTime[1]);
-                    srow('Angle', data.metadata.Angle, 'Angle', true);
-                    row('Flash', data.metadata.Flash);
-                    row('ID', data.id);
+                    row('Exposure', data.metadata.ExposureTime[0] + '/' + data.metadata.ExposureTime[1]);
+                    srow('Angle', data.metadata.Angle, 'Angle', true, ['-270', '-180', '-90', '0', '90', '180', '270']);
                     srow('Copyright', data.metadata.Copyright, 'Copyright', true);
-                    row('Folder', data.import_folder);
-                    row('Filename', data.original_filename);
-                    row('State', data.state);
+                    row('Source', data.import_folder + '/' + data.original_filename);
                 },
                 error: function(data) {
                     $('#viewer_metadata_content').html('no metadata, apparently');
@@ -553,28 +519,6 @@ $(function() {
                 }
             }
         });
-    };
-
-    var autosave = function (id) {
-        $(id).change(function () {
-            $(id).removeClass('autosave_error').addClass('autosave_saving');
-            var url = $(id)[0].getAttribute('data-url');
-            var field = $(id)[0].getAttribute('data-name');
-            var data = new Object();
-            data[field] = $(id).val();
-            $.ajax({
-                url: url,
-                method: 'PATCH',
-                contentType: "application/json",
-                data: JSON.stringify(data),
-                success: function (data) {
-                    $(id).removeClass('autosave_saving');
-                },
-                error: function (data) {
-                    $(id).removeClass('autosave_saving').addClass('autosave_error');
-                },
-            });
-        })
     };
 
     $.Images = $.Images || {};
