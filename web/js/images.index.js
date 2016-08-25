@@ -62,7 +62,7 @@ $(function() {
     var monitor = function(url, caption, before, active, div, callback) {
         $(div)
             .html('<h2>' + caption + '</h2>')
-            .append('<div class="common_progress_outer"><div id="progress"></div></div>')
+            .append('<div class="common_progress_outer"><div class="common_progress_inner" id="progress"></div></div>')
             .append('<div class="common_error_message" id="menu_failure"></div>');
 
         var poll = function() {

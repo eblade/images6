@@ -94,3 +94,14 @@ img.thumb {
     border: 4pt solid #333;
 }
 
+img.date_state_pending {
+    border-color: #248 !important;
+}
+
+img.date_state_purge {
+    border-color: #f43 !important;
+}
+
+img.date_selected {
+    border-color: white !important;
+}

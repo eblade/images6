@@ -117,7 +117,9 @@ class Variant(PropertySet):
     mime_type = Property()
     size = Property(int)
     purpose = Property(enum=Purpose, default=Purpose.original)
+    source_purpose = Property(enum=Purpose, default=Purpose.original)
     version = Property(int, default=0)
+    source_version = Property(int, default=0)
     width = Property(int)
     height = Property(int)
 
@@ -148,6 +150,8 @@ class Backup(PropertySet):
     method = Property()
     key = Property()
     url = Property()
+    source_purpose = Property(enum=Purpose, default=Purpose.original)
+    source_version = Property(int, default=0)
 
 
 class Entry(PropertySet):
@@ -176,15 +180,28 @@ class Entry(PropertySet):
     raw_url = Property()
     derivative_url = Property()
 
-    def get_filename(self, purpose):
+    def get_variant(self, purpose, version=None):
         variants = [variant for variant in self.variants
                     if variant.purpose == Purpose(purpose)]
         if len(variants) == 0:
             return None
-        return sorted(
-            variants,
-            key=lambda variant: variant.version
-        ).pop().get_filename(self.id)
+        if version is None:  # take latest
+            return sorted(
+                variants,
+                key=lambda variant: variant.version
+            ).pop()
+        else:
+            try:
+                return [variant for variant in varants if variant.version == version][0]
+            except IndexError:
+                return None
+
+    def get_filename(self, purpose, version=None):
+        variant = self.get_variant(purpose, version=version)
+        if variant is None:
+            return None
+        else:
+            return variant.get_filename(self.id)
 
     def get_next_version(self, purpose):
         variants = [variant for variant in self.variants

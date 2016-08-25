@@ -19,6 +19,8 @@ class ImageProxyOptions(PropertySet):
     entry_id = Property(int)
     angle = Property(int)
     mirror = Property(int)
+    source_purpose = Property(enum=Purpose, default=Purpose.original)
+    source_version = Property(int)
 
 
 register_schema(ImageProxyOptions)
@@ -34,9 +36,11 @@ class ImageProxyPlugin(GenericPlugin):
         self.entry = get_entry_by_id(payload.entry_id)
         self.system = current_system()
 
+        self.source = self.entry.get_variant(payload.source_purpose, version=payload.source_version)
+
         self.full_original_file_path = os.path.join(
             self.system.media_root,
-            self.entry.get_filename(Purpose.original),
+            self.source.get_filename(self.entry.id),
         )
 
         logging.info('Full original file path is %s.',
@@ -80,6 +84,8 @@ class ImageProxyPlugin(GenericPlugin):
             mime_type='image/jpeg',
             purpose=purpose,
             version=self.entry.get_next_version(purpose),
+            source_purpose=self.source.purpose,
+            source_version=self.source.version,
         )
         full_path = os.path.join(
             self.system.media_root,
@@ -102,6 +108,8 @@ class ImageProxyPlugin(GenericPlugin):
             mime_type='image/jpeg',
             purpose=Purpose.check,
             version=self.entry.get_next_version(Purpose.check),
+            source_purpose=self.source.purpose,
+            source_version=self.source.version,
         )
         full_path = os.path.join(
             self.system.media_root,

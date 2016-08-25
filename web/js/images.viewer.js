@@ -37,6 +37,8 @@ $(function() {
                 } else {
                     previous = { date: date, delta: -1 };
                 }
+                $('#date_feed')
+                    .html('');
                 $('#date_this')
                     .html(date)
                     .click(function() { load_date({'date': 'today', 'delta': '0'}); });
@@ -70,7 +72,7 @@ $(function() {
                                 '" data-state-url="' + entry.state_url +
                                 '" data-check-url="' + entry.check_url +
                                 '" data-proxy-url="' + entry.proxy_url +
-                                '" class="thumb ' + entry.state + '" id="thumb_' + index +
+                                '" class="thumb date_state_' + entry.state + '" id="thumb_' + index +
                                 '" src="' + entry.thumb_url +
                                 '" title="' + index + '"/>');
                     $('#thumb_' + index)
@@ -119,12 +121,12 @@ $(function() {
                         animate: false,
                     });
                 }
-                $(thumb).addClass('selected');
+                $(thumb).addClass('date_selected');
                 $('#day_view').animate({
                     top: -$(thumb).position().top + 270,
                 }, 200);
             } else {
-                $(thumb).removeClass('selected');
+                $(thumb).removeClass('date_selected');
             }
         });
     };
@@ -144,7 +146,8 @@ $(function() {
                         alert("Unabled to purge " + id);
                     },
                 });
-                $(thumb).addClass('purge');
+                $(thumb).removeClass('date_state_pending');
+                $(thumb).addClass('date_state_purge');
             }
         });
         $('#day_thisday').click();
@@ -219,6 +222,7 @@ $(function() {
             success: function(data) {
                 thumb.setAttribute('data-state', 'keep');
                 sync_overlay_buttons();
+                $(thumb).removeClass('date_state_pending');
             },
             error: function(data) {
                 alert("Unabled to keep " + id);
@@ -235,6 +239,8 @@ $(function() {
             success: function(data) {
                 thumb.setAttribute('data-state', 'purge');
                 sync_overlay_buttons();
+                $(thumb).removeClass('date_state_pending');
+                $(thumb).addClass('date_state_purge');
             },
             error: function(data) {
                 alert("Unabled to purge " + id);
@@ -351,33 +357,44 @@ $(function() {
                         has_raw = false,
                         has_flickr = false;
 
-                    var copy = function(key, style, callback) {
+                    var button = function(key, style, callback) {
                         var id = 'copy_' + key;
                         $('#viewer_copies_content')
-                            .append('<div class="copy ' + style + '" id="' + id + '">' + key + '</div>');
+                            .append('<div class="viewer_make_copy_button ' + style + '" id="' + id + '">' + key + '</div>');
 
                         if (callback) {
                             $('#' + id).click(callback);
                         }
                     };
 
+                    var header = function(title) {
+                        $('#viewer_copies_content')
+                            .append('<h2>' + title + '</h2>');
+                    }
+
+                    var link = function(title, url) {
+                        $('#viewer_copies_content')
+                            .append('<a href="' + url + '">' + title + '</a></br>');
+                    }
+
+                    header('files');
                     $.each(data.variants, function(index, variant) {
                         if (variant.purpose === 'original') { has_original = true; }
                         if (variant.purpose === 'proxy') { has_proxy = true; }
                         if (variant.purpose === 'raw') { has_raw = true; }
+
+                        if (variant.purpose === variant.source_purpose && variant.version === variant.source_version) {
+                            link(variant.purpose + '/' + variant.version, data.urls[variant.purpose][variant.version]);
+                        } else {
+                            link(variant.purpose + '/' + variant.version + ' (of ' +
+                                 variant.source_purpose + '/' + variant.source_version + ')',
+                                 data.urls[variant.purpose][variant.version]);
+                        }
                     });
 
+                    header('actions');
                     if (has_original) {
-                        copy('original', 'download', function() {
-                            location.href = data.original_url + '?download=yes';
-                        });
-                    }
-                    if (has_proxy) {
-                        copy('proxy', 'download', function() {
-                            location.href = data.proxy_url + '?download=yes';
-                        });
-                    } else if (has_original) {
-                        copy('proxy', 'none', function() {
+                        button('proxy', 'none', function() {
                             $.ajax({
                                 url: '/plugin/imageproxy/trig',
                                 method: 'post',
@@ -395,12 +412,8 @@ $(function() {
                             });
                         });
                     }
-                    if (has_raw) {
-                        copy('raw', 'download', function() {
-                            location.href = data.raw_url + '?download=yes';
-                        });
-                    } else {
-                        copy('raw', 'none', function() {
+                    if (!has_raw) {
+                        button('raw', 'none', function() {
                             $.ajax({
                                 url: '/plugin/rawfetch/trig',
                                 method: 'post',
@@ -422,11 +435,10 @@ $(function() {
                     $.each(data.backups, function(index, backup) {
                         if (backup.method === 'flickr') {
                             has_flickr = true;
-                            //copy('flickr', 'next', function() { alert(backup.key); });
                         }
                     });
 
-                    copy('flickr', has_flickr ? 'next' : 'none', function() {
+                    button('flickr', has_flickr ? 'next' : 'none', function() {
                         $.ajax({
                             url: '/plugin/flickr/trig',
                             method: 'post',

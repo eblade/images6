@@ -207,8 +207,8 @@ class Database:
                     },
                 }
         else:
-            if not 'entries' in self.dates[date]:
-                self.dates[date] = {}
+            if not 'entries' in self.dates[date].keys():
+                self.dates[date]['entries'] = {}
             self.dates[date]['entries'][entry['id']] = entry['state']
 
     def sort(self):

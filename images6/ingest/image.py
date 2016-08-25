@@ -36,7 +36,7 @@ class JPEGImportModule(GenericImportModule):
         self.full_source_file_path = self.folder.get_full_path(self.file_path)
         logging.debug('Import %s', self.full_source_file_path)
         self.system = current_system()
-        
+
         # Try to se if there is an entry to match it with
         file_name = os.path.basename(self.file_path)
         m = re.search(r'^[0-9a-f]{8}', file_name)
@@ -95,6 +95,11 @@ class JPEGImportModule(GenericImportModule):
             purpose=Purpose.original,
             version=self.entry.get_next_version(Purpose.original),
         )
+        if self.file_path.startswith('from_raw/'):
+            raw = self.entry.get_variant(Purpose.raw)
+            if raw is not None:
+                original.source_purpose = Purpose.raw
+                original.source_version = raw.version
         filecopy = FileCopy(
             source=self.full_source_file_path,
             destination=os.path.join(
