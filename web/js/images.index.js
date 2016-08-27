@@ -153,9 +153,9 @@ $(function() {
                         .click(function() {
                             load_date(this.getAttribute('data-date'));
                         });
-                    if (document.location.hash) {
-                        scroll_to(document.location.hash);
-                    }
+                    //if (document.location.hash) {
+                    //    $.scroll_to(document.location.hash, 200);
+                    //}
                 });
             },
             error: function(data) {
@@ -168,15 +168,6 @@ $(function() {
         this.window.location = 'view-date#' + date;
     };
 
-    var scroll_to = function(id) {
-        var element = $(id);
-        if (element.length) {
-            $('html body').animate({
-                scrollTop: $(element).offset().top,
-            }, 500);
-        }
-    };
-
     load_menu('#index_menu');
     load_index('#index_feed');
 
@@ -185,7 +176,7 @@ $(function() {
             $(window)
                 .hashchange(function() {
                     if (document.location.hash) {
-                        scroll_to(document.location.hash);
+                        $.scroll_to(document.location.hash, 200);
                     }
                 });
         });

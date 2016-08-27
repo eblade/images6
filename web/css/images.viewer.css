@@ -23,7 +23,7 @@
     background-color: #48a;
     color: white;
     font-weight: bold;
-    width: 300pt;
+    width: 500pt;
     min-height: 400pt;
 }
 
@@ -74,7 +74,7 @@
     background-color: #830;
 }
 
-.vierer_next {
+.viewer_next {
     background-color: #284;
 }
 
@@ -116,4 +116,28 @@
     font-family: monospace, lucida;
     font-size: 18pt;
     color: white;
+}
+
+#copies {
+    width: 100%;
+}
+
+#copies th {
+    text-align: left;
+    color: #acf;
+    font-weight: bold;
+}
+
+#copies a {
+    font-weight: bold;
+    color: #acf;
+}
+
+.viewer_action_button {
+    background-color: white;
+    color: #284;
+    padding: 8pt;
+    display: inline-block;
+    margin-top: 5pt;
+    margin-left: 5pt;
 }

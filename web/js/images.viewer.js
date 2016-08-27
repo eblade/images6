@@ -1,22 +1,22 @@
 $(function() {
     var
-        feed_div = '#date_feed',
-        scope = {
-            offset: 0,
-            focus: 0,
-            showing_viewer: false,
-            showing_metadata: false,
-            showing_copies: false,
-            mode:  'proxy',
-            date: null,
-        };
+        feed_div = '#date_feed';
+    $.scope = {
+        offset: 0,
+        focus: 0,
+        showing_viewer: false,
+        showing_metadata: false,
+        showing_copies: false,
+        mode:  'proxy',
+        date: null,
+    };
 
     var load_date = function(params) {
         params = params || Object();
         var date = params.date || 'today';
         var delta = params.delta || '0';
         var override = params.override || false;
-        scope.focus = 0;
+        $.scope.focus = 0;
         if (document.location.hash !== '#' + date) {
             document.location.hash = '#' + date;
         } else if (!override) {
@@ -26,7 +26,7 @@ $(function() {
             url: 'entry?date=' + date + '&delta=' + delta,
             success: function(data) {
                 date = data.date;
-                scope.date = date;
+                $.scope.date = date;
                 if (data.next_date !== null) {
                     next = { date: data.next_date };
                 } else {
@@ -86,7 +86,7 @@ $(function() {
                         });
                 });
                 update_focus({focus: 0});
-                scope.total_count = data.count;
+                $.scope.total_count = data.count;
             },
         });
     };
@@ -95,27 +95,32 @@ $(function() {
         params = params || new Object();
         var move = params.move || 0;
         var focus = params.focus;
+        var old_focus = $.scope.focus;
 
         if (focus === undefined) {
-            scope.focus += move;
+            $.scope.focus += move;
         } else if (focus === -1) {
-            scope.focus = scope.total_count - 1;
+            $.scope.focus = $.scope.total_count - 1;
         } else {
-            scope.focus = focus;
+            $.scope.focus = focus;
         }
 
-        if (scope.focus < 0) {
-            scope.focus = 0;
-        } else if (scope.focus >= scope.total_count) {
-            scope.focus = scope.total_count - 1;
+        if ($.scope.focus < 0) {
+            $.scope.focus = 0;
+        } else if ($.scope.focus >= $.scope.total_count) {
+            $.scope.focus = $.scope.total_count - 1;
+        }
+
+        if ($.scope.focus !== old_focus) {
+            $.scroll_to('#thumb_' + $.scope.focus, 260);
         }
 
         $('.thumb').each(function(index, thumb) {
-            if (index === scope.focus) {
-                if (scope.mode === 'check') {
-                    scope.mode = 'proxy';
+            if (index === $.scope.focus) {
+                if ($.scope.mode === 'check') {
+                    $.scope.mode = 'proxy';
                 }
-                if (scope.mode === 'proxy') {
+                if ($.scope.showing_viewer) {
                     show_viewer({
                         proxy_url: thumb.getAttribute('data-proxy-url'),
                         animate: false,
@@ -165,24 +170,24 @@ $(function() {
         if (animate) {
             $('#viewer_overlay').fadeIn();
         }
-        scope.mode = 'proxy';
-        scope.showing_viewer = true;
-        scope.showing_metadata = false;
-        scope.showing_copies = false;
+        $.scope.mode = 'proxy';
+        $.scope.showing_viewer = true;
+        $.scope.showing_metadata = false;
+        $.scope.showing_copies = false;
         sync_overlay_buttons();
     };
 
     var back_to_index = function() {
-        document.location = '/#' + scope.date;
+        document.location = '/#' + $.scope.date;
     };
 
     var hide_viewer = function() {
-        scope.showing_viewer = false;
+        $.scope.showing_viewer = false;
         $('#viewer_overlay').hide();
     };
 
     var sync_overlay_buttons = function() {
-        var thumb = $('img.thumb')[scope.focus];
+        var thumb = $('img.thumb')[$.scope.focus];
         var state = thumb.getAttribute('data-state');
         if (state === 'keep') {
             $('#viewer_keep').addClass('toggle_state_keep');
@@ -194,19 +199,19 @@ $(function() {
         } else {
             $('#viewer_purge').removeClass('toggle_state_purge');
         }
-        if (scope.mode === 'proxy') {
+        if ($.scope.mode === 'proxy') {
             $('#viewer_proxy').addClass('toggle_selected');
             $('#viewer_check').removeClass('toggle_selected');
-        } else if (scope.mode === 'check') {
+        } else if ($.scope.mode === 'check') {
             $('#viewer_check').addClass('toggle_selected');
             $('#viewer_proxy').removeClass('toggle_selected');
         }
-        if (scope.showing_metadata) {
+        if ($.scope.showing_metadata) {
             $('#viewer_toggle_metadata').addClass('toggle_selected').addClass('toggle_extended');
         } else {
             $('#viewer_toggle_metadata').removeClass('toggle_selected').removeClass('toggle_extended');
         }
-        if (scope.showing_copies) {
+        if ($.scope.showing_copies) {
             $('#viewer_toggle_copies').addClass('toggle_selected').addClass('toggle_extended');
         } else {
             $('#viewer_toggle_copies').removeClass('toggle_selected').removeClass('toggle_extended');
@@ -249,34 +254,34 @@ $(function() {
     };
 
     var show_check = function() {
-        var thumb = $('img.thumb')[scope.focus];
+        var thumb = $('img.thumb')[$.scope.focus];
         var url = thumb.getAttribute('data-check-url');
         $('#viewer_overlay').css('background-image', 'url(' + url + ')');
-        scope.mode = 'check';
+        $.scope.mode = 'check';
         sync_overlay_buttons();
     };
 
     var show_proxy = function() {
-        var thumb = $('img.thumb')[scope.focus];
+        var thumb = $('img.thumb')[$.scope.focus];
         var url = thumb.getAttribute('data-proxy-url');
         $('#viewer_overlay').css('background-image', 'url(' + url + ')');
-        scope.mode = 'proxy';
+        $.scope.mode = 'proxy';
         sync_overlay_buttons();
     };
 
     var toggle_metadata = function(showing_metadata) {
         if (showing_metadata === undefined) {
-            scope.showing_metadata = !scope.showing_metadata;
+            $.scope.showing_metadata = !$.scope.showing_metadata;
         } else {
-            scope.showing_metadata = showing_metadata;
+            $.scope.showing_metadata = showing_metadata;
         }
-        if (scope.showing_metadata) {
-            scope.showing_copies = false;
+        if ($.scope.showing_metadata) {
+            $.scope.showing_copies = false;
             $('#viewer_copies').fadeOut();
         }
         sync_overlay_buttons();
-        if (scope.showing_metadata === true) {
-            var thumb = $('img.thumb')[scope.focus];
+        if ($.scope.showing_metadata) {
+            var thumb = $('img.thumb')[$.scope.focus];
             var url = thumb.getAttribute('data-self-url');
             $('#viewer_metadata').fadeIn();
             $('#viewer_metadata_content').html('loading...');
@@ -336,31 +341,39 @@ $(function() {
     };
 
     var toggle_copies = function() {
-        scope.showing_copies = !scope.showing_copies;
-        if (scope.showing_copies) {
-            scope.showing_metadata = false;
+        $.scope.showing_copies = !$.scope.showing_copies;
+        if ($.scope.showing_copies) {
+            $.scope.showing_metadata = false;
             $('#viewer_metadata').fadeOut();
         }
         sync_overlay_buttons();
-        if (scope.showing_copies === true) {
-            var thumb = $('img.thumb')[scope.focus];
+        if ($.scope.showing_copies) {
+            var thumb = $('img.thumb')[$.scope.focus];
             var url = thumb.getAttribute('data-self-url');
             $('#viewer_copies').fadeIn();
             $('#viewer_copies_content').html('loading...');
             $.ajax({
                 url: url,
                 success: function(data) {
-                    $('#viewer_copies_content').html('');
+                    $('#viewer_copies_content').html('<table id="copies"><thead>' +
+                                                     '<th>store</th>' +
+                                                     '<th>purpose</th>' +
+                                                     '<th>source</th>' +
+                                                     '<th>mimetype</th>' +
+                                                     '<th>size</th>' +
+                                                     '<th>geometry</th>' +
+                                                     '<th></th>' +
+                                                     '</thead><tbody></tbody><table>');
 
                     var has_original = false,
                         has_proxy = false,
                         has_raw = false,
                         has_flickr = false;
 
-                    var button = function(key, style, callback) {
-                        var id = 'copy_' + key;
+                    var action = function(key, title, callback) {
+                        var id = 'action_' + key;
                         $('#viewer_copies_content')
-                            .append('<div class="viewer_make_copy_button ' + style + '" id="' + id + '">' + key + '</div>');
+                            .append('<div class="viewer_action_button" id="' + id + '">' + title + '</div>');
 
                         if (callback) {
                             $('#' + id).click(callback);
@@ -372,29 +385,67 @@ $(function() {
                             .append('<h2>' + title + '</h2>');
                     }
 
-                    var link = function(title, url) {
-                        $('#viewer_copies_content')
-                            .append('<a href="' + url + '">' + title + '</a></br>');
+                    var link = function(v, url) {
+                        var
+                            source = '',
+                            geometry = '',
+                            show = '';
+                        if (v.source_purpose !== null) {
+                            source = v.source_purpose + '/' + v.source_version;
+                        }
+                        if (v.height !== null) {
+                            geometry = v.height + 'x' + v.width;
+                        }
+                        if (v.purpose === 'proxy' || v.purpose === 'check') {
+                            var id = 'use_' + v.purpose + '_' + v.version;
+                            show = '<span id="' + id + '">&gt;&gt;&gt;</span>';
+                        }
+                        $('#copies tbody')
+                            .append('<tr>' +
+                                    '<td>' + v.store + '</td>' +
+                                    '<td><a href="' + url + '">' + v.purpose + '/' + v.version + '</a></td>' +
+                                    '<td>' + source + '</td>' +
+                                    '<td>' + (v.mime_type || 'unknown') + '</td>' +
+                                    '<td>' + (v.size || '?') + '</td>' +
+                                    '<td>' + geometry + '</td>' +
+                                    '<td>' + show + '</td>' +
+                                    '</tr>');
+                        if (v.purpose === 'proxy' || v.purpose === 'check') {
+                            var id = 'use_' + v.purpose + '_' + v.version;
+                            $('#' + id)
+                                .click(function() {
+                                    $('#viewer_overlay').css('background-image', 'url(' + url + ')');
+                                    $.scope.mode = v.purpose;
+                                    sync_overlay_buttons();
+                                });
+                        }
                     }
 
-                    header('files');
+                    var backup_row = function(b) {
+                        if (b.source_purpose !== null) {
+                            source = b.source_purpose + '/' + b.source_version;
+                        }
+                        $('#copies tbody')
+                            .append('<tr>' +
+                                    '<td>' + b.method + '</td>' +
+                                    '<td>' + b.key + '</td>' +
+                                    '<td>' + source + '</td>' +
+                                    '<td></td>' +
+                                    '<td></td>' +
+                                    '<td></td>' +
+                                    '</tr>');
+                    };
+
                     $.each(data.variants, function(index, variant) {
                         if (variant.purpose === 'original') { has_original = true; }
                         if (variant.purpose === 'proxy') { has_proxy = true; }
                         if (variant.purpose === 'raw') { has_raw = true; }
 
-                        if (variant.purpose === variant.source_purpose && variant.version === variant.source_version) {
-                            link(variant.purpose + '/' + variant.version, data.urls[variant.purpose][variant.version]);
-                        } else {
-                            link(variant.purpose + '/' + variant.version + ' (of ' +
-                                 variant.source_purpose + '/' + variant.source_version + ')',
-                                 data.urls[variant.purpose][variant.version]);
-                        }
+                        link(variant, data.urls[variant.purpose][variant.version]);
                     });
 
-                    header('actions');
                     if (has_original) {
-                        button('proxy', 'none', function() {
+                        action('proxy', 'create new proxy', function() {
                             $.ajax({
                                 url: '/plugin/imageproxy/trig',
                                 method: 'post',
@@ -404,16 +455,16 @@ $(function() {
                                     entry_id: data.id,
                                 }),
                                 success: function(data) {
-                                    $('#copy_proxy').html('creating');
+                                    $('#action_proxy').html('creating');
                                 },
                                 error: function(data) {
-                                    $('#copy_proxy').html('error');
+                                    $('#action_proxy').html('error');
                                 },
                             });
                         });
                     }
                     if (!has_raw) {
-                        button('raw', 'none', function() {
+                        action('raw', 'fetch raw file', function() {
                             $.ajax({
                                 url: '/plugin/rawfetch/trig',
                                 method: 'post',
@@ -423,10 +474,10 @@ $(function() {
                                     entry_id: data.id,
                                 }),
                                 success: function(data) {
-                                    $('#copy_raw').html('fetching');
+                                    $('#action_raw').html('fetching');
                                 },
                                 error: function(data) {
-                                    $('#copy_raw').html('error');
+                                    $('#action_raw').html('error');
                                 },
                             });
                         });
@@ -436,9 +487,10 @@ $(function() {
                         if (backup.method === 'flickr') {
                             has_flickr = true;
                         }
+                        backup_row(backup);
                     });
 
-                    button('flickr', has_flickr ? 'next' : 'none', function() {
+                    action('flickr', has_flickr ? 'replace on flickr' : 'publish to flickr', function() {
                         $.ajax({
                             url: '/plugin/flickr/trig',
                             method: 'post',
@@ -448,10 +500,28 @@ $(function() {
                                 entry_id: data.id,
                             }),
                             success: function(data) {
-                                $('#copy_flickr').html('sent');
+                                $('#action_flickr').html('sent');
                             },
                             error: function(data) {
-                                $('#copy_flickr').html('error');
+                                $('#action_flickr').html('error');
+                            },
+                        });
+                    });
+
+                    action('amend', 'amend entry', function() {
+                        $.ajax({
+                            url: '/plugin/amend/trig',
+                            method: 'post',
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                '*schema': 'AmendOptions',
+                                entry_id: data.id,
+                            }),
+                            success: function(data) {
+                                $('#action_amend').fadeOut(400);
+                            },
+                            error: function(data) {
+                                $('#action_amend').html('error');
                             },
                         });
                     });
@@ -466,8 +536,8 @@ $(function() {
 
     };
 
-    $('#viewer_keep').click(function() { keep(scope.focus); });
-    $('#viewer_purge').click(function() { purge(scope.focus); });
+    $('#viewer_keep').click(function() { keep($.scope.focus); });
+    $('#viewer_purge').click(function() { purge($.scope.focus); });
     $('#viewer_toggle_metadata').click(function() { toggle_metadata(); });
     $('#viewer_toggle_copies').click(function() { toggle_copies(); });
     $('#viewer_check').click(function() { show_check(); });
@@ -485,32 +555,38 @@ $(function() {
                 } else if (event.which === 39) { // right
                     update_focus({move: +1});
                     event.preventDefault();
+                } else if (event.which === 38) { // up
+                    update_focus({move: -10});
+                    event.preventDefault();
+                } else if (event.which === 40) { // down
+                    update_focus({move: +10});
+                    event.preventDefault();
                 } else if (event.which === 36) { // home
                     update_focus({focus: 0});
                     event.preventDefault();
-                    } else if (event.which === 35) { // end
-                        update_focus({focus: -1});
-                        event.preventDefault();
-                } else if (scope.showing_viewer === false) {
+                } else if (event.which === 35) { // end
+                    update_focus({focus: -1});
+                    event.preventDefault();
+                } else if (!$.scope.showing_viewer) {
                     if (event.which === 27) { // escape
                         back_to_index();
                         event.preventDefault();
                     } else if (event.which === 13) { // return
-                        var thumb = $('img.thumb')[scope.focus];
+                        var thumb = $('img.thumb')[$.scope.focus];
                         show_viewer({
                             proxy_url: thumb.getAttribute('data-proxy-url'),
                         });
                         event.preventDefault();
                     }
-                } else if (scope.showing_viewer === true) {
+                } else if ($.scope.showing_viewer) {
                     if (event.which === 38) { // up
                         event.preventDefault();
                     } else if (event.which === 40) { // down
                         event.preventDefault();
                     } else if (event.which === 27) { // escape
-                        if (scope.showing_metadata === true) {
+                        if ($.scope.showing_metadata) {
                             toggle_metadata();
-                        } else if (scope.showing_copies === true) {
+                        } else if ($.scope.showing_copies) {
                             toggle_copies();
                         } else {
                             hide_viewer();
@@ -520,9 +596,9 @@ $(function() {
                     } else if (event.which === 70) { // f
                         toggle_copies();
                     } else if (event.which === 75) { // k
-                        keep(scope.focus);
+                        keep($.scope.focus);
                     } else if (event.which === 88) { // x
-                        purge(scope.focus);
+                        purge($.scope.focus);
                     } else if (event.which === 80) { // p
                         show_proxy();
                     } else if (event.which === 67) { // c

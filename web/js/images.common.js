@@ -6,4 +6,15 @@ $(function() {
         return defer;
     };
 
+    $.scroll_to = function(id, offset) {
+        var
+            element = $(id),
+            offset = offset || 0;
+        if (element.length) {
+            $('html, body').animate({
+                scrollTop: $(element).offset().top - offset,
+            }, 300);
+        }
+    };
+
 });
