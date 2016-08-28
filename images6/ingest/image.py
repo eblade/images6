@@ -4,6 +4,7 @@ import re
 import exifread
 from datetime import datetime
 from jsonobject import PropertySet, Property, register_schema
+from PIL import Image
 
 from ..system import current_system
 from ..importer import GenericImportModule, register_import_module
@@ -68,6 +69,8 @@ class JPEGImportModule(GenericImportModule):
 
         if self.new:
             metadata = JPEGMetadata(**(self.analyse()))
+            if metadata.Copyright == '[]':
+                metadata.Copyright = None
             self.fix_taken_ts(metadata)
             logging.debug('Read metadata.')
 
@@ -112,6 +115,9 @@ class JPEGImportModule(GenericImportModule):
         filecopy.run()
         self.full_original_file_path = filecopy.destination
         original.size = os.path.getsize(filecopy.destination)
+        img = Image.open(filecopy.destination)
+        original.width, original.height = img.size
+        img.close()
         self.entry.variants.append(original)
 
     def fix_taken_ts(self, metadata):
