@@ -64,7 +64,7 @@ class JPEGImportModule(GenericImportModule):
             logging.debug('Created entry.\n%s', self.entry.to_json())
             self.new = True
 
-        self.create_original()
+        original = self.create_original()
         logging.debug('Created original.')
 
         if self.new:
@@ -81,7 +81,10 @@ class JPEGImportModule(GenericImportModule):
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
-        options = ImageProxyOptions(entry_id=self.entry.id)
+        options = ImageProxyOptions(
+            entry_id=self.entry.id,
+            source_purpose=original.purpose,
+        )
         trig_plugin('imageproxy', options)
         logging.debug('Created image proxy task.')
 
@@ -103,6 +106,8 @@ class JPEGImportModule(GenericImportModule):
             if raw is not None:
                 original.source_purpose = Purpose.raw
                 original.source_version = raw.version
+                original.purpose = Purpose.derivative
+                original.store = 'derivative'
         filecopy = FileCopy(
             source=self.full_source_file_path,
             destination=os.path.join(
@@ -119,6 +124,7 @@ class JPEGImportModule(GenericImportModule):
         original.width, original.height = img.size
         img.close()
         self.entry.variants.append(original)
+        return original
 
     def fix_taken_ts(self, metadata):
         real_date = metadata.DateTimeOriginal

@@ -366,6 +366,7 @@ $(function() {
                                                      '</thead><tbody></tbody><table>');
 
                     var has_original = false,
+                        has_derivative = false,
                         has_proxy = false,
                         has_raw = false,
                         has_flickr = false;
@@ -440,8 +441,9 @@ $(function() {
                         if (variant.purpose === 'original') { has_original = true; }
                         if (variant.purpose === 'proxy') { has_proxy = true; }
                         if (variant.purpose === 'raw') { has_raw = true; }
+                        if (variant.purpose === 'derivative') { has_derivative = true; }
 
-                        link(variant, data.urls[variant.purpose][variant.version]);
+                        link(variant, data.urls[variant.purpose][variant.version] + "?download=yes");
                     });
 
                     if (has_original) {
@@ -453,6 +455,7 @@ $(function() {
                                 data: JSON.stringify({
                                     '*schema': 'ImageProxyOptions',
                                     entry_id: data.id,
+                                    source_purpose: has_derivative ? 'derivative' : 'original',
                                 }),
                                 success: function(data) {
                                     $('#action_proxy').html('creating');

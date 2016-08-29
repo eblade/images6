@@ -118,7 +118,7 @@ class Variant(PropertySet):
     size = Property(int)
     purpose = Property(enum=Purpose, default=Purpose.original)
     source_purpose = Property(enum=Purpose)
-    version = Property(int)
+    version = Property(int, default=0)
     source_version = Property(int, default=0)
     width = Property(int)
     height = Property(int)
