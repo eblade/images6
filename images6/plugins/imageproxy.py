@@ -48,8 +48,10 @@ class ImageProxyPlugin(GenericPlugin):
 
         if payload.angle is not None:
             angle = payload.angle
-        else:
+        elif self.source is Purpose.original:
             angle = self.entry.metadata.Angle
+        else:
+            angle = 0
 
         if payload.mirror is not None:
             mirror = payload.mirror
