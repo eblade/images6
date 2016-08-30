@@ -38,12 +38,12 @@ class FlickrPlugin(GenericPlugin):
         flickr = flickrapi.FlickrAPI(api_key=self.key, secret=self.secret)
         flickr.authenticate_via_browser(perms='write')
 
-        self.source = self.entry.get_variant(payload.source_purpose, version=payload.source_version)
+        self.source = entry.get_variant(payload.source_purpose, version=payload.source_version)
 
         if flickr_backup is None:
             logging.debug('Uploading to flickr')
             response = flickr.upload(
-                filename=os.path.join(current_system().media_root, self.source.get_filename(self.entry.id)),
+                filename=os.path.join(current_system().media_root, self.source.get_filename(entry.id)),
                 title=payload.title or entry.title or '',
                 description=payload.description or entry.description or '',
                 is_public=payload.is_public,

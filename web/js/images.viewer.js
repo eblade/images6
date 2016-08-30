@@ -501,6 +501,7 @@ $(function() {
                             data: JSON.stringify({
                                 '*schema': 'FlickrOptions',
                                 entry_id: data.id,
+                                source_purpose: has_derivative ? 'derivative' : 'original',
                             }),
                             success: function(data) {
                                 $('#action_flickr').html('sent');
