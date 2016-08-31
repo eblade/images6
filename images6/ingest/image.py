@@ -107,6 +107,7 @@ class JPEGImportModule(GenericImportModule):
                 original.source_purpose = Purpose.raw
                 original.source_version = raw.version
                 original.purpose = Purpose.derivative
+                original.version = self.entry.get_next_version(Purpose.dervitive)
                 original.store = 'derivative'
         filecopy = FileCopy(
             source=self.full_source_file_path,
@@ -178,6 +179,7 @@ class JPEGImportModule(GenericImportModule):
 
 register_import_module('image/jpeg', JPEGImportModule)
 register_import_module('image/tiff', JPEGImportModule)
+register_import_module('image/png', JPEGImportModule)
 
 
 class JPEGMetadata(PropertySet):

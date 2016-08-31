@@ -148,7 +148,7 @@ def import_job(folder):
         ImportJob.imported = 0
         ImportJob.failed = 0
 
-        scanner = FolderScanner(folder.path, extensions=['.jpg', '.jpeg'])
+        scanner = FolderScanner(folder.path, extensions=['.jpg', '.jpeg', '.png', '.tiff'])
         for filepath in scanner.scan():
             if not folder.is_known(filepath):
                 folder.add_to_import(filepath)
