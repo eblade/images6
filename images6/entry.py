@@ -135,9 +135,9 @@ class Variant(PropertySet):
 
     def get_extension(self):
         if self.mime_type == 'image/jpeg':
-            return 'jpg'
+            return '.jpg'
         elif self.purpose is Purpose.raw:
-            return self.mime_type.split('/')[1]
+            return '.' + self.mime_type.split('/')[1]
         else:
             extensions = mimetypes.guess_all_extensions(self.mime_type)
             if len(extensions) == 0:
@@ -149,7 +149,7 @@ class Variant(PropertySet):
         extension = self.get_extension()
         hex_id = '%08x' % (id)
         version = '_%i'  % self.version if self.version > 0 else ''
-        filename = hex_id + version + '.' + extension
+        filename = hex_id + version + extension
         return os.path.join(self.store, filename)
 
 
