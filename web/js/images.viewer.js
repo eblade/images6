@@ -362,6 +362,8 @@ $(function() {
                                                      '<th>mimetype</th>' +
                                                      '<th>size</th>' +
                                                      '<th>geometry</th>' +
+                                                     '<th>angle</th>' +
+                                                     '<th>mirror</th>' +
                                                      '<th></th>' +
                                                      '</thead><tbody></tbody><table>');
 
@@ -390,6 +392,8 @@ $(function() {
                         var
                             source = '',
                             geometry = '',
+                            angle = '',
+                            mirror = '',
                             show = '';
                         if (v.source_purpose !== null) {
                             source = v.source_purpose + '/' + v.source_version;
@@ -401,6 +405,12 @@ $(function() {
                             var id = 'use_' + v.purpose + '_' + v.version;
                             show = '<span id="' + id + '">&gt;&gt;&gt;</span>';
                         }
+                        if (v.angle !== null) {
+                            angle = v.angle;
+                        }
+                        if (v.mirror !== null) {
+                            mirror = v.mirror;
+                        }
                         $('#copies tbody')
                             .append('<tr>' +
                                     '<td>' + v.store + '</td>' +
@@ -409,6 +419,8 @@ $(function() {
                                     '<td>' + (v.mime_type || 'unknown') + '</td>' +
                                     '<td>' + (v.size || '?') + '</td>' +
                                     '<td>' + geometry + '</td>' +
+                                    '<td>' + angle + '</td>' +
+                                    '<td>' + mirror + '</td>' +
                                     '<td>' + show + '</td>' +
                                     '</tr>');
                         if (v.purpose === 'proxy' || v.purpose === 'check') {

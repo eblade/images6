@@ -122,6 +122,13 @@ class Variant(PropertySet):
     source_version = Property(int, default=0)
     width = Property(int)
     height = Property(int)
+    angle = Property(int)
+    mirror = Property()
+    description = Property()
+
+    _patchable = 'description', 'angle', 'mirror', \
+                 'source_version', 'source_purpose', \
+                 'size', 'width', 'height'
 
     def __repr__(self):
         return '<Variant %s/%i (%s)>' % (self.purpose.value, self.version, self.mime_type)
@@ -179,6 +186,8 @@ class Entry(PropertySet):
     check_url = Property()
     raw_url = Property()
     derivative_url = Property()
+
+    _patchable = 'title', 'description'
 
     def get_variant(self, purpose, version=None):
         variants = [variant for variant in self.variants
@@ -400,8 +409,15 @@ def patch_entry_by_id(id, patch):
     entry = get_entry_by_id(id)
 
     for key, value in patch.items():
-        if key in ('title', 'description'):
+        if key in Entry._patchable:
             setattr(entry, key, value)
+        elif key == 'variants':
+            purpose = value['purpose']
+            version = value['version']
+            variant = entry.get_variant(purpose, version=version)
+            for key, value in value.items():
+                if key in Variant._patchable:
+                    setattr(variant, key, value)
 
     logging.info(entry.to_json())
     current_system().database.update(id, entry.to_dict())

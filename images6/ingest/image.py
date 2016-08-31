@@ -75,8 +75,9 @@ class JPEGImportModule(GenericImportModule):
             logging.debug('Read metadata.')
 
             self.entry.metadata = metadata
-
             self.entry.state = State.pending
+            original.angle = self.metadata.Angle
+            original.mirror = self.metadata.Mirror
 
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
@@ -108,6 +109,7 @@ class JPEGImportModule(GenericImportModule):
                 original.source_version = raw.version
                 original.purpose = Purpose.derivative
                 original.version = self.entry.get_next_version(Purpose.dervitive)
+                original.angle = 0
                 original.store = 'derivative'
         filecopy = FileCopy(
             source=self.full_source_file_path,
