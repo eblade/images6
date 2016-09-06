@@ -79,12 +79,12 @@ if __name__ == '__main__':
             port=system.server_port,
             server=system.server_adapter,
         )
-    
+
     elif command == 'select':
         from .select import select
         for line in select(args):
             print(line)
-    
+
     else:
 
         logging.error('unknown command "%s"', command)
