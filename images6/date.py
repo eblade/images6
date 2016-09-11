@@ -139,18 +139,18 @@ def get_dates(query=None):
 
     else:
         logging.info(query.to_query_string())
-        if query.year is not None:
-            query_str = '%04d-' % (query.year)
-        elif query.month is not None:
-            query_str = '%04d-%02d-' % \
-                (datetime.date.today().year, query.month)
-        elif query.month is None and query.year is None:
-            query_str = ''
+        if query.month is not None:
+            sk = (query.year, query.month)
+            ek = (query.year, query.month, None)
+        elif query.year is not None:
+            sk = (query.year, )
+            ek = (query.year, None)
         else:
-            query_str = '%04d-%02d-' % (query.year, query.month)
+            sk = None
+            ek = None
 
     dates = [Date.FromDict(date) for date
-             in current_system().database.get_dates(query_str)]
+             in current_system().date.view('by_date', startkey=sk, endkey=ek, expand=True)]
     [date.calculate_urls() for date in dates]
     return DateFeed(
         count=len(dates),
@@ -159,7 +159,8 @@ def get_dates(query=None):
 
 
 def get_date(date):
-    date = Date.FromDict(current_system().database.get_date_info(date))
+    k = int(x) for x in date.split('-')
+    date = Date.FromDict(current_system().date.view('by_date', key=k)
     date.calculate_urls()
     return date
 
