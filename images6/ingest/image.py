@@ -76,8 +76,8 @@ class JPEGImportModule(GenericImportModule):
 
             self.entry.metadata = metadata
             self.entry.state = State.pending
-            original.angle = self.metadata.Angle
-            original.mirror = self.metadata.Mirror
+            original.angle = self.entry.metadata.Angle
+            original.mirror = self.entry.metadata.Mirror
 
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
