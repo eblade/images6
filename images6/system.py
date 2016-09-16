@@ -58,14 +58,35 @@ class System:
         self.server_adapter = self.config['Server'].get('adapter', 'cherrypy')
 
     def setup_database(self):
+        def sum_per(field, values):
+            result = {}
+            for value in values:
+                v = value.get(field)
+                if v in result:
+                    result[v] += 1
+                else:
+                    result[v] = 1
+            result['total'] = len(values)
+            return result
+
         self.entry_root = os.path.join(self.root, 'entry')
         self.entry = jsondb.Database(self.entry_root)
-        self.entry.define('by_taken_ts', lambda o: (o['taken_ts'], None))
-        self.entry.define('by_date', lambda o: (o['taken_ts'][10:], None))
+        self.entry.define(
+            'by_taken_ts',
+            lambda o: (o['taken_ts'], None)
+        )
+        self.entry.define(
+            'by_date',
+            lambda o: (o['taken_ts'][:10], {'state': o['state']}),
+            lambda keys, values, rereduce: sum_per('state', values)
+        )
 
         self.date_root = os.path.join(self.root, 'date')
         self.date = jsondb.Database(self.date_root)
-        self.date.define('by_date', lambda o: (o['date'], None))
+        self.date.define(
+            'by_date',
+            lambda o: (o['date'], None)
+        )
 
     def setup_plugins(self):
         self.plugin_workers = self.config['Plugin'].getint('workers')

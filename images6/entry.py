@@ -334,7 +334,7 @@ def get_entries(query=None):
     if date is None:
         entry_data = current_system().entry.view(
             'by_date',
-            expand_docs=True
+            include_docs=True
         )
         before = None
         after = None
@@ -349,7 +349,7 @@ def get_entries(query=None):
         entry_data = current_system().entry.view(
             'by_date',
             key=(date.year, date.month, date.day),
-            expand_docs=True
+            include_docs=True
         )
         before = None
         after = None

@@ -130,9 +130,9 @@ $(function() {
                     var date_css = 'index_normal';
                     if (date.count === 0) {
                         date_css = 'index_empty';
-                    } else if (date.count_per_state.pending > 0) {
+                    } else if (date.stats.pending > 0) {
                         date_css = 'index_pending';
-                    } else if (date.count_per_state.purge > 0) {
+                    } else if (date.stats.purge > 0) {
                         date_css = 'index_purge';
                     }
                     if (date.short) {

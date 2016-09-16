@@ -57,6 +57,14 @@ class App:
 ############
 
 
+class DateStats(PropertySet):
+    new = Property(int, none=0)
+    pending = Property(int, none=0)
+    keep = Property(int, none=0)
+    purge = Property(int, none=0)
+    total = Property(int, none=0)
+
+
 class Date(PropertySet):
     date = Property()
     short = Property()
@@ -64,7 +72,7 @@ class Date(PropertySet):
     mimetype = Property(default='text/plain')
 
     count = Property(int, default=0, calculated=True)
-    count_per_state = Property(dict, calculated=True)
+    stats = Property(DateStats, calculated=True)
     entries = Property(dict, calculated=True)
 
     self_url = Property(calculated=True)
@@ -74,30 +82,8 @@ class Date(PropertySet):
         self.self_url = App.BASE + '/' + self.date
         self.date_url = '/entry?date=' + self.date
 
-        n_all = 0
-        n_new = 0
-        n_pending = 0
-        n_keep = 0
-        n_purge = 0
-
-        for entry, state in self.entries.items():
-            n_all += 1
-            if state == 'new':
-                n_new += 1
-            elif state == 'pending':
-                n_pending += 1
-            elif state == 'keep':
-                n_keep += 1
-            elif state == 'purge':
-                n_purge += 1
-
-        self.count = n_all
-        self.count_per_state = {
-            'new': n_new,
-            'pending': n_pending,
-            'keep': n_keep,
-            'purge': n_purge,
-        }
+        if self.stats is not None:
+            self.count = self.stats.total
 
 
 class DateFeed(PropertySet):
@@ -141,16 +127,28 @@ def get_dates(query=None):
         logging.info(query.to_query_string())
         if query.month is not None:
             sk = (query.year, query.month)
-            ek = (query.year, query.month, None)
+            ek = (query.year, query.month, any)
         elif query.year is not None:
             sk = (query.year, )
-            ek = (query.year, None)
+            ek = (query.year, any)
         else:
             sk = None
-            ek = None
+            ek = any
 
-    dates = [Date.FromDict(date) for date
-             in current_system().date.view('by_date', startkey=sk, endkey=ek, include_docs=True)]
+    date_stats = [(date['key'], DateStats.FromDict(date['value'])) for date
+                  in current_system().entry.view('by_date', startkey=sk, endkey=ek, group=True)]
+    date_infos = {data.get('date'): Date.FromDict(date['doc']) for date
+                  in current_system().date.view('by_date', startkey=sk, endkey=ek, include_docs=True)}
+    dates = []
+    for date_str, date_stat in date_stats:
+        try:
+            date = date_infos[date_str]
+            date.state = date_stat
+            dates.append(date)
+        except KeyError:
+            date = Date(date=date_str, stats=date_stat)
+            dates.append(date)
+
     [date.calculate_urls() for date in dates]
     return DateFeed(
         count=len(dates),
