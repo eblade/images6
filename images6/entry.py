@@ -177,16 +177,16 @@ class Entry(PropertySet):
     title = Property()
     description = Property()
 
-    urls = Property(dict)
-    state_url = Property()
+    urls = Property(dict, calculated=True)
+    state_url = Property(calculated=True)
 
-    self_url = Property()
-    original_url = Property()
-    thumb_url = Property()
-    proxy_url = Property()
-    check_url = Property()
-    raw_url = Property()
-    derivative_url = Property()
+    self_url = Property(calculated=True)
+    original_url = Property(calculated=True)
+    thumb_url = Property(calculated=True)
+    proxy_url = Property(calculated=True)
+    check_url = Property(calculated=True)
+    raw_url = Property(calculated=True)
+    derivative_url = Property(calculated=True)
 
     _patchable = 'title', 'description'
 
@@ -259,7 +259,7 @@ class EntryFeed(PropertySet):
     date = Property()
     previous_date = Property()
     next_date = Property()
-    entries = Property(list)
+    entries = Property(Entry, is_list=True)
 
 
 class EntryQuery(PropertySet):
@@ -358,8 +358,8 @@ def get_entries(query=None):
     for entry in entries:
         entry.calculate_urls()
     return EntryFeed(
-        date=date,
-        count=len(entries),
+        date=date.isoformat(),
+        count=len(entry_data),
         offset=offset,
         entries=entries,
         #total_count=current_system().entry.count(),
