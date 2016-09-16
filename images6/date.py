@@ -150,7 +150,7 @@ def get_dates(query=None):
             ek = None
 
     dates = [Date.FromDict(date) for date
-             in current_system().date.view('by_date', startkey=sk, endkey=ek, expand=True)]
+             in current_system().date.view('by_date', startkey=sk, endkey=ek, include_docs=True)]
     [date.calculate_urls() for date in dates]
     return DateFeed(
         count=len(dates),
@@ -159,8 +159,8 @@ def get_dates(query=None):
 
 
 def get_date(date):
-    k = int(x) for x in date.split('-')
-    date = Date.FromDict(current_system().date.view('by_date', key=k)
+    k = [int(x) for x in date.split('-')]
+    date = Date.FromDict(current_system().date.view('by_date', key=k))
     date.calculate_urls()
     return date
 

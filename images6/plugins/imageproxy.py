@@ -34,6 +34,7 @@ class ImageProxyPlugin(GenericPlugin):
         logging.info('Options\n%s', payload.to_json())
 
         self.entry = get_entry_by_id(payload.entry_id)
+        logging.info('Entry\n%s', self.entry.to_json())
         self.system = current_system()
 
         self.source = self.entry.get_variant(payload.source_purpose, version=payload.source_version)

@@ -60,12 +60,12 @@ class System:
     def setup_database(self):
         self.entry_root = os.path.join(self.root, 'entry')
         self.entry = jsondb.Database(self.entry_root)
-        self.entry.define('by_taken_ts', lambda o: {o['taken_ts']: None})
-        self.entry.define('by_date', lambda o: {o['taken_ts'][10:]: None})
+        self.entry.define('by_taken_ts', lambda o: (o['taken_ts'], None))
+        self.entry.define('by_date', lambda o: (o['taken_ts'][10:], None))
 
         self.date_root = os.path.join(self.root, 'date')
         self.date = jsondb.Database(self.date_root)
-        self.date.define('by_date', lambda o: {o['date']: None})
+        self.date.define('by_date', lambda o: (o['date'], None))
 
     def setup_plugins(self):
         self.plugin_workers = self.config['Plugin'].getint('workers')

@@ -162,7 +162,8 @@ class Backup(PropertySet):
 
 
 class Entry(PropertySet):
-    id = Property(int)
+    id = Property(int, name='_id')
+    revision = Property(name='_rev')
     mime_type = Property()
     original_filename = Property()
     import_folder = Property()
@@ -319,7 +320,7 @@ class StateQuery(PropertySet):
 def get_entries(query=None):
     if query is None:
         offset = 0
-        page_size = 25
+        page_size = 100
         date = None
         delta = 0
 
@@ -331,7 +332,10 @@ def get_entries(query=None):
         delta = query.delta
 
     if date is None:
-        entry_data = current_system().database.get_page(offset, page_size)
+        entry_data = current_system().entry.view(
+            'by_date',
+            expand_docs=True
+        )
         before = None
         after = None
 
@@ -342,32 +346,40 @@ def get_entries(query=None):
             date = (int(part) for part in date.split('-', 2))
             date = datetime.date(*date)
         date += datetime.timedelta(days=delta)
-        before, entry_data, after = \
-            current_system().database.get_day(date.isoformat())
+        entry_data = current_system().entry.view(
+            'by_date',
+            key=(date.year, date.month, date.day),
+            expand_docs=True
+        )
+        before = None
+        after = None
 
-    entries = [Entry.FromDict(entry) for entry in entry_data]
+    entries = [Entry.FromDict(entry.get('doc')) for entry in entry_data]
     for entry in entries:
         entry.calculate_urls()
     return EntryFeed(
         date=date,
-        count=len(entry_data),
+        count=len(entries),
         offset=offset,
         entries=entries,
-        total_count=current_system().database.count(),
+        #total_count=current_system().entry.count(),
         previous_date=before,
         next_date=after,
     )
 
 
 def get_entry_by_id(id):
-    entry = Entry.FromDict(current_system().database.get(id))
+    entry = Entry.FromDict(current_system().entry.get(id))
     entry.calculate_urls()
     return entry
 
 
-def update_entry_by_id(id, ed):
-    current_system().database.update(id, ed.to_dict())
-    return get_entry_by_id(id)
+def update_entry_by_id(id, entry):
+    entry.id = id
+    logging.debug('Updating entry to\n%s', entry.to_json())
+    entry = Entry.FromDict(current_system().entry.save(entry.to_dict()))
+    logging.debug('Updated entry to\n%s', entry.to_json())
+    return entry
 
 
 def update_entry_state(id, query):
@@ -394,7 +406,7 @@ def patch_entry_metadata_by_id(id, patch):
     metadata = wrap_dict(metadata_dict)
     entry.metadata = metadata
     logging.debug(entry.to_json())
-    current_system().database.update(id, entry.to_dict())
+    current_system().entry.save(id, entry.to_dict())
 
     if 'Angle' in patch:
         options = get_schema('ImageProxyOptions')()
@@ -420,21 +432,19 @@ def patch_entry_by_id(id, patch):
                     setattr(variant, key, value)
 
     logging.info(entry.to_json())
-    current_system().database.update(id, entry.to_dict())
+    current_system().entry.save(id, entry.to_dict())
     return get_entry_by_id(id)
 
 
 def create_entry(ed):
-    id = current_system().database.next_id()
-    ed.id = id
     if ed.taken_ts is None:
         ed.taken_ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    current_system().database.create(id, ed.to_dict())
-    return get_entry_by_id(id)
+    logging.debug('Create entry\n%s', ed.to_json())
+    return Entry.FromDict(current_system().entry.save(ed.to_dict()))
 
 
 def delete_entry_by_id(id):
-    current_system().database.delete(id)
+    current_system().entry.delete(id)
 
 
 def download(id, store, version, extension):
@@ -454,17 +464,17 @@ def download(id, store, version, extension):
 def download_latest(id, store, extension):
     download = bottle.request.query.download == 'yes'
     entry = get_entry_by_id(id)
-    choicen = None
+    chosen = None
     for variant in entry.variants:
         if variant.store == store and variant.get_extension() == extension:
-            if choicen is None:
-                choicen = variant
-            elif choicen.version < variant.version:
-                choicen = variant
+            if chosen is None:
+                chosen = variant
+            elif chosen.version < variant.version:
+                chosen = variant
 
-    if choicen is not None:
+    if chosen is not None:
         return bottle.static_file(
-            choicen.get_filename(id),
+            chosen.get_filename(id),
             download=download,
             root=current_system().media_root
         )

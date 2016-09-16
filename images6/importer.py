@@ -12,7 +12,6 @@ from threading import Thread, Event, Lock
 
 from .web import ResourceBusy
 from .system import current_system
-from .entry import Entry, create_entry, update_entry_by_id
 from .localfile import FolderScanner
 
 
@@ -185,7 +184,6 @@ def import_job(folder):
             folder.add_imported(file_path)
             logging.debug("Imported %s", full_path)
 
-        current_system().database.sort()
         ImportJob.status = 'done'
 
     except Exception as e:
