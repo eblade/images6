@@ -63,12 +63,12 @@ class Date(PropertySet):
     full = Property()
     mimetype = Property(default='text/plain')
 
-    count = Property(int, default=0)
-    count_per_state = Property(dict)
-    entries = Property(dict)
+    count = Property(int, default=0, calculated=True)
+    count_per_state = Property(dict, calculated=True)
+    entries = Property(dict, calculated=True)
 
-    self_url = Property()
-    date_url = Property()
+    self_url = Property(calculated=True)
+    date_url = Property(calculated=True)
 
     def calculate_urls(self):
         self.self_url = App.BASE + '/' + self.date
@@ -102,7 +102,7 @@ class Date(PropertySet):
 
 class DateFeed(PropertySet):
     count = Property(int)
-    entries = Property(list)
+    entries = Property(Date, is_list=True)
 
 
 class DateQuery(PropertySet):
