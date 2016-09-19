@@ -91,7 +91,7 @@ $(function() {
         $(feed_div)
             .html('');
         $.ajax({
-            url: 'date',
+            url: 'date?reverse=yes',
             success: function(data) {
                 var
                     last_month = "",
@@ -141,12 +141,14 @@ $(function() {
                                     '<div id="' + day_id +
                                         '" data-date="' + date.date +
                                         '" class="index_date_block ' + date_css + '">' + day + '</div>' +
-                                    '<div class="index_date_short">' + date.short + '</div></div>');
+                                    '<div class="index_date_short">' + date.stats.total + ' - ' + date.short + '</div></div>');
                     } else {
                         $(feed_div)
-                            .append('<div id="' + day_id +
+                            .append('<div class="index_date_wrapper">' +
+                                    '<div id="' + day_id +
                                     '" data-date="' + date.date +
-                                    '" class="index_date_block ' + date_css + '">' + day + '</div>');
+                                    '" class="index_date_block ' + date_css + '">' + day + '</div>' +
+                                    '<div class="index_date_short">' + date.stats.total + '</div></div>');
                     }
                     $(feed_div)
                         .find('#' + day_id)

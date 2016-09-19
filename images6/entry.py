@@ -228,7 +228,7 @@ class Entry(PropertySet):
         for variant in self.variants:
             if not variant.purpose.value in self.urls.keys():
                 self.urls[variant.purpose.value] = {}
-            url = '%s/%i/dl/%s/%i.%s' % (
+            url = '%s/%i/dl/%s/%i%s' % (
                 App.BASE,
                 self.id,
                 variant.store,
@@ -268,6 +268,7 @@ class EntryQuery(PropertySet):
     page_size = Property(int, default=25, required=True)
     date = Property()
     delta = Property(int, default=0)
+    reverse = Property(bool, default=False)
 
     @classmethod
     def FromRequest(self):
@@ -283,6 +284,8 @@ class EntryQuery(PropertySet):
             eq.date = bottle.request.query.date
         if bottle.request.query.delta not in (None, ''):
             eq.delta = int(bottle.request.query.delta)
+        if bottle.request.query.reverse not in (None, ''):
+            eq.reverse = (bottle.request.query.reverse == 'yes')
 
         return eq
 
@@ -294,6 +297,7 @@ class EntryQuery(PropertySet):
                 ('page_size', self.page_size),
                 ('date', self.date),
                 ('delta', str(self.delta)),
+                ('reverse', 'yes' if self.reverse else 'no'),
             )
         )
 
@@ -323,6 +327,7 @@ def get_entries(query=None):
         page_size = 100
         date = None
         delta = 0
+        reverse = False
 
     else:
         logging.info(query.to_query_string())
@@ -330,10 +335,11 @@ def get_entries(query=None):
         page_size = query.page_size
         date = query.date
         delta = query.delta
+        reverse = query.reverse
 
     if date is None:
         entry_data = current_system().entry.view(
-            'by_date',
+            'by_taken_ts',
             include_docs=True
         )
         before = None
@@ -347,8 +353,9 @@ def get_entries(query=None):
             date = datetime.date(*date)
         date += datetime.timedelta(days=delta)
         entry_data = current_system().entry.view(
-            'by_date',
-            key=(date.year, date.month, date.day),
+            'by_taken_ts',
+            startkey=(date.year, date.month, date.day),
+            endkey=(date.year, date.month, date.day, any),
             include_docs=True
         )
         before = None
@@ -359,9 +366,9 @@ def get_entries(query=None):
         entry.calculate_urls()
     return EntryFeed(
         date=date.isoformat(),
-        count=len(entry_data),
+        count=len(entries),
         offset=offset,
-        entries=entries,
+        entries=entries if not reverse else list(reversed(entries)),
         #total_count=current_system().entry.count(),
         previous_date=before,
         next_date=after,
@@ -400,13 +407,12 @@ def update_entry_state(id, query):
 def patch_entry_metadata_by_id(id, patch):
     entry = get_entry_by_id(id)
     logging.debug('Metadata Patch for %d: \n%s', id, json.dumps(patch, indent=2))
-
     metadata_dict = entry.metadata.to_dict()
     metadata_dict.update(patch)
     metadata = wrap_dict(metadata_dict)
     entry.metadata = metadata
     logging.debug(entry.to_json())
-    current_system().entry.save(id, entry.to_dict())
+    current_system().entry.save(entry.to_dict())
 
     if 'Angle' in patch:
         options = get_schema('ImageProxyOptions')()
@@ -432,7 +438,7 @@ def patch_entry_by_id(id, patch):
                     setattr(variant, key, value)
 
     logging.info(entry.to_json())
-    current_system().entry.save(id, entry.to_dict())
+    current_system().entry.save(entry.to_dict())
     return get_entry_by_id(id)
 
 
@@ -451,7 +457,7 @@ def download(id, store, version, extension):
     download = bottle.request.query.download == 'yes'
     entry = get_entry_by_id(id)
     for variant in entry.variants:
-        if variant.store == store and variant.version == version and variant.get_extension() == extension:
+        if variant.store == store and variant.version == version and variant.get_extension() == '.' + extension:
             return bottle.static_file(
                 variant.get_filename(id),
                 download=download,
@@ -466,7 +472,7 @@ def download_latest(id, store, extension):
     entry = get_entry_by_id(id)
     chosen = None
     for variant in entry.variants:
-        if variant.store == store and variant.get_extension() == extension:
+        if variant.store == store and variant.get_extension() == '.' + extension:
             if chosen is None:
                 chosen = variant
             elif chosen.version < variant.version:

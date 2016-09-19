@@ -299,7 +299,7 @@ $(function() {
                     var srow = function(key, value, patch_key, in_metadata, valid_values) {
                         value = value === null ? '' : value;
                         var
-                            url = '/entry/' + data.id + (in_metadata ? '/metadata' : ''),
+                            url = '/entry/' + data._id + (in_metadata ? '/metadata' : ''),
                             id = 'autosave_' + patch_key;
                         $('#viewer_metadata_content')
                             .append('<div class="viewer_metadata_key">' + key + '</div>' +
@@ -311,7 +311,7 @@ $(function() {
                             return valid_values.indexOf(value) !== -1;
                         } : undefined);
                     };
-                    row('ID', data.id);
+                    row('ID', data._id);
                     srow('Title', data.title, 'title', false);
                     srow('Description', data.description, 'description', false);
                     srow('Artist', data.metadata.Artist, 'Artist', true);
@@ -466,7 +466,7 @@ $(function() {
                                 contentType: "application/json",
                                 data: JSON.stringify({
                                     '*schema': 'ImageProxyOptions',
-                                    entry_id: data.id,
+                                    entry_id: data._id,
                                     source_purpose: has_derivative ? 'derivative' : 'original',
                                 }),
                                 success: function(data) {
@@ -486,7 +486,7 @@ $(function() {
                                 contentType: "application/json",
                                 data: JSON.stringify({
                                     '*schema': 'RawFetchOptions',
-                                    entry_id: data.id,
+                                    entry_id: data._id,
                                 }),
                                 success: function(data) {
                                     $('#action_raw').html('fetching');
@@ -512,7 +512,7 @@ $(function() {
                             contentType: "application/json",
                             data: JSON.stringify({
                                 '*schema': 'FlickrOptions',
-                                entry_id: data.id,
+                                entry_id: data._id,
                                 source_purpose: has_derivative ? 'derivative' : 'original',
                             }),
                             success: function(data) {
@@ -531,7 +531,7 @@ $(function() {
                             contentType: "application/json",
                             data: JSON.stringify({
                                 '*schema': 'AmendOptions',
-                                entry_id: data.id,
+                                entry_id: data._id,
                             }),
                             success: function(data) {
                                 $('#action_amend').fadeOut(400);

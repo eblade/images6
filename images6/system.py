@@ -73,19 +73,27 @@ class System:
         self.entry = jsondb.Database(self.entry_root)
         self.entry.define(
             'by_taken_ts',
-            lambda o: (o['taken_ts'], None)
+            lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')) + (o['taken_ts'][11:],), None)
+        )
+        self.entry.define(
+            'state_by_date',
+            lambda o: (o['taken_ts'][:10], {'state': o['state']}),
+            lambda keys, values, rereduce: sum_per('state', values)
         )
         self.entry.define(
             'by_date',
-            lambda o: (o['taken_ts'][:10], {'state': o['state']}),
-            lambda keys, values, rereduce: sum_per('state', values)
+            lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')), None)
+        )
+        self.entry.define(
+            'by_state',
+            lambda o: (o['state'], None)
         )
 
         self.date_root = os.path.join(self.root, 'date')
         self.date = jsondb.Database(self.date_root)
         self.date.define(
             'by_date',
-            lambda o: (o['date'], None)
+            lambda o: (o['_id'], None)
         )
 
     def setup_plugins(self):

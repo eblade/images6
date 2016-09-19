@@ -66,7 +66,9 @@ class DateStats(PropertySet):
 
 
 class Date(PropertySet):
-    date = Property()
+    id = Property(name='_id')
+    rev = Property(name='_rev')
+    date = Property(calculated=True)
     short = Property()
     full = Property()
     mimetype = Property(default='text/plain')
@@ -79,6 +81,8 @@ class Date(PropertySet):
     date_url = Property(calculated=True)
 
     def calculate_urls(self):
+        if self.date is None:
+            self.date = self.id
         self.self_url = App.BASE + '/' + self.date
         self.date_url = '/entry?date=' + self.date
 
@@ -94,6 +98,7 @@ class DateFeed(PropertySet):
 class DateQuery(PropertySet):
     year = Property(int)
     month = Property(int)
+    reverse = Property(bool, default=False)
 
     @classmethod
     def FromRequest(self):
@@ -103,6 +108,8 @@ class DateQuery(PropertySet):
             q.year = bottle.request.query.year
         if bottle.request.query.month not in (None, ''):
             q.month = bottle.request.query.month
+        if bottle.request.query.reverse not in (None, ''):
+            q.reverse = (bottle.request.query.reverse == 'yes')
 
         return q
 
@@ -111,6 +118,7 @@ class DateQuery(PropertySet):
             (
                 ('year', str(self.year) or ''),
                 ('month', str(self.month) or ''),
+                ('reverse', 'yes' if self.reverse else 'no'),
             )
         )
 
@@ -122,6 +130,7 @@ class DateQuery(PropertySet):
 def get_dates(query=None):
     if query is None:
         query_str = ''
+        reverse = False
 
     else:
         logging.info(query.to_query_string())
@@ -134,16 +143,17 @@ def get_dates(query=None):
         else:
             sk = None
             ek = any
+        reverse = query.reverse
 
     date_stats = [(date['key'], DateStats.FromDict(date['value'])) for date
-                  in current_system().entry.view('by_date', startkey=sk, endkey=ek, group=True)]
-    date_infos = {data.get('date'): Date.FromDict(date['doc']) for date
+                  in current_system().entry.view('state_by_date', startkey=sk, endkey=ek, group=True)]
+    date_infos = {date.get('key'): Date.FromDict(date['doc']) for date
                   in current_system().date.view('by_date', startkey=sk, endkey=ek, include_docs=True)}
     dates = []
     for date_str, date_stat in date_stats:
         try:
             date = date_infos[date_str]
-            date.state = date_stat
+            date.stats = date_stat
             dates.append(date)
         except KeyError:
             date = Date(date=date_str, stats=date_stat)
@@ -152,22 +162,24 @@ def get_dates(query=None):
     [date.calculate_urls() for date in dates]
     return DateFeed(
         count=len(dates),
-        entries=dates,
+        entries=dates if not reverse else list(reversed(dates)),
     )
 
 
 def get_date(date):
-    k = [int(x) for x in date.split('-')]
-    date = Date.FromDict(current_system().date.view('by_date', key=k))
+    try:
+        date = Date.FromDict(current_system().date[date])
+    except KeyError:
+        date = Date(date=date)
     date.calculate_urls()
     return date
 
 
 def update_date(date, date_info):
+    date_info.id = date
     date_info.calculate_urls()
     date_info = date_info.to_dict()
-    current_system().database.update_date_info(date, date_info)
-    return get_date(date)
+    return current_system().date.save(date_info)
 
 
 def patch_date(date, patch):
@@ -178,8 +190,8 @@ def patch_date(date, patch):
         if key in ('short', 'full'):
             setattr(date_info, key, value)
 
-    return update_date(date, date_info)
+    return Date.FromDict(update_date(date, date_info))
 
 
 def delete_date(date):
-    current_system().database.delete_date_info(date)
+    current_system().date.delete(date)
