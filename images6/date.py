@@ -67,7 +67,7 @@ class DateStats(PropertySet):
 
 class Date(PropertySet):
     id = Property(name='_id')
-    rev = Property(name='_rev')
+    revision = Property(name='_rev')
     date = Property(calculated=True)
     short = Property()
     full = Property()
