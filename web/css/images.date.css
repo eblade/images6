@@ -94,6 +94,15 @@ img.thumb {
     border: 4pt solid #333;
 }
 
+img.thumb_selected {
+    border-style: dashed !important;
+    border-bottom-color: white !important;
+}
+
+img.thumb_focused {
+    border-color: white !important;
+}
+
 img.date_state_pending {
     border-color: #248 !important;
 }
@@ -102,6 +111,3 @@ img.date_state_purge {
     border-color: #f43 !important;
 }
 
-img.date_selected {
-    border-color: white !important;
-}

@@ -253,12 +253,8 @@ class Entry(PropertySet):
 class EntryFeed(PropertySet):
     count = Property(int)
     total_count = Property(int)
-    prev_link = Property()
-    next_link = Property()
     offset = Property(int)
     date = Property()
-    previous_date = Property()
-    next_date = Property()
     entries = Property(Entry, is_list=True)
 
 
@@ -342,8 +338,6 @@ def get_entries(query=None):
             'by_taken_ts',
             include_docs=True
         )
-        before = None
-        after = None
 
     else:
         if date == 'today':
@@ -358,8 +352,6 @@ def get_entries(query=None):
             endkey=(date.year, date.month, date.day, any),
             include_docs=True
         )
-        before = None
-        after = None
 
     entries = [Entry.FromDict(entry.get('doc')) for entry in entry_data]
     for entry in entries:
@@ -369,9 +361,6 @@ def get_entries(query=None):
         count=len(entries),
         offset=offset,
         entries=entries if not reverse else list(reversed(entries)),
-        #total_count=current_system().entry.count(),
-        previous_date=before,
-        next_date=after,
     )
 
 

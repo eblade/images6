@@ -7,7 +7,7 @@ $(function() {
         showing_viewer: false,
         showing_metadata: false,
         showing_copies: false,
-        mode:  'proxy',
+        mode: 'proxy',
         date: null,
     };
 
@@ -27,25 +27,11 @@ $(function() {
             success: function(data) {
                 date = data.date;
                 $.scope.date = date;
-                if (data.next_date !== null) {
-                    next = { date: data.next_date };
-                } else {
-                    next = { date: date, delta: 1 };
-                }
-                if (data.previous_date !== null) {
-                    previous = { date: data.previous_date };
-                } else {
-                    previous = { date: date, delta: -1 };
-                }
                 $('#date_feed')
                     .html('');
                 $('#date_this')
                     .html(date)
                     .click(function() { load_date({'date': 'today', 'delta': '0'}); });
-                $('#date_prev')
-                    .click(function() { load_date(previous); });
-                $('#date_next')
-                    .click(function() { load_date(next); });
                 $('#date_back')
                     .click(function() { back_to_index(); });
                 $('#date_purge')
@@ -126,14 +112,18 @@ $(function() {
                         animate: false,
                     });
                 }
-                $(thumb).addClass('date_selected');
+                $(thumb).addClass('thumb_focused');
                 $('#day_view').animate({
                     top: -$(thumb).position().top + 270,
                 }, 200);
             } else {
-                $(thumb).removeClass('date_selected');
+                $(thumb).removeClass('thumb_focused');
             }
         });
+    };
+
+    var toggle_select = function() {
+        $('.thumb:eq(' + $.scope.focus + ')').toggleClass('thumb_selected');
     };
 
     var purge_pending = function() {
@@ -552,6 +542,18 @@ $(function() {
 
     };
 
+    $('#button_select_all').click(function() {
+        $('.thumb').each(function(index, thumb) {
+            $(thumb).addClass('thumb_selected');
+        });
+    });
+
+    $('#button_select_none').click(function() {
+        $('.thumb').each(function(index, thumb) {
+            $(thumb).removeClass('thumb_selected');
+        });
+    });
+
     $('#viewer_keep').click(function() { keep($.scope.focus); });
     $('#viewer_purge').click(function() { purge($.scope.focus); });
     $('#viewer_toggle_metadata').click(function() { toggle_metadata(); });
@@ -582,6 +584,9 @@ $(function() {
                     event.preventDefault();
                 } else if (event.which === 35) { // end
                     update_focus({focus: -1});
+                    event.preventDefault();
+                } else if (event.which === 83) { // space
+                    toggle_select();
                     event.preventDefault();
                 } else if (!$.scope.showing_viewer) {
                     if (event.which === 27) { // escape
