@@ -80,9 +80,9 @@ $(function() {
                         $('#date_details')
                             .append('<span class="viewer_state_label toggle_state_pending">' + data.stats.pending + ' pending</span>');
                     }
-                    if (data.stats.keep > 0) {
+                    if (data.stats.purge > 0) {
                         $('#date_details')
-                            .append('<span class="viewer_state_label toggle_state_keep">' + data.stats.keep + ' to keep</span>');
+                            .append('<span class="viewer_state_label toggle_state_purge">' + data.stats.purge + ' to purge</span>');
                     }
                     if (data.stats.todo > 0) {
                         $('#date_details')
