@@ -162,6 +162,7 @@ $(function() {
                     method: 'PUT',
                     success: function(data) {
                         thumb.setAttribute('data-state', 'purge');
+                        load_date_info($.scope.date);
                     },
                     error: function(data) {
                         alert("Unabled to purge " + id);
@@ -231,12 +232,10 @@ $(function() {
         } else {
             $('#viewer_final').removeClass('toggle_state_final');
         }
-        if ($.scope.mode === 'proxy') {
-            $('#viewer_proxy').addClass('toggle_selected');
-            $('#viewer_check').removeClass('toggle_selected');
-        } else if ($.scope.mode === 'check') {
+        if ($.scope.mode === 'check') {
             $('#viewer_check').addClass('toggle_selected');
-            $('#viewer_proxy').removeClass('toggle_selected');
+        } else {
+            $('#viewer_check').removeClass('toggle_selected');
         }
         if ($.scope.showing_metadata) {
             $('#viewer_toggle_metadata').addClass('toggle_selected').addClass('toggle_extended');
@@ -273,19 +272,16 @@ $(function() {
         });
     };
 
-    var show_check = function() {
+    var toggle_check = function() {
         var thumb = $('img.thumb')[$.scope.focus];
-        var url = thumb.getAttribute('data-check-url');
+        if ($.scope.mode === 'check') {
+            var url = thumb.getAttribute('data-proxy-url');
+            $.scope.mode = 'proxy';
+        } else {
+            var url = thumb.getAttribute('data-check-url');
+            $.scope.mode = 'check';
+        }
         $('#viewer_overlay').css('background-image', 'url(' + url + ')');
-        $.scope.mode = 'check';
-        sync_overlay_buttons();
-    };
-
-    var show_proxy = function() {
-        var thumb = $('img.thumb')[$.scope.focus];
-        var url = thumb.getAttribute('data-proxy-url');
-        $('#viewer_overlay').css('background-image', 'url(' + url + ')');
-        $.scope.mode = 'proxy';
         sync_overlay_buttons();
     };
 
@@ -591,8 +587,7 @@ $(function() {
     $('#viewer_final').click(function() { set_state($.scope.focus, 'final'); });
     $('#viewer_toggle_metadata').click(function() { toggle_metadata(); });
     $('#viewer_toggle_copies').click(function() { toggle_copies(); });
-    $('#viewer_check').click(function() { show_check(); });
-    $('#viewer_proxy').click(function() { show_proxy(); });
+    $('#viewer_check').click(function() { toggle_check(); });
     $('#viewer_close').click(function() { hide_viewer(); });
 
     var bind_keys = function() {
@@ -653,10 +648,8 @@ $(function() {
                         keep($.scope.focus);
                     } else if (event.which === 88) { // x
                         purge($.scope.focus);
-                    } else if (event.which === 80) { // p
-                        show_proxy();
                     } else if (event.which === 67) { // c
-                        show_check();
+                        toggle_check();
                     }
                 }
             }
