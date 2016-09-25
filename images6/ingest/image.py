@@ -108,7 +108,7 @@ class JPEGImportModule(GenericImportModule):
                 original.source_purpose = Purpose.raw
                 original.source_version = raw.version
                 original.purpose = Purpose.derivative
-                original.version = self.entry.get_next_version(Purpose.dervitive)
+                original.version = self.entry.get_next_version(Purpose.derivative)
                 original.angle = 0
                 original.store = 'derivative'
         filecopy = FileCopy(
