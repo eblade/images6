@@ -104,26 +104,26 @@ img.thumb_focused {
 }
 
 img.date_state_pending {
-    border-color: #248 !important;
+    border-color: #248;
 }
 
 img.date_state_purge {
-    border-color: #f43 !important;
+    border-color: #f43;
 }
 
 img.date_state_keep {
-    border-color: #444 !important;
+    border-color: #444;
 }
 
 img.date_state_todo {
-    border-color: #248 !important;
+    border-color: #248;
 }
 
 img.date_state_wip {
-    border-color: #288 !important;
+    border-color: #288;
 }
 
 img.date_state_final {
-    border-color: #284 !important;
+    border-color: #284;
 }
 
