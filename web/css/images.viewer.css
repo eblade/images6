@@ -90,13 +90,34 @@
     width: 56pt;
 }
 
+.toggle_state_pending {
+    background-color: rgb(150, 150, 150);
+}
+
 .toggle_state_purge {
     background-color: #843;
     border-color: #843;
 }
 
 .toggle_state_keep {
+    background-color: #444;
+}
+
+.toggle_state_todo {
+    background-color: #248;
+}
+
+.toggle_state_wip {
+    background-color: #288;
+}
+
+.toggle_state_final {
     background-color: #284;
+}
+
+.viewer_state_label {
+    padding: 3pt;
+    margin-left: 3pt;
 }
 
 .viewer_metadata_key {

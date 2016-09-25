@@ -95,6 +95,9 @@ class State(EnumProperty):
     new = 'new'
     pending = 'pending'
     keep = 'keep'
+    todo = 'todo'
+    final = 'final'
+    wip = 'wip'
     purge = 'purge'
 
 

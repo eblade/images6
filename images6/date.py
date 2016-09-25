@@ -62,6 +62,9 @@ class DateStats(PropertySet):
     pending = Property(int, none=0)
     keep = Property(int, none=0)
     purge = Property(int, none=0)
+    todo = Property(int, none=0)
+    wip = Property(int, none=0)
+    final = Property(int, none=0)
     total = Property(int, none=0)
 
 
@@ -167,12 +170,19 @@ def get_dates(query=None):
 
 
 def get_date(date):
+    logging.info(date)
     try:
-        date = Date.FromDict(current_system().date[date])
+        result = Date.FromDict(current_system().date[date])
     except KeyError:
-        date = Date(date=date)
-    date.calculate_urls()
-    return date
+        result = Date(date=date)
+
+    try:
+        result.stats = DateStats.FromDict(list(current_system().entry.view('state_by_date', key=date, group=True))[0]['value'])
+    except IndexError:
+        result.stats = DateStats()
+
+    result.calculate_urls()
+    return result
 
 
 def update_date(date, date_info):

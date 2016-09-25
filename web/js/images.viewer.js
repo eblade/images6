@@ -36,21 +36,9 @@ $(function() {
                     .click(function() { back_to_index(); });
                 $('#date_purge')
                     .click(function() { purge_pending(); });
-                $('#date_details')
-                    .html(data.count + (data.count === 1 ? ' entry' : ' entries'));
                 $.Images.autosave('#date_info_short');
                 $.Images.autosave('#date_info_full');
-                $.ajax({
-                    url: '/date/' + date,
-                    success: function(data) {
-                        $('#date_info_short').val(data.short);
-                        $('#date_info_short')[0].setAttribute('data-url', '/date/' + date);
-                        $('#date_info_full').html(data.full);
-                        $('#date_info_full')[0].setAttribute('data-url', '/date/' + date);
-                    },
-                    error: function(data) {
-                    },
-                })
+                load_date_info(date);
                 $.each(data.entries, function(index, entry) {
                     $('#date_feed')
                         .append('<img data-self-url="' + entry.self_url +
@@ -75,6 +63,44 @@ $(function() {
                 $.scope.total_count = data.count;
             },
         });
+    };
+
+    var load_date_info = function (date) {
+        $.ajax({
+            url: '/date/' + date,
+            success: function(data) {
+                $('#date_info_short').val(data.short);
+                $('#date_info_short')[0].setAttribute('data-url', '/date/' + date);
+                $('#date_info_full').html(data.full);
+                $('#date_info_full')[0].setAttribute('data-url', '/date/' + date);
+                $('#date_details')
+                    .html(data.count + (data.count === 1 ? ' entry' : ' entries'));
+                if (data.stats) {
+                    if (data.stats.pending > 0) {
+                        $('#date_details')
+                            .append('<span class="viewer_state_label toggle_state_pending">' + data.stats.pending + ' pending</span>');
+                    }
+                    if (data.stats.keep > 0) {
+                        $('#date_details')
+                            .append('<span class="viewer_state_label toggle_state_keep">' + data.stats.keep + ' to keep</span>');
+                    }
+                    if (data.stats.todo > 0) {
+                        $('#date_details')
+                            .append('<span class="viewer_state_label toggle_state_todo">' + data.stats.todo + ' todo</span>');
+                    }
+                    if (data.stats.wip > 0) {
+                        $('#date_details')
+                            .append('<span class="viewer_state_label toggle_state_wip">' + data.stats.wip + ' wip</span>');
+                    }
+                    if (data.stats.final > 0) {
+                        $('#date_details')
+                            .append('<span class="viewer_state_label toggle_state_final">' + data.stats.final + ' final</span>');
+                    }
+                }
+            },
+            error: function(data) {
+            },
+        })
     };
 
     var update_focus = function(params) {
@@ -172,6 +198,7 @@ $(function() {
     };
 
     var hide_viewer = function() {
+        load_date_info($.scope.date);
         $.scope.showing_viewer = false;
         $('#viewer_overlay').hide();
     };
@@ -188,6 +215,21 @@ $(function() {
             $('#viewer_purge').addClass('toggle_state_purge');
         } else {
             $('#viewer_purge').removeClass('toggle_state_purge');
+        }
+        if (state === 'todo') {
+            $('#viewer_todo').addClass('toggle_state_todo');
+        } else {
+            $('#viewer_todo').removeClass('toggle_state_todo');
+        }
+        if (state === 'wip') {
+            $('#viewer_wip').addClass('toggle_state_wip');
+        } else {
+            $('#viewer_wip').removeClass('toggle_state_wip');
+        }
+        if (state === 'final') {
+            $('#viewer_final').addClass('toggle_state_final');
+        } else {
+            $('#viewer_final').removeClass('toggle_state_final');
         }
         if ($.scope.mode === 'proxy') {
             $('#viewer_proxy').addClass('toggle_selected');
@@ -208,37 +250,25 @@ $(function() {
         }
     };
 
-    var keep = function(id) {
+    var set_state = function(id, new_state) {
         var thumb = $('img.thumb')[id];
         var url = thumb.getAttribute('data-state-url');
         $.ajax({
-            url: url + '?state=keep',
+            url: url + '?state=' + new_state,
             method: 'PUT',
             success: function(data) {
-                thumb.setAttribute('data-state', 'keep');
+                thumb.setAttribute('data-state', new_state);
                 sync_overlay_buttons();
                 $(thumb).removeClass('date_state_pending');
+                $(thumb).removeClass('date_state_purge');
+                $(thumb).removeClass('date_state_keep');
+                $(thumb).removeClass('date_state_todo');
+                $(thumb).removeClass('date_state_wip');
+                $(thumb).removeClass('date_state_final');
+                $(thumb).addClass('date_state_' + new_state);
             },
             error: function(data) {
-                alert("Unabled to keep " + id);
-            },
-        });
-    };
-
-    var purge = function(id) {
-        var thumb = $('img.thumb')[id];
-        var url = thumb.getAttribute('data-state-url');
-        $.ajax({
-            url: url + '?state=purge',
-            method: 'PUT',
-            success: function(data) {
-                thumb.setAttribute('data-state', 'purge');
-                sync_overlay_buttons();
-                $(thumb).removeClass('date_state_pending');
-                $(thumb).addClass('date_state_purge');
-            },
-            error: function(data) {
-                alert("Unabled to purge " + id);
+                alert("Unabled to set state for " + id);
             },
         });
     };
@@ -554,8 +584,11 @@ $(function() {
         });
     });
 
-    $('#viewer_keep').click(function() { keep($.scope.focus); });
-    $('#viewer_purge').click(function() { purge($.scope.focus); });
+    $('#viewer_keep').click(function() { set_state($.scope.focus, 'keep'); });
+    $('#viewer_purge').click(function() { set_state($.scope.focus, 'purge'); });
+    $('#viewer_todo').click(function() { set_state($.scope.focus, 'todo'); });
+    $('#viewer_wip').click(function() { set_state($.scope.focus, 'wip'); });
+    $('#viewer_final').click(function() { set_state($.scope.focus, 'final'); });
     $('#viewer_toggle_metadata').click(function() { toggle_metadata(); });
     $('#viewer_toggle_copies').click(function() { toggle_copies(); });
     $('#viewer_check').click(function() { show_check(); });

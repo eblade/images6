@@ -111,3 +111,19 @@ img.date_state_purge {
     border-color: #f43 !important;
 }
 
+img.date_state_keep {
+    border-color: #444 !important;
+}
+
+img.date_state_todo {
+    border-color: #248 !important;
+}
+
+img.date_state_wip {
+    border-color: #288 !important;
+}
+
+img.date_state_final {
+    border-color: #284 !important;
+}
+
