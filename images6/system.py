@@ -58,6 +58,8 @@ class System:
         self.server_adapter = self.config['Server'].get('adapter', 'cherrypy')
 
     def setup_database(self):
+        self.db = dict()
+
         def sum_per(field, values):
             result = {}
             for value in values:
@@ -70,31 +72,33 @@ class System:
             return result
 
         self.entry_root = os.path.join(self.root, 'entry')
-        self.entry = jsondb.Database(self.entry_root)
-        self.entry.define(
+        entry = jsondb.Database(self.entry_root)
+        entry.define(
             'by_taken_ts',
             lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')) + (o['taken_ts'][11:],), None)
         )
-        self.entry.define(
+        entry.define(
             'state_by_date',
             lambda o: (o['taken_ts'][:10], {'state': o['state']}),
             lambda keys, values, rereduce: sum_per('state', values)
         )
-        self.entry.define(
+        entry.define(
             'by_date',
             lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')), None)
         )
-        self.entry.define(
+        entry.define(
             'by_state',
             lambda o: (o['state'], None)
         )
+        self.db['entry'] = entry
 
         self.date_root = os.path.join(self.root, 'date')
-        self.date = jsondb.Database(self.date_root)
-        self.date.define(
+        date = jsondb.Database(self.date_root)
+        date.define(
             'by_date',
             lambda o: (o['_id'], None)
         )
+        self.db['date'] = date
 
     def setup_plugins(self):
         self.plugin_workers = self.config['Plugin'].getint('workers')

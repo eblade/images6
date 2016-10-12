@@ -149,9 +149,9 @@ def get_dates(query=None):
         reverse = query.reverse
 
     date_stats = [(date['key'], DateStats.FromDict(date['value'])) for date
-                  in current_system().entry.view('state_by_date', startkey=sk, endkey=ek, group=True)]
+                  in current_system().db['entry'].view('state_by_date', startkey=sk, endkey=ek, group=True)]
     date_infos = {date.get('key'): Date.FromDict(date['doc']) for date
-                  in current_system().date.view('by_date', startkey=sk, endkey=ek, include_docs=True)}
+                  in current_system().db['date'].view('by_date', startkey=sk, endkey=ek, include_docs=True)}
     dates = []
     for date_str, date_stat in date_stats:
         try:
@@ -172,12 +172,12 @@ def get_dates(query=None):
 def get_date(date):
     logging.info(date)
     try:
-        result = Date.FromDict(current_system().date[date])
+        result = Date.FromDict(current_system().db['date'][date])
     except KeyError:
         result = Date(date=date)
 
     try:
-        result.stats = DateStats.FromDict(list(current_system().entry.view('state_by_date', key=date, group=True))[0]['value'])
+        result.stats = DateStats.FromDict(list(current_system().db['entry'].view('state_by_date', key=date, group=True))[0]['value'])
     except IndexError:
         result.stats = DateStats()
 
@@ -189,7 +189,7 @@ def update_date(date, date_info):
     date_info.id = date
     date_info.calculate_urls()
     date_info = date_info.to_dict()
-    return current_system().date.save(date_info)
+    return current_system().db['date'].save(date_info)
 
 
 def patch_date(date, patch):
@@ -204,4 +204,4 @@ def patch_date(date, patch):
 
 
 def delete_date(date):
-    current_system().date.delete(date)
+    current_system().db['date'].delete(date)

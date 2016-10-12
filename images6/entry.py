@@ -337,7 +337,7 @@ def get_entries(query=None):
         reverse = query.reverse
 
     if date is None:
-        entry_data = current_system().entry.view(
+        entry_data = current_system().db['entry'].view(
             'by_taken_ts',
             include_docs=True
         )
@@ -349,7 +349,7 @@ def get_entries(query=None):
             date = (int(part) for part in date.split('-', 2))
             date = datetime.date(*date)
         date += datetime.timedelta(days=delta)
-        entry_data = current_system().entry.view(
+        entry_data = current_system().db['entry'].view(
             'by_taken_ts',
             startkey=(date.year, date.month, date.day),
             endkey=(date.year, date.month, date.day, any),
@@ -368,7 +368,7 @@ def get_entries(query=None):
 
 
 def get_entry_by_id(id):
-    entry = Entry.FromDict(current_system().entry.get(id))
+    entry = Entry.FromDict(current_system().db['entry'][id])
     entry.calculate_urls()
     return entry
 
@@ -376,7 +376,7 @@ def get_entry_by_id(id):
 def update_entry_by_id(id, entry):
     entry.id = id
     logging.debug('Updating entry to\n%s', entry.to_json())
-    entry = Entry.FromDict(current_system().entry.save(entry.to_dict()))
+    entry = Entry.FromDict(current_system().db['entry'].save(entry.to_dict()))
     logging.debug('Updated entry to\n%s', entry.to_json())
     return entry
 
@@ -404,7 +404,7 @@ def patch_entry_metadata_by_id(id, patch):
     metadata = wrap_dict(metadata_dict)
     entry.metadata = metadata
     logging.debug(entry.to_json())
-    current_system().entry.save(entry.to_dict())
+    current_system().db['entry'].save(entry.to_dict())
 
     if 'Angle' in patch:
         options = get_schema('ImageProxyOptions')()
@@ -430,7 +430,7 @@ def patch_entry_by_id(id, patch):
                     setattr(variant, key, value)
 
     logging.info(entry.to_json())
-    current_system().entry.save(entry.to_dict())
+    current_system().db['entry'].save(entry.to_dict())
     return get_entry_by_id(id)
 
 
@@ -438,11 +438,11 @@ def create_entry(ed):
     if ed.taken_ts is None:
         ed.taken_ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     logging.debug('Create entry\n%s', ed.to_json())
-    return Entry.FromDict(current_system().entry.save(ed.to_dict()))
+    return Entry.FromDict(current_system().db['entry'].save(ed.to_dict()))
 
 
 def delete_entry_by_id(id):
-    current_system().entry.delete(id)
+    current_system().db['entry'].delete(id)
 
 
 def download(id, store, version, extension):
