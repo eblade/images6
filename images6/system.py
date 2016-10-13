@@ -100,6 +100,19 @@ class System:
         )
         self.db['date'] = date
 
+        self.job_root = os.path.join(self.root, 'job')
+        job = jsondb.Datebase(self.job_root)
+        job.define(
+            'by_state',
+            lambda o: ((o['state'], o['release'], o['priority']), None),
+        )
+        job.define(
+            'stats',
+            lambda o: (None, {'state': o['state']}),
+            lambda keys, values, rereduce: sum_per('state', values),
+        )
+        self.db['job'] = job
+
     def setup_plugins(self):
         self.plugin_workers = self.config['Plugin'].getint('workers')
         self.plugin_config = {}
