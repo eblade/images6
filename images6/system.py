@@ -101,7 +101,7 @@ class System:
         self.db['date'] = date
 
         self.job_root = os.path.join(self.root, 'job')
-        job = jsondb.Datebase(self.job_root)
+        job = jsondb.Database(self.job_root)
         job.define(
             'by_state',
             lambda o: ((o['state'], o['release'], o['priority']), None),
