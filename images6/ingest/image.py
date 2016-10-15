@@ -27,8 +27,8 @@ from ..exif import(
     exif_int,
     exif_ratio,
 )
-from ..plugin import trig_plugin
-from ..plugins.imageproxy import ImageProxyOptions
+from ..job import Job, create_job
+from ..job.imageproxy import ImageProxyJob, ImageProxyOptions
 
 
 class JPEGImportModule(GenericImportModule):
@@ -82,12 +82,14 @@ class JPEGImportModule(GenericImportModule):
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
-        options = ImageProxyOptions(
-            entry_id=self.entry.id,
-            source_purpose=original.purpose,
+        job = ImageProxyJob(
+            options=ImageProxyOptions(
+                entry_id=self.entry.id,
+                source_purpose=original.purpose,
+            )
         )
-        trig_plugin('imageproxy', options)
-        logging.debug('Created image proxy task.')
+        create_job(job)
+        logging.debug('Created image proxy job.')
 
     def clean_up(self):
         logging.debug('Cleaning up...')

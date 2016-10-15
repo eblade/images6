@@ -43,8 +43,9 @@ if __name__ == '__main__':
     from . import publish
     from .ingest import image
 
-    from . import plugin
-    from .plugins import flickr, raw, amend
+    from . import job
+    from .job import imageproxy
+    #from .job import flickr, raw, amend
 
     # Config
     system = System(args.config)

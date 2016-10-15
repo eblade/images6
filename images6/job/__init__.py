@@ -2,6 +2,7 @@ import logging
 import bottle
 import threading
 import time
+import jsondb
 
 from jsonobject import (
     PropertySet,
@@ -57,30 +58,61 @@ class App:
 
     @classmethod
     def run(self, **kwargs):
-        def service(**kwargs):
+        def doorman(**kwargs):
             with Pool(**kwargs) as pool:
                 App.pool = pool
                 while True:
                     new_job_ids = [d['id'] for d in current_system().db['job'].view(
                         'by_state',
                         startkey=('new', None, None),
-                        startkey=('new', any, any)
+                        endkey=('new', any, any)
                     )]
                     for job_id in new_job_ids:
                         job = Job.FromDict(current_system().db['job'][job_id])
-                        
+                        if job.state is State.new:
+                            job.state = State.acquired
+                            logging.info('Acquiring job %d', job.id)
+                            try:
+                                job = Job.FromDict(current_system().db['job'].save(job)
+                                logging.info('Acquired job %d', job.id)
+                            except jsondb.Conflict:
+                                continue
+                            if pool.spawn(dispatch, job, blocking=False):
+                                logging.info('Dispatch job %d', job.id)
+                            else:
+                                job.state = State.new
+                                Job.FromDict(current_system().db['job'].save(job)
+                                logging.info('Unacquired job %d', job.id)
                     time.sleep(1)
 
 
-        
         pool_thread = threading.Thread(
-            target=service,
+            target=doorman,
             name='job_pool',
             args=(),
             kwargs=kwargs,
         )
         pool_thread.daemon = True
         pool_thread.start()
+
+
+def dispatch(job):
+    try:
+        handler = get_job_handler_for_method(job.method)
+    except KeyError:
+        job.state = State.failed
+        job.message = 'Method %s is not supported' % str(job.method)
+        current_system().db['job'].save(job)
+        return
+
+    try:
+        handler.run(job)
+        job.state = State.done
+        current_system().db['job'].save(job)
+    except Exception as e:
+        job.state = State.failed
+        job.message = 'Job of type %s failed with %s:' % (str(job.method), e.__class__.__name__, str(e))
+        current_system().db['job'].save(job)
 
 
 # DESCRIPTOR
@@ -91,7 +123,7 @@ class State(EnumProperty):
     new = 'new'
     acquired = 'acquired'
     active = 'active'
-    ok = 'ok'
+    done = 'done'
     held = 'held'
     failed = 'failed'
 
@@ -101,6 +133,7 @@ class Job(PropertySet):
     revision = Property(name='_rev')
     method = Property(required=True)
     state = Property(enum=State, default=State.new)
+    message = Property()
     release = Property()
     options = Property(wrap=True)
 
@@ -116,7 +149,7 @@ class JobStats(PropertySet):
     new = Property(int, none=0)
     acquired = Property(int, none=0)
     active = Property(int, none=0)
-    ok = Property(int, none=0)
+    done = Property(int, none=0)
     held = Property(int, none=0)
     failed = Property(int, none=0)
     total = Property(int, none=0)
@@ -239,21 +272,27 @@ def patch_job_by_id(id, patch):
 
 
 
-# PLUGIN HANDLING
-#################
+# JOB HANDLING
+##############
 
-plugins = {}
+_handlers = {}
 
 
 def register_job_handler(module):
-    plugins[module.method] = module
+    if not hasattr(module, 'method'):
+        raise ValueError("Handler must support the method attribute")
+    if not hasattr(module, 'run') or not callable(module.run):
+        raise ValueError("Handler must support the run method")
+    if module.method in _handlers:
+        raise KeyError("Handler for method %s already registred" % module.method)
+    _handlers[module.method] = module
 
 
-def get_plugin(method):
-    return plugins[method]
+def get_job_handler_for_method(method):
+    return _handlers[method]
 
 
-class GenericJob(object):
+class GenericJobHandler(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key.replace(' ', '_'), value)
