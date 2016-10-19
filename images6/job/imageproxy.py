@@ -4,7 +4,7 @@ import logging
 from jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
-from ..plugin import GenericPlugin, register_plugin
+from ..job import JobHandler, register_job_handler
 from ..entry import (
     Entry,
     Variant,
@@ -26,18 +26,22 @@ class ImageProxyOptions(PropertySet):
 register_schema(ImageProxyOptions)
 
 
-class ImageProxyPlugin(GenericPlugin):
+class ImageProxyJobHandler(JobHandler):
+    Options = ImageProxyOptions
     method = 'imageproxy'
 
-    def run(self, payload):
+    def run(self, job):
         logging.info('Starting image proxy generation.')
-        logging.info('Options\n%s', payload.to_json())
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
+        logging.info('Job\n%s', job.to_json())
+        options = job.options
 
-        self.entry = get_entry_by_id(payload.entry_id)
+        self.entry = get_entry_by_id(options.entry_id)
         logging.info('Entry\n%s', self.entry.to_json())
         self.system = current_system()
 
-        self.source = self.entry.get_variant(payload.source_purpose, version=payload.source_version)
+        self.source = self.entry.get_variant(options.source_purpose, version=options.source_version)
 
         self.full_original_file_path = os.path.join(
             self.system.media_root,
@@ -47,21 +51,23 @@ class ImageProxyPlugin(GenericPlugin):
         logging.info('Full original file path is %s.',
                     self.full_original_file_path)
 
-        if payload.angle is not None:
-            angle = payload.angle
+        if options.angle is not None:
+            angle = options.angle
         elif self.source.angle is not None:
             angle = self.source.angle
-        elif self.source is Purpose.original:
+        elif self.source is Purpose.original and self.entry.metadata:
             angle = self.entry.metadata.Angle
         else:
             angle = 0
 
-        if payload.mirror is not None:
-            mirror = payload.mirror
+        if options.mirror is not None:
+            mirror = options.mirror
         elif self.source.mirror is not None:
             mirror = self.source.mirror
-        else:
+        elif self.entry.metadata:
             mirror = self.entry.metadata.Mirror
+        else:
+            mirror = 0
 
         self.create_variant(
             'thumb',
@@ -134,7 +140,7 @@ class ImageProxyPlugin(GenericPlugin):
         self.entry.variants.append(variant)
 
 
-register_plugin(ImageProxyPlugin)
+register_job_handler(ImageProxyJobHandler)
 
 
 

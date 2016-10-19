@@ -7,7 +7,7 @@ name_ = 'images'
 version_ = '6.0.0'
 packages_ = [
     'images6',
-    'images6.ingest',
+    'images6.job',
     'exifread',
     'exifread.tags',
     'exifread.tags.makernote',
@@ -37,7 +37,8 @@ setup(
         "pillow>=2.5.1",
         "cherrypy",
         "flickrapi",
-        "https://github.com/eblade/jsonobject/archive/v1.0.tar.gz",
+        "jsonobject",
+        "jsondb",
     ],
     classifiers=classifiers,
 )

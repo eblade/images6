@@ -58,7 +58,8 @@ class FolderScanner(object):
         logging.debug('Scanning for file-extensions %s', str(self.extensions))
 
     def scan(self):
-        for relative_path, directories, files in os.walk(self.basepath):
+        for relative_path, directories, files in os.walk(self.basepath, followlinks=True):
+            logging.debug('Scanning %s', relative_path)
             for f in files:
                 if self.extensions is None or any(map(lambda e: f.endswith(e), self.extensions)):
                     path = os.path.relpath(os.path.join(relative_path, f), self.basepath)

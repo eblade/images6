@@ -1,0 +1,308 @@
+import logging
+import bottle
+import threading
+import time
+import jsondb
+import urllib
+
+from jsonobject import (
+    PropertySet,
+    Property,
+    EnumProperty,
+    wrap_dict,
+    get_schema,
+)
+
+
+from ..multi import Pool
+from ..system import current_system
+
+from ..web import (
+    Create,
+    FetchById,
+    FetchByQuery,
+    PatchById,
+)
+
+
+# WEB
+#####
+
+
+class App:
+    BASE = '/job'
+
+    @classmethod
+    def create(self):
+        app = bottle.Bottle()
+
+        app.route(
+            path='/',
+            callback=FetchByQuery(get_jobs, QueryClass=JobQuery)
+        )
+        app.route(
+            path='/<id:int>',
+            callback=FetchById(get_job_by_id)
+        )
+        app.route(
+            path='/<id:int>',
+            method='PATCH',
+            callback=PatchById(patch_job_by_id),
+        )
+        app.route(
+            path='/',
+            method='POST',
+            callback=Create(create_job, Job),
+        )
+
+        return app
+
+    @classmethod
+    def run(self, **kwargs):
+        def doorman(**kwargs):
+            with Pool(**kwargs) as pool:
+                App.pool = pool
+                while True:
+                    new_job_ids = [d['id'] for d in current_system().db['job'].view(
+                        'by_state',
+                        startkey=('new', None, None),
+                        endkey=('new', any, any)
+                    )]
+                    for job_id in new_job_ids:
+                        job = Job.FromDict(current_system().db['job'][job_id])
+                        if job.state is State.new:
+                            job.state = State.acquired
+                            logging.info('Acquiring job %d', job.id)
+                            try:
+                                job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
+                                job.state = State.active
+                                job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
+                                logging.info('Acquired job %d', job.id)
+                            except jsondb.Conflict:
+                                continue
+                            if pool.spawn(dispatch, job, blocking=False):
+                                logging.info('Dispatched job %d', job.id)
+                            else:
+                                job.state = State.new
+                                Job.FromDict(current_system().db['job'].save(job.to_dict()))
+                                logging.info('Unacquired job %d', job.id)
+                                break
+                    time.sleep(1)
+
+
+        pool_thread = threading.Thread(
+            target=doorman,
+            name='job_pool',
+            args=(),
+            kwargs=kwargs,
+        )
+        pool_thread.daemon = True
+        pool_thread.start()
+
+
+def dispatch(job):
+    try:
+        Handler = get_job_handler_for_method(job.method)
+    except KeyError:
+        logging.error('Method %s is not supported', str(job.method))
+        job.state = State.failed
+        job.message = 'Method %s is not supported' % str(job.method)
+        current_system().db['job'].save(job.to_dict())
+        return
+
+    try:
+        config = current_system().job_config.get(job.method, dict())
+        Handler(**config).run(job)
+        job.state = State.done
+        current_system().db['job'].save(job.to_dict())
+    except Exception as e:
+        logging.error('Job of type %s failed with %s: %s', str(job.method), e.__class__.__name__, str(e))
+        job.state = State.failed
+        job.message = 'Job of type %s failed with %s: %s' % (str(job.method), e.__class__.__name__, str(e))
+        current_system().db['job'].save(job.to_dict())
+
+
+# DESCRIPTOR
+############
+
+
+class State(EnumProperty):
+    new = 'new'
+    acquired = 'acquired'
+    active = 'active'
+    done = 'done'
+    held = 'held'
+    failed = 'failed'
+
+
+class Job(PropertySet):
+    id = Property(int, name='_id')
+    revision = Property(name='_rev')
+    method = Property(required=True)
+    state = Property(enum=State, default=State.new)
+    priority = Property(int, default=1000)
+    message = Property()
+    release = Property()
+    options = Property(wrap=True)
+
+    self_url = Property(calculated=True)
+
+    _patchable = ('state', )
+
+    def calculate_urls(self):
+        self.self_url = '%s/%i' % (App.BASE, self.id)
+
+
+class JobStats(PropertySet):
+    new = Property(int, none=0)
+    acquired = Property(int, none=0)
+    active = Property(int, none=0)
+    done = Property(int, none=0)
+    held = Property(int, none=0)
+    failed = Property(int, none=0)
+    total = Property(int, none=0)
+
+
+class JobFeed(PropertySet):
+    count = Property(int)
+    total_count = Property(int)
+    offset = Property(int)
+    date = Property()
+    stats = Property(JobStats, calculated=True)
+    entries = Property(Job, is_list=True)
+
+
+class JobQuery(PropertySet):
+    prev_offset = Property(int)
+    offset = Property(int, default=0)
+    page_size = Property(int, default=25, required=True)
+    state = Property(enum=State)
+
+    @classmethod
+    def FromRequest(self):
+        eq = JobQuery()
+
+        if bottle.request.query.prev_offset not in (None, ''):
+            eq.prev_offset = bottle.request.query.prev_offset
+        if bottle.request.query.offset not in (None, ''):
+            eq.offset = bottle.request.query.offset
+        if bottle.request.query.page_size not in (None, ''):
+            eq.page_size = bottle.request.query.page_size
+        if bottle.request.query.state not in (None, ''):
+            eq.state = getattr(State, bottle.request.query.state)
+
+        return eq
+
+    def to_query_string(self):
+        return urllib.parse.urlencode(
+            (
+                ('prev_offset', self.prev_offset or ''),
+                ('offset', self.offset),
+                ('page_size', self.page_size),
+                ('state', str(self.state or '')),
+            )
+        )
+
+
+# API
+#####
+
+
+def get_jobs(query):
+    if query is None:
+        offset = 0
+        page_size = 25
+        state = None
+
+    else:
+        logging.info(query.to_query_string())
+        offset = query.offset
+        page_size = query.page_size
+        state = None if query.state is None else str(query.state)
+
+    data = current_system().db['job'].view(
+        'by_state',
+        startkey=(state, None, None),
+        endkey=(state or any, any, any),
+        include_docs=True,
+    )
+
+    stats = list(current_system().db['job'].view('stats', group=True))
+    stats = JobStats.FromDict(stats[0]['value']) if len(stats) else JobStats()
+
+    entries = []
+    for i, d in enumerate(data):
+        if i < offset:
+            continue
+        elif i > offset + page_size:
+            break
+        entries.append(Job.FromDict(d['doc']))
+
+    return JobFeed(
+        offset=offset,
+        count=len(entries),
+        total_count=stats.total,
+        page_size=page_size,
+        stats=stats,
+        entries=entries,
+    )
+
+
+def get_job_by_id(id):
+    job = Job.FromDict(current_system().db['job'][id])
+    job.calculate_urls()
+    return job
+
+
+def create_job(job):
+    if job.method is None:
+        raise bottle.HTTPError(400, 'Missing parameter "method".')
+    job.state = State.new
+    job._id = None
+    job._rev = None
+    job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
+    logging.debug('Created job\n%s', job.to_json())
+    return job
+
+
+def patch_job_by_id(id, patch):
+    logging.debug('Patch job %d: \n%s', id, json.dumps(patch, indent=2))
+    job = get_job_by_id(id)
+    for key, value in patch.items():
+        if key in Job._patchable:
+            setattr(job, key, value)
+
+    job = Job.FromDict(current_system().db['entry'].save(entry.to_dict()))
+    return job
+
+
+
+
+# JOB HANDLING
+##############
+
+_handlers = {}
+
+
+def register_job_handler(module):
+    if not hasattr(module, 'method'):
+        raise ValueError("Handler must support the method attribute")
+    if not hasattr(module, 'run') or not callable(module.run):
+        raise ValueError("Handler must support the run method")
+    if module.method in _handlers:
+        raise KeyError("Handler for method %s already registred" % module.method)
+    _handlers[module.method] = module
+
+
+def get_job_handler_for_method(method):
+    return _handlers[method]
+
+
+class JobHandler(object):
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key.replace(' ', '_'), value)
+
+    def run(self, *args, **kwargs):
+        raise NotImplemented
+

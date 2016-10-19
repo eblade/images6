@@ -41,10 +41,10 @@ if __name__ == '__main__':
     from . import importer
     from . import deleter
     from . import publish
-    from .ingest import image
 
-    from . import plugin
-    from .plugins import flickr, raw, amend
+    from . import job
+    from .job import imageproxy, jpg, raw
+    #from .job import flickr, raw, amend
 
     # Config
     system = System(args.config)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
             importer,
             deleter,
             publish,
-            plugin,
+            job,
         ):
             logging.info(
                 "Setting up %s on %s..." % (module.__name__, module.App.BASE)
@@ -72,7 +72,7 @@ if __name__ == '__main__':
                 logging.info(
                     "Setting up %s backend..." % (module.__name__)
                 )
-                module.App.run(workers=system.plugin_workers)
+                module.App.run(workers=system.job_workers)
         logging.info("*** Done setting up apps.")
 
         # Serve the Web-App
@@ -86,6 +86,49 @@ if __name__ == '__main__':
         from .select import select
         for line in select(args):
             print(line)
+
+    elif command == 'amend':
+        dates = args
+        for date_s in dates:
+            print('Amending date %s...' % date_s)
+            d = entry.get_entries(entry.EntryQuery(date=date_s))
+            for e in d.entries:
+                print(' - Entry %d (%s) %s/%s' % (e.id, e.state.value, e.import_folder, e.original_filename))
+                if e.state is entry.State.pending:
+                    print('   - Entry is Pending')
+                    if e.original_filename.endswith('.DNG') or e.original_filename.endswith('.RAF'):
+                        print('   - Entry is Raw')
+                        jpg_filename = e.original_filename[:-4] + '.JPG'
+                        print('   - Look for JPG %s/%s' % (e.import_folder, jpg_filename))
+                        jpg = entry.get_entry_by_source(e.import_folder, jpg_filename)
+                        if jpg is None:
+                            print('   - Found no JPG Entry')
+                            print('     ---> Delete Raw Entry %d' % e.id)
+                            e.state = entry.State.purge
+                            entry.update_entry_by_id(e.id, e)
+                            continue
+                        print('   - Found JPG Entry %s (%s)' % (jpg.id, jpg.state.value))
+                        if jpg.get_filename(entry.Purpose.raw) is None:
+                            print('     ---> Copy metadata from JPG Entry %d into Raw Entry %d' % (jpg.id, e.id))
+                            e.metadata = jpg.metadata
+                            e.title = jpg.title
+                            e.description = jpg.description
+                            e.state = jpg.state
+                            entry.update_entry_by_id(e.id, e)
+                            print('     ---> Purge JPG Entry %d', jpg.id)
+                            jpg.state = entry.State.purge
+                            entry.update_entry_by_id(jpg.id, jpg)
+
+                        else:
+                            print('   - JPG Entry already has Raw file')
+                            print('     ---> Change source to %s' % e.original_filename)
+                            jpg.original_filename = e.original_filename
+                            entry.update_entry_by_id(jpg.id, jpg)
+                            print('     ---> Purge Raw Entry %d' % e.id)
+                            e.state = entry.State.purge
+                            entry.update_entry_by_id(e.id, e)
+                            continue
+
 
     else:
 

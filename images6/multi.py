@@ -58,9 +58,10 @@ class Pool(object):
                 self.resource.release()
                 logging.debug("Exit control thread for %s.", thread.name)
 
-    def spawn(self, worker, *args, **kwargs):
+    def spawn(self, worker, *args, blocking=True, **kwargs):
         logging.debug("Start spawn.")
-        self.resource.acquire()
+        if not self.resource.acquire(blocking=blocking):
+            return None
         logging.debug("Acquired resource.")
 
         log_id = log_id_generator.next()
@@ -91,7 +92,7 @@ class Pool(object):
 class LogIdGenerator(object):
     """
     Thread-safe incrementer.
-    
+
     Use like this:
 
         log_id = LogId()

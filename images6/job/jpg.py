@@ -7,7 +7,7 @@ from jsonobject import PropertySet, Property, register_schema
 from PIL import Image
 
 from ..system import current_system
-from ..importer import GenericImportModule, register_import_module
+from ..importer import register_import_module
 from ..localfile import FileCopy
 from ..entry import (
     Entry,
@@ -27,47 +27,49 @@ from ..exif import(
     exif_int,
     exif_ratio,
 )
-from ..plugin import trig_plugin
-from ..plugins.imageproxy import ImageProxyOptions
+from ..job import JobHandler, Job, create_job, register_job_handler
+from ..job.imageproxy import ImageProxyOptions, ImageProxyJobHandler
 
 
-class JPEGImportModule(GenericImportModule):
-    def run(self):
-        self.new = False
-        self.full_source_file_path = self.folder.get_full_path(self.file_path)
-        logging.debug('Import %s', self.full_source_file_path)
+class JPEGImportOptions(PropertySet):
+    entry_id = Property(int)
+    source_path = Property()
+    folder = Property()
+    mime_type = Property()
+    analyse = Property(bool)
+    is_derivative = Property(bool, default=False)
+    source_purpose = Property(enum=Purpose, default=Purpose.raw)
+    source_version = Property(int)
+
+
+register_schema(JPEGImportOptions)
+
+
+class JPEGImportJobHandler(JobHandler):
+    Options = JPEGImportOptions
+    method = 'jpeg_import'
+
+    def run(self, job):
+        logging.info('Starting jpg generation.')
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
+        logging.info('Job\n%s', job.to_json())
         self.system = current_system()
+        self.options = job.options
+        self.folder = self.system.import_folders[self.options.folder]
 
-        # Try to se if there is an entry to match it with
-        file_name = os.path.basename(self.file_path)
-        m = re.search(r'^[0-9a-f]{8}', file_name)
+        if self.options.analyse is None:
+            self.options.analyse = not self.options.is_derivative
 
-        self.entry = None
-        if m is not None:
-            hex_id = m.group(0)
-            logging.debug('Converting hex %s into decimal', hex_id)
-            entry_id = int(hex_id, 16)
-            logging.debug('Trying to use entry %s (%d)', hex_id, entry_id)
-            try:
-                self.entry = get_entry_by_id(entry_id)
-            except KeyError:
-                logging.warn('There was no such entry %s (%d)', hex_id, entry_id)
+        self.full_source_file_path = self.folder.get_full_path(self.options.source_path)
+        logging.debug('Full source path is %s', self.full_source_file_path)
 
-        if self.entry is None:
-            logging.debug('Creating entry...')
-            self.entry = create_entry(Entry(
-                original_filename=os.path.basename(self.file_path),
-                state=State.new,
-                import_folder=self.folder.name,
-                mime_type=self.mime_type,
-            ))
-            logging.debug('Created entry.\n%s', self.entry.to_json())
-            self.new = True
+        self.entry = get_entry_by_id(self.options.entry_id)
 
-        original = self.create_original()
-        logging.debug('Created original.')
+        variant = self.create_variant()
+        logging.debug('Created variant.')
 
-        if self.new:
+        if self.options.analyse:
             metadata = JPEGMetadata(**(self.analyse()))
             if metadata.Copyright == '[]':
                 metadata.Copyright = None
@@ -75,19 +77,24 @@ class JPEGImportModule(GenericImportModule):
             logging.debug('Read metadata.')
 
             self.entry.metadata = metadata
-            self.entry.state = State.pending
-            original.angle = self.entry.metadata.Angle
-            original.mirror = self.entry.metadata.Mirror
+            variant.angle = self.entry.metadata.Angle
+            variant.mirror = self.entry.metadata.Mirror
+            if not self.options.is_derivative:
+                self.entry.state = State.pending
 
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
-        options = ImageProxyOptions(
-            entry_id=self.entry.id,
-            source_purpose=original.purpose,
+        proxy_job = Job(
+            method=ImageProxyJobHandler.method,
+            options=ImageProxyOptions(
+                entry_id=self.entry.id,
+                source_purpose=variant.purpose,
+                source_version=0,
+            )
         )
-        trig_plugin('imageproxy', options)
-        logging.debug('Created image proxy task.')
+        proxy_job = create_job(proxy_job)
+        logging.debug('Created image proxy job %d.', proxy_job.id)
 
     def clean_up(self):
         logging.debug('Cleaning up...')
@@ -95,39 +102,53 @@ class JPEGImportModule(GenericImportModule):
             delete_entry_by_id(self.entry.id)
         logging.debug('Cleaned up.')
 
-    def create_original(self):
-        original = Variant(
-            store='original',
-            mime_type=self.mime_type,
-            purpose=Purpose.original,
-            version=self.entry.get_next_version(Purpose.original),
-        )
-        if self.file_path.startswith('from_raw/'):
-            raw = self.entry.get_variant(Purpose.raw)
-            if raw is not None:
-                original.source_purpose = Purpose.raw
-                original.source_version = raw.version
-                original.purpose = Purpose.derivative
-                original.version = self.entry.get_next_version(Purpose.derivative)
-                original.angle = 0
-                original.store = 'derivative'
+    def create_variant(self):
+        if self.options.is_derivative:
+            variant = Variant(
+                store='derivative',
+                mime_type=self.options.mime_type,
+                purpose=Purpose.derivative,
+                version=self.entry.get_next_version(Purpose.derivative),
+                source_purpose=self.options.source_purpose,
+                source_version=self.options.source_version,
+            )
+            if self.options.source_path.startswith('from_raw/'):
+                raw = self.entry.get_variant(Purpose.raw)
+                if raw is not None:
+                    derivative.source_purpose = Purpose.raw
+                    derivative.source_version = raw.version
+                    derivative.angle = 0
+            else:
+                original = self.entry.get_variant(Purpose.original)
+                if original is not None:
+                    original.source_purpose = Purpose.original
+                    original.source_version = original.version
+                    original.angle = 0
+        else:
+            variant = Variant(
+                store='original',
+                mime_type=self.options.mime_type,
+                purpose=Purpose.original,
+                version=self.entry.get_next_version(Purpose.original),
+            )
+
         filecopy = FileCopy(
             source=self.full_source_file_path,
             destination=os.path.join(
                 self.system.media_root,
-                original.get_filename(self.entry.id)
+                variant.get_filename(self.entry.id)
             ),
             link=True,
             remove_source=self.folder.auto_remove,
         )
         filecopy.run()
-        self.full_original_file_path = filecopy.destination
-        original.size = os.path.getsize(filecopy.destination)
+        self.full_destination_file_path = filecopy.destination
+        variant.size = os.path.getsize(filecopy.destination)
         img = Image.open(filecopy.destination)
-        original.width, original.height = img.size
+        variant.width, variant.height = img.size
         img.close()
-        self.entry.variants.append(original)
-        return original
+        self.entry.variants.append(variant)
+        return variant
 
     def fix_taken_ts(self, metadata):
         real_date = metadata.DateTimeOriginal
@@ -140,7 +161,7 @@ class JPEGImportModule(GenericImportModule):
         )
 
     def analyse(self):
-        infile = self.full_original_file_path
+        infile = self.full_destination_file_path
 
         exif = None
         with open(infile, 'rb') as f:
@@ -179,9 +200,11 @@ class JPEGImportModule(GenericImportModule):
             "Longitude": lon,
         }
 
-register_import_module('image/jpeg', JPEGImportModule)
-register_import_module('image/tiff', JPEGImportModule)
-register_import_module('image/png', JPEGImportModule)
+
+register_job_handler(JPEGImportJobHandler)
+register_import_module('image/jpeg', JPEGImportJobHandler)
+register_import_module('image/tiff', JPEGImportJobHandler)
+register_import_module('image/png', JPEGImportJobHandler)
 
 
 class JPEGMetadata(PropertySet):
@@ -212,5 +235,3 @@ class JPEGMetadata(PropertySet):
 
 
 register_schema(JPEGMetadata)
-
-

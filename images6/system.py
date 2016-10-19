@@ -27,7 +27,7 @@ class System:
         self.setup_import()
         self.setup_server()
         self.setup_database()
-        self.setup_plugins()
+        self.setup_jobs()
 
         current_system.system = self
         logging.info("System registered.")
@@ -35,22 +35,19 @@ class System:
 
     def setup_filesystem(self):
         self.root = os.path.expanduser(os.path.expandvars(self.config['Filesystem']['root']))
+        self.mount_root = os.path.expanduser(os.path.expandvars(self.config['Filesystem']['mount root']))
         self.media_root = os.path.join(self.root, 'media')
         os.makedirs(self.media_root, exist_ok=True)
         logging.debug("Root path: %s", self.root)
 
     def setup_import(self):
         self.import_folders = {}
-        for name, path in self.config['Import'].items():
-            path = os.path.expanduser(os.path.expandvars(path))
-            logging.debug("Loading import folder '%s': %s", name, path)
-            if name.startswith('-'):
-                name = name[1:]
-                auto_remove = True
-            else:
-                auto_remove = False
-            import_folder = ImportFolder(name, path, self.root, auto_remove)
-            self.import_folders[name] = import_folder
+        for section in self.config.sections():
+            if section.startswith("Import:"):
+                name = section[7:]
+                config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                import_folder = ImportFolder(name, self.root, **config)
+                self.import_folders[name] = import_folder
 
     def setup_server(self):
         self.server_host = self.config['Server']['host']
@@ -58,6 +55,8 @@ class System:
         self.server_adapter = self.config['Server'].get('adapter', 'cherrypy')
 
     def setup_database(self):
+        self.db = dict()
+
         def sum_per(field, values):
             result = {}
             for value in values:
@@ -70,51 +69,83 @@ class System:
             return result
 
         self.entry_root = os.path.join(self.root, 'entry')
-        self.entry = jsondb.Database(self.entry_root)
-        self.entry.define(
+        entry = jsondb.Database(self.entry_root)
+        entry.define(
             'by_taken_ts',
             lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')) + (o['taken_ts'][11:],), None)
         )
-        self.entry.define(
+        entry.define(
             'state_by_date',
             lambda o: (o['taken_ts'][:10], {'state': o['state']}),
             lambda keys, values, rereduce: sum_per('state', values)
         )
-        self.entry.define(
+        entry.define(
             'by_date',
             lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')), None)
         )
-        self.entry.define(
+        entry.define(
             'by_state',
             lambda o: (o['state'], None)
         )
+        entry.define(
+            'by_source',
+            lambda o: ((o['import_folder'], o['original_filename']), None)
+        )
+        self.db['entry'] = entry
 
         self.date_root = os.path.join(self.root, 'date')
-        self.date = jsondb.Database(self.date_root)
-        self.date.define(
+        date = jsondb.Database(self.date_root)
+        date.define(
             'by_date',
             lambda o: (o['_id'], None)
         )
+        self.db['date'] = date
 
-    def setup_plugins(self):
-        self.plugin_workers = self.config['Plugin'].getint('workers')
-        self.plugin_config = {}
+        self.job_root = os.path.join(self.root, 'job')
+        job = jsondb.Database(self.job_root)
+        job.define(
+            'by_state',
+            lambda o: ((o['state'], o['release'], o['priority']), None),
+        )
+        job.define(
+            'stats',
+            lambda o: (None, {'state': o['state']}),
+            lambda keys, values, rereduce: sum_per('state', values),
+        )
+        self.db['job'] = job
+
+    def setup_jobs(self):
+        self.job_workers = self.config['Job'].getint('workers')
+        self.job_config = {}
         for section in self.config.sections():
-            if section.startswith("Plugin:"):
-                method = section[7:]
-                self.plugin_config[method] = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
-                logging.info('Loaded plugin config for %s.', method)
+            if section.startswith("Job:"):
+                method = section[4:]
+                self.job_config[method] = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                logging.info('Loaded job config for %s.', method)
 
 
 class ImportFolder:
-    def __init__(self, name, path, system_root, auto_remove):
+    def __init__(self, name, system_root, type=None, mode=None, path=None, remove_source=False, extension=None, derivatives=False):
+        logging.info("Setting up import folder %s", name)
+        assert type is not None, 'Import type required'
+        assert type, 'Import type required (card or folder)'
         self.name = name
-        self.path = path
-        self.auto_remove = auto_remove
-        try:
-            os.makedirs(path, exist_ok=True)
-        except Exception as e:
-            logging.error("Import Folder %s not reachable: %s.", path, str(e))
+        self.type = type
+        self.path = os.path.expandvars(os.path.expanduser(path)) if path else None
+        if type == 'folder': assert path, 'Import path required for folder'
+        self.auto_remove = (remove_source == 'yes')
+        self.mode = mode
+        if type == 'card': assert mode, 'Import mode required for card (raw or jpg)'
+        self.extensions = extension.strip().lower().split()
+        assert extension, 'Import extension required'
+        self.derivatives = derivatives
+        if type == 'card': assert not derivatives, 'Import derivatives only applies for folder type'
+
+        if type == 'folder':
+            try:
+                os.makedirs(path, exist_ok=True)
+            except Exception as e:
+                logging.error("Import Folder %s not reachable: %s.", path, str(e))
 
         self.imported_file = os.path.join(
                 system_root, name + '_imported.index')
