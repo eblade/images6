@@ -35,6 +35,7 @@ class System:
 
     def setup_filesystem(self):
         self.root = os.path.expanduser(os.path.expandvars(self.config['Filesystem']['root']))
+        self.mount_root = os.path.expanduser(os.path.expandvars(self.config['Filesystem']['mount root']))
         self.media_root = os.path.join(self.root, 'media')
         os.makedirs(self.media_root, exist_ok=True)
         logging.debug("Root path: %s", self.root)
@@ -86,6 +87,10 @@ class System:
             'by_state',
             lambda o: (o['state'], None)
         )
+        entry.define(
+            'by_source',
+            lambda o: ((o['import_folder'], o['original_filename']), None)
+        )
         self.db['entry'] = entry
 
         self.date_root = os.path.join(self.root, 'date')
@@ -126,9 +131,9 @@ class ImportFolder:
         assert type, 'Import type required (card or folder)'
         self.name = name
         self.type = type
-        self.path = path
+        self.path = os.path.expandvars(os.path.expanduser(path)) if path else None
         if type == 'folder': assert path, 'Import path required for folder'
-        self.auto_remove = remove_source
+        self.auto_remove = (remove_source == 'yes')
         self.mode = mode
         if type == 'card': assert mode, 'Import mode required for card (raw or jpg)'
         self.extensions = extension.strip().lower().split()

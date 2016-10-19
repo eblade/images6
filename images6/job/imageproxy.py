@@ -4,7 +4,7 @@ import logging
 from jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
-from ..job import GenericJobHandler, register_job_handler
+from ..job import JobHandler, register_job_handler
 from ..entry import (
     Entry,
     Variant,
@@ -26,7 +26,8 @@ class ImageProxyOptions(PropertySet):
 register_schema(ImageProxyOptions)
 
 
-class ImageProxyJobHandler(GenericJobHandler):
+class ImageProxyJobHandler(JobHandler):
+    Options = ImageProxyOptions
     method = 'imageproxy'
 
     def run(self, job):
@@ -54,7 +55,7 @@ class ImageProxyJobHandler(GenericJobHandler):
             angle = options.angle
         elif self.source.angle is not None:
             angle = self.source.angle
-        elif self.source is Purpose.original:
+        elif self.source is Purpose.original and self.entry.metadata:
             angle = self.entry.metadata.Angle
         else:
             angle = 0
@@ -63,8 +64,10 @@ class ImageProxyJobHandler(GenericJobHandler):
             mirror = options.mirror
         elif self.source.mirror is not None:
             mirror = self.source.mirror
-        else:
+        elif self.entry.metadata:
             mirror = self.entry.metadata.Mirror
+        else:
+            mirror = 0
 
         self.create_variant(
             'thumb',

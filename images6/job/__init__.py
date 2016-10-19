@@ -75,6 +75,8 @@ class App:
                             logging.info('Acquiring job %d', job.id)
                             try:
                                 job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
+                                job.state = State.active
+                                job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
                                 logging.info('Acquired job %d', job.id)
                             except jsondb.Conflict:
                                 continue
@@ -84,6 +86,7 @@ class App:
                                 job.state = State.new
                                 Job.FromDict(current_system().db['job'].save(job.to_dict()))
                                 logging.info('Unacquired job %d', job.id)
+                                break
                     time.sleep(1)
 
 
@@ -224,10 +227,8 @@ def get_jobs(query):
         include_docs=True,
     )
 
-    stats = JobStats.FromDict(current_system().db['job'].view(
-        'stats',
-        group=True,
-    ))
+    stats = list(current_system().db['job'].view('stats', group=True))
+    stats = JobStats.FromDict(stats[0]['value']) if len(stats) else JobStats()
 
     entries = []
     for i, d in enumerate(data):
@@ -297,7 +298,7 @@ def get_job_handler_for_method(method):
     return _handlers[method]
 
 
-class GenericJobHandler(object):
+class JobHandler(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key.replace(' ', '_'), value)

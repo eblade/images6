@@ -115,6 +115,14 @@ class Purpose(EnumProperty):
     derivative = 'derivative'
 
 
+class Type(EnumProperty):
+    image = 'image'
+    video = 'video'
+    audio = 'audio'
+    document = 'document'
+    other = 'other'
+
+
 class Variant(PropertySet):
     store = Property()
     mime_type = Property()
@@ -166,6 +174,7 @@ class Backup(PropertySet):
 
 class Entry(PropertySet):
     id = Property(int, name='_id')
+    type = Property(enum=Type, default=Type.image)
     revision = Property(name='_rev')
     mime_type = Property()
     original_filename = Property()
@@ -205,7 +214,7 @@ class Entry(PropertySet):
             ).pop()
         else:
             try:
-                return [variant for variant in varants if variant.version == version][0]
+                return [variant for variant in variants if variant.version == version][0]
             except IndexError:
                 return None
 
@@ -371,6 +380,19 @@ def get_entry_by_id(id):
     entry = Entry.FromDict(current_system().db['entry'][id])
     entry.calculate_urls()
     return entry
+
+
+def get_entry_by_source(folder, filename):
+    entry_data = list(current_system().db['entry'].view(
+        'by_source',
+        key=(folder, filename),
+        include_docs=True
+    ))
+    if len(entry_data) > 0:
+        return Entry.FromDict(entry_data[0]['doc'])
+    else:
+        return None
+
 
 
 def update_entry_by_id(id, entry):

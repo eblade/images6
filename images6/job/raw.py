@@ -2,10 +2,111 @@ import os
 import logging
 from jsonobject import register_schema, PropertySet, Property
 
+from . import Job, JobHandler, register_job_handler, create_job
+from .jpg import JPEGImportJobHandler
 from ..system import current_system
-from ..plugin import GenericPlugin, register_plugin
-from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Variant
+from ..importer import register_import_module
+from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Variant, State
 from ..localfile import FileCopy, FolderScanner
+
+
+############
+# RAW IMPORT
+
+
+class RawImportOptions(PropertySet):
+    entry_id = Property(int)
+    source_path = Property()
+    folder = Property()
+    mime_type = Property()
+
+
+register_schema(RawImportOptions)
+
+
+class RawImportJobHandler(JobHandler):
+    Options = RawImportOptions
+    method = 'raw_import'
+
+    def run(self, job):
+        logging.info('Starting raw import.')
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
+        logging.info('Job\n%s', job.to_json())
+        self.system = current_system()
+        self.options = job.options
+        self.folder = self.system.import_folders[self.options.folder]
+
+        self.full_source_file_path = self.folder.get_full_path(self.options.source_path)
+        logging.debug('Full source path is %s', self.full_source_file_path)
+
+        self.entry = get_entry_by_id(self.options.entry_id)
+        if self.entry.state is State.new:
+            self.entry.state = State.pending
+
+        variant = self.create_variant()
+        logging.debug('Created variant.')
+
+        self.entry = update_entry_by_id(self.entry.id, self.entry)
+        logging.debug('Updated entry.\n%s', self.entry.to_json())
+
+        # Create job for adding JPG
+        if self.folder.mode == 'raw+jpg':
+            stripped_path, _ = os.path.splitext(self.options.source_path)
+            jpg_path = stripped_path + '.JPG' 
+            if os.path.exists(self.folder.get_full_path(jpg_path)):
+                jpg_job = Job(
+                    method=JPEGImportJobHandler.method,
+                    options=JPEGImportJobHandler.Options(
+                        entry_id=self.entry.id,
+                        source_path=jpg_path,
+                        folder=self.folder.name,
+                        mime_type='image/jpeg',
+                        analyse=True,
+                        is_derivative=True,
+                        source_purpose=variant.purpose,
+                        source_version=variant.version,
+                    )
+                )
+                jpg_job = create_job(jpg_job)
+                logging.info('Created jpg job %d.', jpg_job.id)
+            else:
+                logging.warn('Found no jpg %s.', jpg_path)
+
+        logging.info('Raw import job %d done.', job.id)
+
+    def create_variant(self):
+        variant = Variant(
+            store='raw',
+            mime_type=self.options.mime_type,
+            purpose=Purpose.raw,
+            version=self.entry.get_next_version(Purpose.raw),
+        )
+
+        filecopy = FileCopy(
+            source=self.full_source_file_path,
+            destination=os.path.join(
+                self.system.media_root,
+                variant.get_filename(self.entry.id)
+            ),
+            link=True,
+            remove_source=self.folder.auto_remove,
+        )
+        filecopy.run()
+        self.full_destination_file_path = filecopy.destination
+        variant.size = os.path.getsize(filecopy.destination)
+        self.entry.variants.append(variant)
+        return variant
+
+
+register_job_handler(RawImportJobHandler)
+register_import_module('image/raf', RawImportJobHandler)
+register_import_module('image/dng', RawImportJobHandler)
+
+
+
+###########
+# RAW FETCH
 
 
 class RawFetchOptions(PropertySet):
@@ -15,14 +116,16 @@ class RawFetchOptions(PropertySet):
 register_schema(RawFetchOptions)
 
 
-class RawFetcherPlugin(GenericPlugin):
-    method = 'rawfetch'
+class RawFetchJobHandler(JobHandler):
+    Options = RawFetchOptions
+    method = 'raw_fetch'
 
-    def run(self, payload):
+    def run(self, job):
         logging.info('Starting raw fetching.')
-        logging.info('Options\n%s', payload.to_json())
+        logging.info('Options\n%s', job.to_json())
 
-        entry = get_entry_by_id(payload.entry_id)
+        options = job.options
+        entry = get_entry_by_id(options.entry_id)
         logging.info('Original filename is %s', entry.original_filename)
 
         full_raw_file_path = self.find_raw(entry.original_filename)
@@ -73,4 +176,4 @@ class RawFetcherPlugin(GenericPlugin):
 
 
 
-register_plugin(RawFetcherPlugin)
+register_job_handler(RawFetchJobHandler)

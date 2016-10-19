@@ -95,7 +95,7 @@ def purge_job():
     try:
         PurgeJob.status = 'reading'
         system = current_system()
-        ids_to_purge = [v['id'] for v in system.entry.view('by_state', key='purge')]
+        ids_to_purge = [v['id'] for v in system.db['entry'].view('by_state', key='purge')]
         PurgeJob.to_delete = len(ids_to_purge)
         PurgeJob.status = 'deleting'
 
