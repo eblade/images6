@@ -27,7 +27,7 @@ class System:
         self.setup_import()
         self.setup_server()
         self.setup_database()
-        self.setup_plugins()
+        self.setup_jobs()
 
         current_system.system = self
         logging.info("System registered.")
@@ -41,16 +41,12 @@ class System:
 
     def setup_import(self):
         self.import_folders = {}
-        for name, path in self.config['Import'].items():
-            path = os.path.expanduser(os.path.expandvars(path))
-            logging.debug("Loading import folder '%s': %s", name, path)
-            if name.startswith('-'):
-                name = name[1:]
-                auto_remove = True
-            else:
-                auto_remove = False
-            import_folder = ImportFolder(name, path, self.root, auto_remove)
-            self.import_folders[name] = import_folder
+        for section in self.config.sections():
+            if section.startswith("Import:"):
+                name = section[7:]
+                config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                import_folder = ImportFolder(name, self.root, **config)
+                self.import_folders[name] = import_folder
 
     def setup_server(self):
         self.server_host = self.config['Server']['host']
@@ -113,25 +109,38 @@ class System:
         )
         self.db['job'] = job
 
-    def setup_plugins(self):
-        self.plugin_workers = self.config['Plugin'].getint('workers')
-        self.plugin_config = {}
+    def setup_jobs(self):
+        self.job_workers = self.config['Job'].getint('workers')
+        self.job_config = {}
         for section in self.config.sections():
-            if section.startswith("Plugin:"):
-                method = section[7:]
-                self.plugin_config[method] = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
-                logging.info('Loaded plugin config for %s.', method)
+            if section.startswith("Job:"):
+                method = section[4:]
+                self.job_config[method] = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                logging.info('Loaded job config for %s.', method)
 
 
 class ImportFolder:
-    def __init__(self, name, path, system_root, auto_remove):
+    def __init__(self, name, system_root, type=None, mode=None, path=None, remove_source=False, extension=None, derivatives=False):
+        logging.info("Setting up import folder %s", name)
+        assert type is not None, 'Import type required'
+        assert type, 'Import type required (card or folder)'
         self.name = name
+        self.type = type
         self.path = path
-        self.auto_remove = auto_remove
-        try:
-            os.makedirs(path, exist_ok=True)
-        except Exception as e:
-            logging.error("Import Folder %s not reachable: %s.", path, str(e))
+        if type == 'folder': assert path, 'Import path required for folder'
+        self.auto_remove = remove_source
+        self.mode = mode
+        if type == 'card': assert mode, 'Import mode required for card (raw or jpg)'
+        self.extensions = extension.strip().lower().split()
+        assert extension, 'Import extension required'
+        self.derivatives = derivatives
+        if type == 'card': assert not derivatives, 'Import derivatives only applies for folder type'
+
+        if type == 'folder':
+            try:
+                os.makedirs(path, exist_ok=True)
+            except Exception as e:
+                logging.error("Import Folder %s not reachable: %s.", path, str(e))
 
         self.imported_file = os.path.join(
                 system_root, name + '_imported.index')

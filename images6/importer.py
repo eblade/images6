@@ -147,7 +147,27 @@ def import_job(folder):
         ImportJob.imported = 0
         ImportJob.failed = 0
 
-        scanner = FolderScanner(folder.path, extensions=['.jpg', '.jpeg', '.png', '.tiff'])
+        full_path = None
+        if folder.type == 'card':
+            folder.path = None
+            pre_scanner = FolderScanner('/media', extensions=['images6'])
+            wanted_filename = '.'.join([current_system().name, 'images6'])
+            for filepath in pre_scanner.scan():
+                filepath = os.path.join('/media', filepath)
+                logging.debug('Found file %s', filepath)
+                filename = os.path.basename(filepath)
+                if filename == wanted_filename:
+                    folder_name = open(filepath).readlines()[0].strip()
+                    if folder_name == folder.name:
+                        folder.path = os.path.dirname(filepath)
+                        logging.info('Importing from %s (%s)', folder.path, folder.name)
+                        break
+
+        if folder.path is None:
+            logging.error('Could not find %s', folder.name)
+            raise Exception('Could not find %s' % folder.name)
+
+        scanner = FolderScanner(folder.path, extensions=folder.extensions)
         for filepath in scanner.scan():
             if not folder.is_known(filepath):
                 folder.add_to_import(filepath)
@@ -159,7 +179,7 @@ def import_job(folder):
             logging.debug("Importing %s", file_path)
             full_path = folder.get_full_path(file_path)
 
-            mime_type = guess_mime_type(full_path)
+            mime_type = guess_mime_type(full_path, raw=(folder.mode=='raw'))
             ImportModule = get_import_module(mime_type)
 
             if ImportModule is None:
@@ -196,7 +216,10 @@ def import_job(folder):
         logging.debug("Import thread closing.")
 
 
-def guess_mime_type(file_path):
-    mime_type = mimetypes.guess_type(file_path)[0]
+def guess_mime_type(file_path, raw=False):
+    if raw:
+        mime_type = 'image/' + os.path.splitext(file_path)[1].lower().replace('.', '')
+    else:
+        mime_type = mimetypes.guess_type(file_path)[0]
     logging.debug("Guessed MIME Type '%s' for '%s'", mime_type, file_path)
     return mime_type

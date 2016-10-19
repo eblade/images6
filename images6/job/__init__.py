@@ -3,6 +3,7 @@ import bottle
 import threading
 import time
 import jsondb
+import urllib
 
 from jsonobject import (
     PropertySet,
@@ -13,10 +14,10 @@ from jsonobject import (
 )
 
 
-from .multi import Pool
-from .system import current_system
+from ..multi import Pool
+from ..system import current_system
 
-from .web import (
+from ..web import (
     Create,
     FetchById,
     FetchByQuery,
@@ -73,15 +74,15 @@ class App:
                             job.state = State.acquired
                             logging.info('Acquiring job %d', job.id)
                             try:
-                                job = Job.FromDict(current_system().db['job'].save(job)
+                                job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
                                 logging.info('Acquired job %d', job.id)
                             except jsondb.Conflict:
                                 continue
                             if pool.spawn(dispatch, job, blocking=False):
-                                logging.info('Dispatch job %d', job.id)
+                                logging.info('Dispatched job %d', job.id)
                             else:
                                 job.state = State.new
-                                Job.FromDict(current_system().db['job'].save(job)
+                                Job.FromDict(current_system().db['job'].save(job.to_dict()))
                                 logging.info('Unacquired job %d', job.id)
                     time.sleep(1)
 
@@ -98,21 +99,24 @@ class App:
 
 def dispatch(job):
     try:
-        handler = get_job_handler_for_method(job.method)
+        Handler = get_job_handler_for_method(job.method)
     except KeyError:
+        logging.error('Method %s is not supported', str(job.method))
         job.state = State.failed
         job.message = 'Method %s is not supported' % str(job.method)
-        current_system().db['job'].save(job)
+        current_system().db['job'].save(job.to_dict())
         return
 
     try:
-        handler.run(job)
+        config = current_system().job_config.get(job.method, dict())
+        Handler(**config).run(job)
         job.state = State.done
-        current_system().db['job'].save(job)
+        current_system().db['job'].save(job.to_dict())
     except Exception as e:
+        logging.error('Job of type %s failed with %s: %s', str(job.method), e.__class__.__name__, str(e))
         job.state = State.failed
-        job.message = 'Job of type %s failed with %s:' % (str(job.method), e.__class__.__name__, str(e))
-        current_system().db['job'].save(job)
+        job.message = 'Job of type %s failed with %s: %s' % (str(job.method), e.__class__.__name__, str(e))
+        current_system().db['job'].save(job.to_dict())
 
 
 # DESCRIPTOR
@@ -133,6 +137,7 @@ class Job(PropertySet):
     revision = Property(name='_rev')
     method = Property(required=True)
     state = Property(enum=State, default=State.new)
+    priority = Property(int, default=1000)
     message = Property()
     release = Property()
     options = Property(wrap=True)
@@ -172,7 +177,7 @@ class JobQuery(PropertySet):
 
     @classmethod
     def FromRequest(self):
-        eq = EntryQuery()
+        eq = JobQuery()
 
         if bottle.request.query.prev_offset not in (None, ''):
             eq.prev_offset = bottle.request.query.prev_offset
@@ -191,7 +196,7 @@ class JobQuery(PropertySet):
                 ('prev_offset', self.prev_offset or ''),
                 ('offset', self.offset),
                 ('page_size', self.page_size),
-                ('state', str(self.date)),
+                ('state', str(self.state or '')),
             )
         )
 
@@ -203,7 +208,7 @@ class JobQuery(PropertySet):
 def get_jobs(query):
     if query is None:
         offset = 0
-        page_size = 100
+        page_size = 25
         state = None
 
     else:
@@ -215,7 +220,7 @@ def get_jobs(query):
     data = current_system().db['job'].view(
         'by_state',
         startkey=(state, None, None),
-        endkey=(state, any, any),
+        endkey=(state or any, any, any),
         include_docs=True,
     )
 
@@ -230,7 +235,7 @@ def get_jobs(query):
             continue
         elif i > offset + page_size:
             break
-        entries.append(wrap_dict(d))
+        entries.append(Job.FromDict(d['doc']))
 
     return JobFeed(
         offset=offset,
@@ -253,7 +258,7 @@ def create_job(job):
         raise bottle.HTTPError(400, 'Missing parameter "method".')
     job.state = State.new
     job._id = None
-    jon._rev = None
+    job._rev = None
     job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
     logging.debug('Created job\n%s', job.to_json())
     return job
@@ -266,7 +271,7 @@ def patch_job_by_id(id, patch):
         if key in Job._patchable:
             setattr(job, key, value)
 
-    job = Job.FromEntry(current_system().db['entry'].save(entry.to_dict()))
+    job = Job.FromDict(current_system().db['entry'].save(entry.to_dict()))
     return job
 
 

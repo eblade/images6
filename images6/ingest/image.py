@@ -28,7 +28,7 @@ from ..exif import(
     exif_ratio,
 )
 from ..job import Job, create_job
-from ..job.imageproxy import ImageProxyJob, ImageProxyOptions
+from ..job.imageproxy import ImageProxyOptions, ImageProxyJobHandler
 
 
 class JPEGImportModule(GenericImportModule):
@@ -38,20 +38,20 @@ class JPEGImportModule(GenericImportModule):
         logging.debug('Import %s', self.full_source_file_path)
         self.system = current_system()
 
-        # Try to se if there is an entry to match it with
-        file_name = os.path.basename(self.file_path)
-        m = re.search(r'^[0-9a-f]{8}', file_name)
-
         self.entry = None
-        if m is not None:
-            hex_id = m.group(0)
-            logging.debug('Converting hex %s into decimal', hex_id)
-            entry_id = int(hex_id, 16)
-            logging.debug('Trying to use entry %s (%d)', hex_id, entry_id)
-            try:
-                self.entry = get_entry_by_id(entry_id)
-            except KeyError:
-                logging.warn('There was no such entry %s (%d)', hex_id, entry_id)
+        if self.folder.derivatives:
+            # Try to see if there is an entry to match it with
+            file_name = os.path.basename(self.file_path)
+            m = re.search(r'^[0-9a-f]{8}', file_name)
+            if m is not None:
+                hex_id = m.group(0)
+                logging.debug('Converting hex %s into decimal', hex_id)
+                entry_id = int(hex_id, 16)
+                logging.debug('Trying to use entry %s (%d)', hex_id, entry_id)
+                try:
+                    self.entry = get_entry_by_id(entry_id)
+                except KeyError:
+                    logging.warn('There was no such entry %s (%d)', hex_id, entry_id)
 
         if self.entry is None:
             logging.debug('Creating entry...')
@@ -82,10 +82,12 @@ class JPEGImportModule(GenericImportModule):
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
-        job = ImageProxyJob(
+        job = Job(
+            method=ImageProxyJobHandler.method,
             options=ImageProxyOptions(
                 entry_id=self.entry.id,
                 source_purpose=original.purpose,
+                source_version=0,
             )
         )
         create_job(job)
@@ -184,6 +186,10 @@ class JPEGImportModule(GenericImportModule):
 register_import_module('image/jpeg', JPEGImportModule)
 register_import_module('image/tiff', JPEGImportModule)
 register_import_module('image/png', JPEGImportModule)
+
+# It can handle Raw+JPG as well
+register_import_module('image/raf', RawImportModule)
+register_import_module('image/dng', RawImportModule)
 
 
 class JPEGMetadata(PropertySet):

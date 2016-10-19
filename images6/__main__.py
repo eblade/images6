@@ -63,7 +63,7 @@ if __name__ == '__main__':
             importer,
             deleter,
             publish,
-            plugin,
+            job,
         ):
             logging.info(
                 "Setting up %s on %s..." % (module.__name__, module.App.BASE)
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                 logging.info(
                     "Setting up %s backend..." % (module.__name__)
                 )
-                module.App.run(workers=system.plugin_workers)
+                module.App.run(workers=system.job_workers)
         logging.info("*** Done setting up apps.")
 
         # Serve the Web-App

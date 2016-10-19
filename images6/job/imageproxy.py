@@ -26,11 +26,13 @@ class ImageProxyOptions(PropertySet):
 register_schema(ImageProxyOptions)
 
 
-class ImageProxyJob(GenericJobHandler):
+class ImageProxyJobHandler(GenericJobHandler):
     method = 'imageproxy'
 
     def run(self, job):
         logging.info('Starting image proxy generation.')
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
         logging.info('Job\n%s', job.to_json())
         options = job.options
 
@@ -135,7 +137,7 @@ class ImageProxyJob(GenericJobHandler):
         self.entry.variants.append(variant)
 
 
-register_job_handler(ImageProxyJob)
+register_job_handler(ImageProxyJobHandler)
 
 
 
