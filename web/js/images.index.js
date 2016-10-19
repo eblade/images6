@@ -5,7 +5,7 @@ $(function() {
 
     var load_menu = function() {
         $.ajax({
-            url: '/importer',
+            url: 'importer',
             success: function(data) {
                 $.each(data.entries, function(index, trigger) {
                     $(menu_div)
@@ -19,7 +19,7 @@ $(function() {
                                 url: trigger.trig_url,
                                 method: 'POST',
                                 success: function(data) {
-                                    monitor('/importer/status', 'importing', 'scanning', 'importing',
+                                    monitor('importer/status', 'importing', 'scanning', 'importing',
                                         feed_div, function() {
                                             load_index(feed_div);
                                             $(feed_div).fadeIn(400)
@@ -39,10 +39,10 @@ $(function() {
                     .click(function() {
                         $(menu_div).hide();
                         $.ajax({
-                            url: '/purger/trig',
+                            url: 'purger/trig',
                             method: 'POST',
                             success: function(data) {
-                                monitor('/purger/status', 'purging', 'reading', 'deleting',
+                                monitor('purger/status', 'purging', 'reading', 'deleting',
                                     feed_div, function() {
                                         load_index(feed_div);
                                         $(feed_div).fadeIn(400)
@@ -62,7 +62,7 @@ $(function() {
     var monitor = function(url, caption, before, active, div, callback) {
         $(div)
             .html('<h2>' + caption + '</h2>')
-            .append('<div class="common_progress_outer"><div id="progress"></div></div>')
+            .append('<div class="common_progress_outer"><div class="common_progress_inner" id="progress"></div></div>')
             .append('<div class="common_error_message" id="menu_failure"></div>');
 
         var poll = function() {
@@ -91,7 +91,7 @@ $(function() {
         $(feed_div)
             .html('');
         $.ajax({
-            url: '/date',
+            url: 'date?reverse=yes',
             success: function(data) {
                 var
                     last_month = "",
@@ -130,9 +130,9 @@ $(function() {
                     var date_css = 'index_normal';
                     if (date.count === 0) {
                         date_css = 'index_empty';
-                    } else if (date.count_per_state.pending > 0) {
+                    } else if (date.stats.pending > 0 || date.stats.todo > 0 || date.stats.wip > 0) {
                         date_css = 'index_pending';
-                    } else if (date.count_per_state.purge > 0) {
+                    } else if (date.stats.purge > 0) {
                         date_css = 'index_purge';
                     }
                     if (date.short) {
@@ -141,21 +141,23 @@ $(function() {
                                     '<div id="' + day_id +
                                         '" data-date="' + date.date +
                                         '" class="index_date_block ' + date_css + '">' + day + '</div>' +
-                                    '<div class="index_date_short">' + date.short + '</div></div>');
+                                    '<div class="index_date_short">' + date.stats.total + ' - ' + date.short + '</div></div>');
                     } else {
                         $(feed_div)
-                            .append('<div id="' + day_id +
+                            .append('<div class="index_date_wrapper">' +
+                                    '<div id="' + day_id +
                                     '" data-date="' + date.date +
-                                    '" class="index_date_block ' + date_css + '">' + day + '</div>');
+                                    '" class="index_date_block ' + date_css + '">' + day + '</div>' +
+                                    '<div class="index_date_short">' + date.stats.total + '</div></div>');
                     }
                     $(feed_div)
                         .find('#' + day_id)
                         .click(function() {
                             load_date(this.getAttribute('data-date'));
                         });
-                    if (document.location.hash) {
-                        scroll_to(document.location.hash);
-                    }
+                    //if (document.location.hash) {
+                    //    $.scroll_to(document.location.hash, 200);
+                    //}
                 });
             },
             error: function(data) {
@@ -165,16 +167,7 @@ $(function() {
     };
 
     var load_date = function(date) {
-        this.window.location = '/view/date#' + date;
-    };
-
-    var scroll_to = function(id) {
-        var element = $(id);
-        if (element.length) {
-            $('html body').animate({
-                scrollTop: $(element).offset().top,
-            }, 500);
-        }
+        this.window.location = 'view-date#' + date;
     };
 
     load_menu('#index_menu');
@@ -185,7 +178,7 @@ $(function() {
             $(window)
                 .hashchange(function() {
                     if (document.location.hash) {
-                        scroll_to(document.location.hash);
+                        $.scroll_to(document.location.hash, 200);
                     }
                 });
         });

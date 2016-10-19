@@ -40,7 +40,7 @@ class App:
             callback=lambda fn: bottle.static_file(fn + '.json', root=self.GRAPHICS),
         )
         app.route(
-            path='/view/date',
+            path='/view-date',
             callback=lambda: bottle.static_file('date.html', root=self.HTML),
         )
 
@@ -60,7 +60,7 @@ def Create(function, InputClass, pre=None):
         if o is None:
             raise bottle.HTTPError(400)
         result = function(o)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -69,7 +69,7 @@ def Fetch(function, pre=None):
         if callable(pre):
             pre()
         result = function()
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -80,7 +80,7 @@ def FetchById(function, pre=None):
         if id is None:
             raise bottle.HTTPError(400)
         result = function(id)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -91,7 +91,7 @@ def FetchByKey(function, pre=None):
         if key is None:
             raise bottle.HTTPError(400)
         result = function(key)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -104,7 +104,7 @@ def FetchByQuery(function, QueryClass=None, pre=None):
         else:
             q = QueryClass.FromRequest()
             result = function(q)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -116,7 +116,7 @@ def UpdateById(function, InputClass, pre=None):
         if o is None:
             raise bottle.HTTPError(400)
         result = function(id, o)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -128,7 +128,19 @@ def PatchById(function, pre=None):
         if o is None:
             raise bottle.HTTPError(400)
         result = function(id, o)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
+    return f
+
+
+def PatchByKey(function, pre=None):
+    def f(key):
+        if callable(pre):
+            pre()
+        o = bottle.request.json
+        if o is None:
+            raise bottle.HTTPError(400)
+        result = function(key, o)
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -140,7 +152,7 @@ def UpdateByKey(function, InputClass, pre=None):
         if o is None:
             raise bottle.HTTPError(400)
         result = function(key, o)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 
@@ -153,7 +165,7 @@ def UpdateByIdAndQuery(function, QueryClass=None, pre=None):
         else:
             q = QueryClass.FromRequest()
             result = function(id, q)
-        return result.to_dict()
+        return result.to_dict(include_calculated=True)
     return f
 
 

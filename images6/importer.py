@@ -12,7 +12,6 @@ from threading import Thread, Event, Lock
 
 from .web import ResourceBusy
 from .system import current_system
-from .entry import Entry, create_entry, update_entry_by_id
 from .localfile import FolderScanner
 
 
@@ -74,7 +73,7 @@ def trig_import(name):
 
 def get_status():
     if ImportJob.files == 0:
-        progress = 100 
+        progress = 100
     else:
         progress = int((ImportJob.imported + ImportJob.failed) / ImportJob.files * 100)
     return {
@@ -148,7 +147,7 @@ def import_job(folder):
         ImportJob.imported = 0
         ImportJob.failed = 0
 
-        scanner = FolderScanner(folder.path, extensions=['.jpg', '.jpeg'])
+        scanner = FolderScanner(folder.path, extensions=['.jpg', '.jpeg', '.png', '.tiff'])
         for filepath in scanner.scan():
             if not folder.is_known(filepath):
                 folder.add_to_import(filepath)
@@ -185,7 +184,6 @@ def import_job(folder):
             folder.add_imported(file_path)
             logging.debug("Imported %s", full_path)
 
-        current_system().database.sort()
         ImportJob.status = 'done'
 
     except Exception as e:

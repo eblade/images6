@@ -33,7 +33,7 @@ h2 {
     margin-bottom: 5pt;
 }
 
-.common_progress {
+.common_progress_inner {
    position: relative;
    background: #48a;
    top: 0;

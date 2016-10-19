@@ -4,6 +4,7 @@ import re
 import exifread
 from datetime import datetime
 from jsonobject import PropertySet, Property, register_schema
+from PIL import Image
 
 from ..system import current_system
 from ..importer import GenericImportModule, register_import_module
@@ -36,7 +37,7 @@ class JPEGImportModule(GenericImportModule):
         self.full_source_file_path = self.folder.get_full_path(self.file_path)
         logging.debug('Import %s', self.full_source_file_path)
         self.system = current_system()
-        
+
         # Try to se if there is an entry to match it with
         file_name = os.path.basename(self.file_path)
         m = re.search(r'^[0-9a-f]{8}', file_name)
@@ -63,22 +64,28 @@ class JPEGImportModule(GenericImportModule):
             logging.debug('Created entry.\n%s', self.entry.to_json())
             self.new = True
 
-        self.create_original()
+        original = self.create_original()
         logging.debug('Created original.')
 
         if self.new:
             metadata = JPEGMetadata(**(self.analyse()))
+            if metadata.Copyright == '[]':
+                metadata.Copyright = None
             self.fix_taken_ts(metadata)
             logging.debug('Read metadata.')
 
             self.entry.metadata = metadata
-
             self.entry.state = State.pending
+            original.angle = self.entry.metadata.Angle
+            original.mirror = self.entry.metadata.Mirror
 
         self.entry = update_entry_by_id(self.entry.id, self.entry)
         logging.debug('Updated entry.\n%s', self.entry.to_json())
 
-        options = ImageProxyOptions(entry_id=self.entry.id)
+        options = ImageProxyOptions(
+            entry_id=self.entry.id,
+            source_purpose=original.purpose,
+        )
         trig_plugin('imageproxy', options)
         logging.debug('Created image proxy task.')
 
@@ -95,6 +102,15 @@ class JPEGImportModule(GenericImportModule):
             purpose=Purpose.original,
             version=self.entry.get_next_version(Purpose.original),
         )
+        if self.file_path.startswith('from_raw/'):
+            raw = self.entry.get_variant(Purpose.raw)
+            if raw is not None:
+                original.source_purpose = Purpose.raw
+                original.source_version = raw.version
+                original.purpose = Purpose.derivative
+                original.version = self.entry.get_next_version(Purpose.derivative)
+                original.angle = 0
+                original.store = 'derivative'
         filecopy = FileCopy(
             source=self.full_source_file_path,
             destination=os.path.join(
@@ -107,7 +123,11 @@ class JPEGImportModule(GenericImportModule):
         filecopy.run()
         self.full_original_file_path = filecopy.destination
         original.size = os.path.getsize(filecopy.destination)
+        img = Image.open(filecopy.destination)
+        original.width, original.height = img.size
+        img.close()
         self.entry.variants.append(original)
+        return original
 
     def fix_taken_ts(self, metadata):
         real_date = metadata.DateTimeOriginal
@@ -161,6 +181,7 @@ class JPEGImportModule(GenericImportModule):
 
 register_import_module('image/jpeg', JPEGImportModule)
 register_import_module('image/tiff', JPEGImportModule)
+register_import_module('image/png', JPEGImportModule)
 
 
 class JPEGMetadata(PropertySet):

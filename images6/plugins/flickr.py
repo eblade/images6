@@ -9,6 +9,8 @@ from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Backup
 
 class FlickrOptions(PropertySet):
     entry_id = Property(int)
+    source_purpose = Property(enum=Purpose, default=Purpose.original)
+    source_version = Property(int)
     title = Property()
     description = Property()
     tags = Property(list)
@@ -36,10 +38,12 @@ class FlickrPlugin(GenericPlugin):
         flickr = flickrapi.FlickrAPI(api_key=self.key, secret=self.secret)
         flickr.authenticate_via_browser(perms='write')
 
+        self.source = entry.get_variant(payload.source_purpose, version=payload.source_version)
+
         if flickr_backup is None:
             logging.debug('Uploading to flickr')
             response = flickr.upload(
-                filename=os.path.join(current_system().media_root, entry.get_filename(Purpose.original)),
+                filename=os.path.join(current_system().media_root, self.source.get_filename(entry.id)),
                 title=payload.title or entry.title or '',
                 description=payload.description or entry.description or '',
                 is_public=payload.is_public,
@@ -50,6 +54,8 @@ class FlickrPlugin(GenericPlugin):
             flickr_backup = Backup(
                 method='flickr',
                 key=photo_id,
+                source_purpose=self.source.purpose,
+                source_version=self.source.version,
             )
             logging.info('Backup\n%s', flickr_backup.to_json())
 
@@ -59,7 +65,7 @@ class FlickrPlugin(GenericPlugin):
                 entry.title = payload.title
             if entry.description is None:
                 entry.description = payload.description
-            
+
             update_entry_by_id(entry.id, entry)
 
         else:
@@ -70,6 +76,11 @@ class FlickrPlugin(GenericPlugin):
                 photo_id=flickr_backup.key,
                 format='etree',
             )
+
+            flickr_backup.source_purpose = self.source.purpose
+            flickr_backup.source_version = self.source.version
+
+            update_entry_by_id(entry.id, entry)
 
         logging.info('Done with flickr export.')
 

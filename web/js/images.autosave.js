@@ -1,15 +1,21 @@
 $(function() {
-    var autosave = function (id) {
+    var autosave = function (id, validator) {
         $(id).change(function () {
             $(id).removeClass('autosave_error').addClass('autosave_saving');
             var url = $(id)[0].getAttribute('data-url');
             var field = $(id)[0].getAttribute('data-name');
             var data = new Object();
-            data['only'] = field;
-            data[field] = $(id).val();
+            var value =  $(id).val();
+            if (validator !== undefined) {
+                if (!validator(value)) {
+                    $(id).removeClass('autosave_saving').addClass('autosave_error');
+                    return;
+                }
+            }
+            data[field] = value;
             $.ajax({
                 url: url,
-                method: 'PUT',
+                method: 'PATCH',
                 contentType: "application/json",
                 data: JSON.stringify(data),
                 success: function (data) {

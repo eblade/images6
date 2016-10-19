@@ -94,3 +94,36 @@ img.thumb {
     border: 4pt solid #333;
 }
 
+img.thumb_selected {
+    border-style: dashed !important;
+    border-bottom-color: white !important;
+}
+
+img.thumb_focused {
+    border-color: white !important;
+}
+
+img.date_state_pending {
+    border-color: #248;
+}
+
+img.date_state_purge {
+    border-color: #f43;
+}
+
+img.date_state_keep {
+    border-color: #444;
+}
+
+img.date_state_todo {
+    border-color: #248;
+}
+
+img.date_state_wip {
+    border-color: #288;
+}
+
+img.date_state_final {
+    border-color: #284;
+}
+

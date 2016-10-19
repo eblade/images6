@@ -23,7 +23,7 @@
     background-color: #48a;
     color: white;
     font-weight: bold;
-    width: 300pt;
+    width: 500pt;
     min-height: 400pt;
 }
 
@@ -74,7 +74,7 @@
     background-color: #830;
 }
 
-.vierer_next {
+.viewer_next {
     background-color: #284;
 }
 
@@ -90,8 +90,8 @@
     width: 56pt;
 }
 
-.xxwide {
-    width: 200pt;
+.toggle_state_pending {
+    background-color: rgb(150, 150, 150);
 }
 
 .toggle_state_purge {
@@ -100,6 +100,65 @@
 }
 
 .toggle_state_keep {
+    background-color: #444;
+}
+
+.toggle_state_todo {
+    background-color: #248;
+}
+
+.toggle_state_wip {
+    background-color: #288;
+}
+
+.toggle_state_final {
     background-color: #284;
 }
 
+.viewer_state_label {
+    padding: 3pt;
+    margin-left: 3pt;
+}
+
+.viewer_metadata_key {
+    margin-top: 3pt;
+    margin-bottom: 2pt;
+}
+
+.viewer_metadata_value {
+    font-size: 18pt;
+    font-weight: normal;
+}
+
+.viewer_metadata_editable input {
+    width: 100%;
+    background-color: #368;
+    border: 0;
+    font-family: monospace, lucida;
+    font-size: 18pt;
+    color: white;
+}
+
+#copies {
+    width: 100%;
+}
+
+#copies th {
+    text-align: left;
+    color: #acf;
+    font-weight: bold;
+}
+
+#copies a {
+    font-weight: bold;
+    color: #acf;
+}
+
+.viewer_action_button {
+    background-color: white;
+    color: #284;
+    padding: 8pt;
+    display: inline-block;
+    margin-top: 5pt;
+    margin-left: 5pt;
+}

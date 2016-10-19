@@ -19,6 +19,8 @@ class ImageProxyOptions(PropertySet):
     entry_id = Property(int)
     angle = Property(int)
     mirror = Property(int)
+    source_purpose = Property(enum=Purpose, default=Purpose.original)
+    source_version = Property(int)
 
 
 register_schema(ImageProxyOptions)
@@ -32,11 +34,14 @@ class ImageProxyPlugin(GenericPlugin):
         logging.info('Options\n%s', payload.to_json())
 
         self.entry = get_entry_by_id(payload.entry_id)
+        logging.info('Entry\n%s', self.entry.to_json())
         self.system = current_system()
+
+        self.source = self.entry.get_variant(payload.source_purpose, version=payload.source_version)
 
         self.full_original_file_path = os.path.join(
             self.system.media_root,
-            self.entry.get_filename(Purpose.original),
+            self.source.get_filename(self.entry.id),
         )
 
         logging.info('Full original file path is %s.',
@@ -44,11 +49,17 @@ class ImageProxyPlugin(GenericPlugin):
 
         if payload.angle is not None:
             angle = payload.angle
-        else:
+        elif self.source.angle is not None:
+            angle = self.source.angle
+        elif self.source is Purpose.original:
             angle = self.entry.metadata.Angle
+        else:
+            angle = 0
 
         if payload.mirror is not None:
             mirror = payload.mirror
+        elif self.source.mirror is not None:
+            mirror = self.source.mirror
         else:
             mirror = self.entry.metadata.Mirror
 
@@ -80,6 +91,8 @@ class ImageProxyPlugin(GenericPlugin):
             mime_type='image/jpeg',
             purpose=purpose,
             version=self.entry.get_next_version(purpose),
+            source_purpose=self.source.purpose,
+            source_version=self.source.version,
         )
         full_path = os.path.join(
             self.system.media_root,
@@ -102,6 +115,8 @@ class ImageProxyPlugin(GenericPlugin):
             mime_type='image/jpeg',
             purpose=Purpose.check,
             version=self.entry.get_next_version(Purpose.check),
+            source_purpose=self.source.purpose,
+            source_version=self.source.version,
         )
         full_path = os.path.join(
             self.system.media_root,

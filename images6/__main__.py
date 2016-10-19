@@ -3,26 +3,6 @@ import sys
 import logging
 import argparse
 
-# Logging
-FORMAT = '%(asctime)s [%(threadName)s] %(filename)s +%(levelno)s ' + \
-         '%(funcName)s %(levelname)s %(message)s'
-logging.basicConfig(
-    format=FORMAT,
-    level=logging.DEBUG,
-)
-
-from .system import System
-
-from . import web
-from . import entry
-from . import date
-from . import importer
-from . import deleter
-from . import publish
-from .ingest import image
-
-from . import plugin
-from .plugins import flickr, raw
 
 
 if __name__ == '__main__':
@@ -43,6 +23,28 @@ if __name__ == '__main__':
         help='command to run')
 
     args = parser.parse_args()
+
+    # Logging
+    FORMAT = '%(asctime)s [%(threadName)s] %(filename)s +%(levelno)s ' + \
+             '%(funcName)s %(levelname)s %(message)s'
+    logging.basicConfig(
+        format=FORMAT,
+        level=logging.DEBUG if args.debug else logging.INFO,
+    )
+
+    # Load modules
+    from .system import System
+
+    from . import web
+    from . import entry
+    from . import date
+    from . import importer
+    from . import deleter
+    from . import publish
+    from .ingest import image
+
+    from . import plugin
+    from .plugins import flickr, raw, amend
 
     # Config
     system = System(args.config)
@@ -79,12 +81,12 @@ if __name__ == '__main__':
             port=system.server_port,
             server=system.server_adapter,
         )
-    
+
     elif command == 'select':
         from .select import select
         for line in select(args):
             print(line)
-    
+
     else:
 
         logging.error('unknown command "%s"', command)

@@ -95,11 +95,14 @@ class State(EnumProperty):
     new = 'new'
     pending = 'pending'
     keep = 'keep'
+    todo = 'todo'
+    final = 'final'
+    wip = 'wip'
     purge = 'purge'
 
 
 class Access(EnumProperty):
-    private = 'private' 
+    private = 'private'
     public = 'public'
 
 
@@ -117,18 +120,27 @@ class Variant(PropertySet):
     mime_type = Property()
     size = Property(int)
     purpose = Property(enum=Purpose, default=Purpose.original)
+    source_purpose = Property(enum=Purpose)
     version = Property(int, default=0)
+    source_version = Property(int, default=0)
     width = Property(int)
     height = Property(int)
+    angle = Property(int)
+    mirror = Property()
+    description = Property()
+
+    _patchable = 'description', 'angle', 'mirror', \
+                 'source_version', 'source_purpose', \
+                 'size', 'width', 'height'
 
     def __repr__(self):
         return '<Variant %s/%i (%s)>' % (self.purpose.value, self.version, self.mime_type)
 
     def get_extension(self):
         if self.mime_type == 'image/jpeg':
-            return 'jpg'
+            return '.jpg'
         elif self.purpose is Purpose.raw:
-            return self.mime_type.split('/')[1]
+            return '.' + self.mime_type.split('/')[1]
         else:
             extensions = mimetypes.guess_all_extensions(self.mime_type)
             if len(extensions) == 0:
@@ -140,7 +152,7 @@ class Variant(PropertySet):
         extension = self.get_extension()
         hex_id = '%08x' % (id)
         version = '_%i'  % self.version if self.version > 0 else ''
-        filename = hex_id + version + '.' + extension
+        filename = hex_id + version + extension
         return os.path.join(self.store, filename)
 
 
@@ -148,10 +160,13 @@ class Backup(PropertySet):
     method = Property()
     key = Property()
     url = Property()
+    source_purpose = Property(enum=Purpose, default=Purpose.original)
+    source_version = Property(int, default=0)
 
 
 class Entry(PropertySet):
-    id = Property(int)
+    id = Property(int, name='_id')
+    revision = Property(name='_rev')
     mime_type = Property()
     original_filename = Property()
     import_folder = Property()
@@ -165,26 +180,41 @@ class Entry(PropertySet):
     title = Property()
     description = Property()
 
-    urls = Property(dict)
-    state_url = Property()
+    urls = Property(dict, calculated=True)
+    state_url = Property(calculated=True)
 
-    self_url = Property()
-    original_url = Property()
-    thumb_url = Property()
-    proxy_url = Property()
-    check_url = Property()
-    raw_url = Property()
-    derivative_url = Property()
+    self_url = Property(calculated=True)
+    original_url = Property(calculated=True)
+    thumb_url = Property(calculated=True)
+    proxy_url = Property(calculated=True)
+    check_url = Property(calculated=True)
+    raw_url = Property(calculated=True)
+    derivative_url = Property(calculated=True)
 
-    def get_filename(self, purpose):
+    _patchable = 'title', 'description'
+
+    def get_variant(self, purpose, version=None):
         variants = [variant for variant in self.variants
                     if variant.purpose == Purpose(purpose)]
         if len(variants) == 0:
             return None
-        return sorted(
-            variants,
-            key=lambda variant: variant.version
-        ).pop().get_filename(self.id)
+        if version is None:  # take latest
+            return sorted(
+                variants,
+                key=lambda variant: variant.version
+            ).pop()
+        else:
+            try:
+                return [variant for variant in varants if variant.version == version][0]
+            except IndexError:
+                return None
+
+    def get_filename(self, purpose, version=None):
+        variant = self.get_variant(purpose, version=version)
+        if variant is None:
+            return None
+        else:
+            return variant.get_filename(self.id)
 
     def get_next_version(self, purpose):
         variants = [variant for variant in self.variants
@@ -201,7 +231,7 @@ class Entry(PropertySet):
         for variant in self.variants:
             if not variant.purpose.value in self.urls.keys():
                 self.urls[variant.purpose.value] = {}
-            url = '%s/%i/dl/%s/%i.%s' % (
+            url = '%s/%i/dl/%s/%i%s' % (
                 App.BASE,
                 self.id,
                 variant.store,
@@ -226,13 +256,9 @@ class Entry(PropertySet):
 class EntryFeed(PropertySet):
     count = Property(int)
     total_count = Property(int)
-    prev_link = Property()
-    next_link = Property()
     offset = Property(int)
     date = Property()
-    previous_date = Property()
-    next_date = Property()
-    entries = Property(list)
+    entries = Property(Entry, is_list=True)
 
 
 class EntryQuery(PropertySet):
@@ -241,6 +267,7 @@ class EntryQuery(PropertySet):
     page_size = Property(int, default=25, required=True)
     date = Property()
     delta = Property(int, default=0)
+    reverse = Property(bool, default=False)
 
     @classmethod
     def FromRequest(self):
@@ -256,6 +283,8 @@ class EntryQuery(PropertySet):
             eq.date = bottle.request.query.date
         if bottle.request.query.delta not in (None, ''):
             eq.delta = int(bottle.request.query.delta)
+        if bottle.request.query.reverse not in (None, ''):
+            eq.reverse = (bottle.request.query.reverse == 'yes')
 
         return eq
 
@@ -267,6 +296,7 @@ class EntryQuery(PropertySet):
                 ('page_size', self.page_size),
                 ('date', self.date),
                 ('delta', str(self.delta)),
+                ('reverse', 'yes' if self.reverse else 'no'),
             )
         )
 
@@ -282,7 +312,7 @@ class StateQuery(PropertySet):
             sq.state = bottle.request.query.state
         if bottle.request.query.soft not in (None, ''):
             sq.soft = bottle.request.query.soft == 'yes'
-        
+
         return sq
 
 
@@ -293,9 +323,10 @@ class StateQuery(PropertySet):
 def get_entries(query=None):
     if query is None:
         offset = 0
-        page_size = 25
+        page_size = 100
         date = None
         delta = 0
+        reverse = False
 
     else:
         logging.info(query.to_query_string())
@@ -303,11 +334,13 @@ def get_entries(query=None):
         page_size = query.page_size
         date = query.date
         delta = query.delta
+        reverse = query.reverse
 
     if date is None:
-        entry_data = current_system().database.get_page(offset, page_size)
-        before = None
-        after = None
+        entry_data = current_system().entry.view(
+            'by_taken_ts',
+            include_docs=True
+        )
 
     else:
         if date == 'today':
@@ -316,32 +349,36 @@ def get_entries(query=None):
             date = (int(part) for part in date.split('-', 2))
             date = datetime.date(*date)
         date += datetime.timedelta(days=delta)
-        before, entry_data, after = \
-            current_system().database.get_day(date.isoformat())
+        entry_data = current_system().entry.view(
+            'by_taken_ts',
+            startkey=(date.year, date.month, date.day),
+            endkey=(date.year, date.month, date.day, any),
+            include_docs=True
+        )
 
-    entries = [Entry.FromDict(entry) for entry in entry_data]
+    entries = [Entry.FromDict(entry.get('doc')) for entry in entry_data]
     for entry in entries:
         entry.calculate_urls()
     return EntryFeed(
-        date=date,
-        count=len(entry_data),
+        date=date.isoformat(),
+        count=len(entries),
         offset=offset,
-        entries=entries,
-        total_count=current_system().database.count(),
-        previous_date=before,
-        next_date=after,
+        entries=entries if not reverse else list(reversed(entries)),
     )
 
 
 def get_entry_by_id(id):
-    entry = Entry.FromDict(current_system().database.get(id))
+    entry = Entry.FromDict(current_system().entry.get(id))
     entry.calculate_urls()
     return entry
 
 
-def update_entry_by_id(id, ed):
-    current_system().database.update(id, ed.to_dict())
-    return get_entry_by_id(id)
+def update_entry_by_id(id, entry):
+    entry.id = id
+    logging.debug('Updating entry to\n%s', entry.to_json())
+    entry = Entry.FromDict(current_system().entry.save(entry.to_dict()))
+    logging.debug('Updated entry to\n%s', entry.to_json())
+    return entry
 
 
 def update_entry_state(id, query):
@@ -362,13 +399,12 @@ def update_entry_state(id, query):
 def patch_entry_metadata_by_id(id, patch):
     entry = get_entry_by_id(id)
     logging.debug('Metadata Patch for %d: \n%s', id, json.dumps(patch, indent=2))
-    
     metadata_dict = entry.metadata.to_dict()
     metadata_dict.update(patch)
     metadata = wrap_dict(metadata_dict)
     entry.metadata = metadata
     logging.debug(entry.to_json())
-    current_system().database.update(id, entry.to_dict())
+    current_system().entry.save(entry.to_dict())
 
     if 'Angle' in patch:
         options = get_schema('ImageProxyOptions')()
@@ -381,34 +417,39 @@ def patch_entry_metadata_by_id(id, patch):
 def patch_entry_by_id(id, patch):
     logging.debug('Patch for %d: \n%s', id, json.dumps(patch, indent=2))
     entry = get_entry_by_id(id)
-    
+
     for key, value in patch.items():
-        if key in ('title', 'description'):
+        if key in Entry._patchable:
             setattr(entry, key, value)
+        elif key == 'variants':
+            purpose = value['purpose']
+            version = value['version']
+            variant = entry.get_variant(purpose, version=version)
+            for key, value in value.items():
+                if key in Variant._patchable:
+                    setattr(variant, key, value)
 
     logging.info(entry.to_json())
-    current_system().database.update(id, entry.to_dict())
+    current_system().entry.save(entry.to_dict())
     return get_entry_by_id(id)
 
 
 def create_entry(ed):
-    id = current_system().database.next_id()
-    ed.id = id
     if ed.taken_ts is None:
         ed.taken_ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    current_system().database.create(id, ed.to_dict())
-    return get_entry_by_id(id)
+    logging.debug('Create entry\n%s', ed.to_json())
+    return Entry.FromDict(current_system().entry.save(ed.to_dict()))
 
 
 def delete_entry_by_id(id):
-    current_system().database.delete(id)
+    current_system().entry.delete(id)
 
 
 def download(id, store, version, extension):
     download = bottle.request.query.download == 'yes'
     entry = get_entry_by_id(id)
     for variant in entry.variants:
-        if variant.store == store and variant.version == version and variant.get_extension() == extension:
+        if variant.store == store and variant.version == version and variant.get_extension() == '.' + extension:
             return bottle.static_file(
                 variant.get_filename(id),
                 download=download,
@@ -421,17 +462,17 @@ def download(id, store, version, extension):
 def download_latest(id, store, extension):
     download = bottle.request.query.download == 'yes'
     entry = get_entry_by_id(id)
-    choicen = None
+    chosen = None
     for variant in entry.variants:
-        if variant.store == store and variant.get_extension() == extension:
-            if choicen is None:
-                choicen = variant
-            elif choicen.version < variant.version:
-                choicen = variant
+        if variant.store == store and variant.get_extension() == '.' + extension:
+            if chosen is None:
+                chosen = variant
+            elif chosen.version < variant.version:
+                chosen = variant
 
-    if choicen is not None:
+    if chosen is not None:
         return bottle.static_file(
-            choicen.get_filename(id),
+            chosen.get_filename(id),
             download=download,
             root=current_system().media_root
         )

@@ -88,15 +88,15 @@ class PurgeJob:
         )
         thread.daemon = True
         thread.start()
-                
+
 
 def purge_job():
     logging.info("Started purge thread.")
     try:
         PurgeJob.status = 'reading'
         system = current_system()
-        db = system.database
-        ids_to_purge = db.get_ids_in_state('purge')
+        ids_to_purge = [v['id'] for v in system.entry.view('by_state', key='purge')]
+        PurgeJob.to_delete = len(ids_to_purge)
         PurgeJob.status = 'deleting'
 
         for id in ids_to_purge:
@@ -109,9 +109,10 @@ def purge_job():
                 logging.info("Deleting %s.", filename)
                 filepath = os.path.join(system.media_root, filename)
                 os.remove(filepath)
-                update_entry_by_id(id, entry)
+                entry = update_entry_by_id(id, entry)
 
             delete_entry_by_id(id)
+            PurgeJob.deleted += 1
             logging.info("Deleted entry %i.", entry.id)
 
         PurgeJob.status = 'done'

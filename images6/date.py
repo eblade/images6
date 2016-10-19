@@ -2,6 +2,7 @@ import logging
 import bottle
 import datetime
 import urllib
+import json
 from jsonobject import PropertySet, Property, EnumProperty
 
 from .system import current_system
@@ -9,6 +10,7 @@ from .web import (
     FetchByKey,
     FetchByQuery,
     UpdateByKey,
+    PatchByKey,
     DeleteByKey,
 )
 
@@ -39,6 +41,11 @@ class App:
         )
         app.route(
             path='/<key>',
+            method='PATCH',
+            callback=PatchByKey(patch_date),
+        )
+        app.route(
+            path='/<key>',
             method='DELETE',
             callback=DeleteByKey(delete_date),
         )
@@ -50,58 +57,51 @@ class App:
 ############
 
 
+class DateStats(PropertySet):
+    new = Property(int, none=0)
+    pending = Property(int, none=0)
+    keep = Property(int, none=0)
+    purge = Property(int, none=0)
+    todo = Property(int, none=0)
+    wip = Property(int, none=0)
+    final = Property(int, none=0)
+    total = Property(int, none=0)
+
+
 class Date(PropertySet):
-    date = Property()
+    id = Property(name='_id')
+    revision = Property(name='_rev')
+    date = Property(calculated=True)
     short = Property()
     full = Property()
     mimetype = Property(default='text/plain')
-    only = Property()
 
-    count = Property(int, default=0)
-    count_per_state = Property(dict)
-    entries = Property(dict)
+    count = Property(int, default=0, calculated=True)
+    stats = Property(DateStats, calculated=True)
+    entries = Property(dict, calculated=True)
 
-    self_url = Property()
-    date_url = Property()
+    self_url = Property(calculated=True)
+    date_url = Property(calculated=True)
 
     def calculate_urls(self):
+        if self.date is None:
+            self.date = self.id
         self.self_url = App.BASE + '/' + self.date
         self.date_url = '/entry?date=' + self.date
 
-        n_all = 0
-        n_new = 0
-        n_pending = 0
-        n_keep = 0
-        n_purge = 0
-
-        for entry, state in self.entries.items():
-            n_all += 1
-            if state == 'new':
-                n_new += 1
-            elif state == 'pending':
-                n_pending += 1
-            elif state == 'keep':
-                n_keep += 1
-            elif state == 'purge':
-                n_purge += 1
-        
-        self.count = n_all
-        self.count_per_state = {
-            'new': n_new,
-            'pending': n_pending,
-            'keep': n_keep,
-            'purge': n_purge,
-        }
+        if self.stats is not None:
+            self.count = self.stats.total
 
 
 class DateFeed(PropertySet):
     count = Property(int)
-    entries = Property(list)
+    entries = Property(Date, is_list=True)
 
 
 class DateQuery(PropertySet):
     year = Property(int)
     month = Property(int)
+    reverse = Property(bool, default=False)
 
     @classmethod
     def FromRequest(self):
@@ -111,6 +111,8 @@ class DateQuery(PropertySet):
             q.year = bottle.request.query.year
         if bottle.request.query.month not in (None, ''):
             q.month = bottle.request.query.month
+        if bottle.request.query.reverse not in (None, ''):
+            q.reverse = (bottle.request.query.reverse == 'yes')
 
         return q
 
@@ -119,6 +121,7 @@ class DateQuery(PropertySet):
             (
                 ('year', str(self.year) or ''),
                 ('month', str(self.month) or ''),
+                ('reverse', 'yes' if self.reverse else 'no'),
             )
         )
 
@@ -130,47 +133,75 @@ class DateQuery(PropertySet):
 def get_dates(query=None):
     if query is None:
         query_str = ''
+        reverse = False
 
     else:
         logging.info(query.to_query_string())
-        if query.year is not None:
-            query_str = '%04d-' % (query.year)
-        elif query.month is not None:
-            query_str = '%04d-%02d-' % \
-                (datetime.date.today().year, query.month)
-        elif query.month is None and query.year is None:
-            query_str = ''
+        if query.month is not None:
+            sk = (query.year, query.month)
+            ek = (query.year, query.month, any)
+        elif query.year is not None:
+            sk = (query.year, )
+            ek = (query.year, any)
         else:
-            query_str = '%04d-%02d-' % (query.year, query.month)
+            sk = None
+            ek = any
+        reverse = query.reverse
 
-    dates = [Date.FromDict(date) for date 
-             in current_system().database.get_dates(query_str)]
+    date_stats = [(date['key'], DateStats.FromDict(date['value'])) for date
+                  in current_system().entry.view('state_by_date', startkey=sk, endkey=ek, group=True)]
+    date_infos = {date.get('key'): Date.FromDict(date['doc']) for date
+                  in current_system().date.view('by_date', startkey=sk, endkey=ek, include_docs=True)}
+    dates = []
+    for date_str, date_stat in date_stats:
+        try:
+            date = date_infos[date_str]
+            date.stats = date_stat
+            dates.append(date)
+        except KeyError:
+            date = Date(date=date_str, stats=date_stat)
+            dates.append(date)
+
     [date.calculate_urls() for date in dates]
     return DateFeed(
         count=len(dates),
-        entries=dates,
+        entries=dates if not reverse else list(reversed(dates)),
     )
 
 
 def get_date(date):
-    date = Date.FromDict(current_system().database.get_date_info(date))
-    date.calculate_urls()
-    return date
+    logging.info(date)
+    try:
+        result = Date.FromDict(current_system().date[date])
+    except KeyError:
+        result = Date(date=date)
+
+    try:
+        result.stats = DateStats.FromDict(list(current_system().entry.view('state_by_date', key=date, group=True))[0]['value'])
+    except IndexError:
+        result.stats = DateStats()
+
+    result.calculate_urls()
+    return result
 
 
 def update_date(date, date_info):
-    old_date_info = current_system().database.get_date_info(date)
-    if date_info.only == 'short':
-        old_date_info['short'] = date_info.short
-        date_info = old_date_info
-    elif date_info.only == 'full':
-        old_date_info['full'] = date_info.full
-        date_info = old_date_info
-    else:
-        date_info = date_info.to_dict()
-    current_system().database.update_date_info(date, date_info)
-    return get_date(date)
+    date_info.id = date
+    date_info.calculate_urls()
+    date_info = date_info.to_dict()
+    return current_system().date.save(date_info)
+
+
+def patch_date(date, patch):
+    logging.debug('Patch for %s: \n%s', date, json.dumps(patch, indent=2))
+    date_info = get_date(date)
+
+    for key, value in patch.items():
+        if key in ('short', 'full'):
+            setattr(date_info, key, value)
+
+    return Date.FromDict(update_date(date, date_info))
 
 
 def delete_date(date):
-    current_system().database.delete_date_info(date)
+    current_system().date.delete(date)

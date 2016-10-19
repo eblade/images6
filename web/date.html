@@ -2,51 +2,55 @@
 <html>
     <head>
         <title>Images6/Date</title>
-        <link rel="stylesheet" type="text/css" href="../css/images.common.css"/>
-        <link rel="stylesheet" type="text/css" href="../css/images.date.css"/>
-        <link rel="stylesheet" type="text/css" href="../css/images.viewer.css"/>
-        <script src="../js/jquery-3.1.0.min.js"></script>
-        <script src="../js/jquery.ba-hashchange.js"></script>
-        <script src="../js/images.autosave.js"></script>
-        <script src="../js/images.viewer.js"></script>
-        <script src="../js/images.date.js"></script>
+        <link rel="stylesheet" type="text/css" href="css/images.common.css"/>
+        <link rel="stylesheet" type="text/css" href="css/images.date.css"/>
+        <link rel="stylesheet" type="text/css" href="css/images.viewer.css"/>
+        <link rel="stylesheet" type="text/css" href="css/images.autosave.css"/>
+        <script src="js/jquery-3.1.0.min.js"></script>
+        <script src="js/jquery.ba-hashchange.js"></script>
+        <script src="js/images.common.js"></script>
+        <script src="js/images.autosave.js"></script>
+        <script src="js/images.viewer.js"></script>
+        <script src="js/images.date.js"></script>
     </head>
     <body>
         <div class="date_header">
             <div class="date_first_button_row">
-                <div id="date_prev" class="date_button">&lt;&lt;</div>
-                <div id="date_purge" class="date_button">purge</div>
                 <div id="date_back" class="date_button">back</div>
+                <div id="date_purge" class="date_button">autopurge</div>
             </div>
             <div class="date_second_button_row">
-                <div id="date_next" class="date_button">&gt;&gt;</div>
+                <div id="button_select_all" class="date_button">all</div>
+                <div id="button_select_none" class="date_button">none</div>
             </div>
             </div>
             <div class="date_info">
                 <div id="date_this" class="date_this">????-??-??</div>
                 <div id="date_details"></div>
                 <div id="date_info">
-                    <input id="date_info_short" data-url="/date/  date + '" data-name="short"/>
-                    <textarea id="date_info_full" data-url="/date/  date + '" data-name="full"></textarea>
+                    <input id="date_info_short" data-url="" data-name="short"/>
+                    <textarea id="date_info_full" data-url="" data-name="full"></textarea>
                 </div>
             </div>
+        </div>
+        <div id="selection_menu">
         </div>
         <div id="date_feed">
         </div>
         <div id="viewer_overlay">
             <div id="viewer_keep" class="viewer_toggle">keep</div>
             <div id="viewer_purge" class="viewer_toggle viewer_tight">purge</div>
+            <div id="viewer_todo" class="viewer_toggle viewer_tight">todo</div>
+            <div id="viewer_wip" class="viewer_toggle viewer_tight">wip</div>
+            <div id="viewer_final" class="viewer_toggle viewer_tight">final</div>
             <div id="viewer_toggle_metadata" class="viewer_toggle">meta</div>
-            <div id="viewer_toggle_copies" class="viewer_toggle">copies</div>
-            <div id="viewer_proxy" class="viewer_toggle">proxy</div>
-            <div id="viewer_check" class="viewer_toggle viewer_tight">check</div>
+            <div id="viewer_toggle_copies" class="viewer_toggle viewer_tight">copies</div>
+            <div id="viewer_check" class="viewer_toggle">check</div>
             <div id="viewer_close" class="viewer_toggle">back</div>
             <div id="viewer_metadata" class="viewer_popup">
-                <h3>Metadata</h3>
                 <div id="viewer_metadata_content"></div>
             </div>
             <div id="viewer_copies" class="viewer_popup">
-                <h3>Copies</h3>
                 <div id="viewer_copies_content"></div>
             </div>
         </div>
