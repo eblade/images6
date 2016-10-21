@@ -108,6 +108,10 @@ class System:
             lambda o: ((o['state'], o['release'], o['priority']), None),
         )
         job.define(
+            'by_updated',
+            lambda o: (10000000000 - int(o['updated']), None),
+        )
+        job.define(
             'stats',
             lambda o: (None, {'state': o['state']}),
             lambda keys, values, rereduce: sum_per('state', values),
