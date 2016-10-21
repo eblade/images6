@@ -645,9 +645,9 @@ $(function() {
                     } else if (event.which === 70) { // f
                         toggle_copies();
                     } else if (event.which === 75) { // k
-                        keep($.scope.focus);
+                        set_state($.scope.focus, 'keep');
                     } else if (event.which === 88) { // x
-                        purge($.scope.focus);
+                        set_state($.scope.focus, 'purge');
                     } else if (event.which === 67) { // c
                         toggle_check();
                     }
