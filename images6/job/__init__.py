@@ -79,6 +79,7 @@ class App:
                                 job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
                                 job.state = State.active
                                 job.updated = time.time()
+                                job.started = time.time()
                                 job = Job.FromDict(current_system().db['job'].save(job.to_dict()))
                                 logging.info('Acquired job %d', job.id)
                             except jsondb.Conflict:
@@ -112,6 +113,7 @@ def dispatch(job):
         job.state = State.failed
         job.message = 'Method %s is not supported' % str(job.method)
         job.updated = time.time()
+        job.stopped = time.time()
         current_system().db['job'].save(job.to_dict())
         return
 
@@ -120,11 +122,13 @@ def dispatch(job):
         Handler(**config).run(job)
         job.state = State.done
         job.updated = time.time()
+        job.stopped = time.time()
         current_system().db['job'].save(job.to_dict())
     except Exception as e:
         logging.error('Job of type %s failed with %s: %s', str(job.method), e.__class__.__name__, str(e))
         job.state = State.failed
         job.message = 'Job of type %s failed with %s: %s' % (str(job.method), e.__class__.__name__, str(e))
+        job.stopped = time.time()
         job.updated = time.time()
         current_system().db['job'].save(job.to_dict())
 
@@ -153,6 +157,8 @@ class Job(PropertySet):
     options = Property(wrap=True)
     created = Property(float)
     updated = Property(float)
+    started = Property(float)
+    stopped = Property(float)
 
     self_url = Property(calculated=True)
 
@@ -176,7 +182,7 @@ class JobFeed(PropertySet):
     count = Property(int)
     total_count = Property(int)
     offset = Property(int)
-    stats = Property(JobStats, calculated=True)
+    stats = Property(JobStats)
     entries = Property(Job, is_list=True)
 
 

@@ -4,6 +4,9 @@ $(function() {
         feed_div = '#index_feed';
 
     var load_menu = function() {
+        $(menu_div)
+            .html('<div id="index_jobs" class="index_menu_button">jobs</div>');
+        $.Images.jobs('#index_jobs', '#more_jobs');
         $.ajax({
             url: 'importer',
             success: function(data) {

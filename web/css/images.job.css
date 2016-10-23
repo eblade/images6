@@ -1,0 +1,49 @@
+#index_jobs {
+    width: 40pt !important;
+}
+
+#index_jobs.error {
+    background-color: #a84 !important;
+}
+
+#index_jobs.active {
+    background-color: white; !important;
+    color: #48a !important
+}
+
+#more_jobs {
+    position: absolute;
+    left: 5pt;
+    top: 71pt;
+    width: 500pt;
+    background-color: #48a;
+    color: white;
+}
+
+#job_table {
+    width: 100%;
+}
+
+#job_table th {
+    text-align: left;
+    border-bottom: 1pt dotted #8bd;
+    color: white;
+    font-weight: bold;
+}
+
+#job_table td.state {
+    width: 60pt;
+    text-align: center;
+    font-weight: bold;
+}
+
+#job_table td.new { }
+#job_table td.acquired { background-color: white; color: grey }
+#job_table td.active { background-color: white; color: #48a }
+#job_table td.failed { background-color: #a84; color: white }
+#job_table td.held { background-color: #288 }
+#job_table td.done { background-color: #284; }
+
+#more_jobs div.info {
+    padding: 10pt;
+}
