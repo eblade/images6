@@ -5,6 +5,7 @@ import os
 import errno
 import logging
 import shutil
+import re
 
 
 class FileCopy(object):
@@ -67,3 +68,156 @@ class FolderScanner(object):
                         yield path
 
 
+mangled = re.compile(r'[^A-Za-z0-9-_]')
+mangled_with_dots = re.compile(r'[^A-Za-z0-9-_.]')
+
+
+def mangle(string, accept_dots=False):
+    """
+    Transliterates a string to ascii format. The only remaining characters in the
+    result will be a-z, A-Z, 0-9, -, _
+
+    :param str string: The input string
+    :param bool accept_dots: Preserve dots in the incoming string
+    :rtype: unicode
+    """
+    mstrs = { 
+        # LATIN1 UPPERCASE
+        u'Å': u'A',
+        u'Ä': u'A',
+        u'Ö': u'O',
+        u'À': u'A',
+        u'Á': u'A',
+        u'Â': u'A',
+        u'Ã': u'A',
+        u'Ä': u'A',
+        u'Å': u'A',
+        u'Æ': u'AE',
+        u'Ç': u'C',
+        u'È': u'E',
+        u'É': u'E',
+        u'Ê': u'E',
+        u'Ë': u'E',
+        u'Ì': u'I',
+        u'Í': u'I',
+        u'Î': u'I',
+        u'Ï': u'I',
+        u'Ð': u'D',
+        u'Ñ': u'N',
+        u'Ò': u'O',
+        u'Ó': u'O',
+        u'Ô': u'O',
+        u'Õ': u'O',
+        u'Ö': u'O',
+        u'Ø': u'O',
+        u'Ù': u'U',
+        u'Ú': u'U',
+        u'Û': u'U',
+        u'Ü': u'U',
+        u'Ý': u'Y',
+        u'Ÿ': u'Y',
+
+        # LATIN1 LOWERCASE
+        u'å': u'a',
+        u'ä': u'a',
+        u'ö': u'o',
+        u'à': u'a',
+        u'á': u'a',
+        u'â': u'a',
+        u'ã': u'a',
+        u'ä': u'a',
+        u'å': u'a',
+        u'æ': u'ae',
+        u'ç': u'c',
+        u'è': u'e',
+        u'é': u'e',
+        u'ê': u'e',
+        u'ë': u'e',
+        u'ì': u'i',
+        u'í': u'i',
+        u'î': u'i',
+        u'ï': u'i',
+        u'ð': u'd',
+        u'ñ': u'n',
+        u'ò': u'o',
+        u'ó': u'o',
+        u'ô': u'o',
+        u'õ': u'o',
+        u'ö': u'o',
+        u'ø': u'o',
+        u'ù': u'u',
+        u'ú': u'u',
+        u'û': u'u',
+        u'ü': u'u',
+        u'ý': u'y',
+        u'ÿ': u'y',
+
+        # CYRILLIC LOWERCASE
+        u'ï': u'I',
+        u'э': u'E',
+        u'и': u'I',
+        u'й': u'I',
+        u'я': u'IA',
+        u'ё': u'E',
+        u'ю': u'IU',
+        u'ы': u'Y',
+        u'ь': u'J',
+        u'ш': u'SH',
+        u'щ': u'SHCH',
+        u'ч': u'CH',
+        u'ц': u'TS',
+        u'т': u'T',
+        u'ж': u'ZH',
+        u'з': u'Z',
+        u'к': u'K',
+        u'б': u'B',
+        u'м': u'M',
+        u'в': u'V',
+        u'н': u'N',
+        u'г': u'G',
+        u'п': u'P',
+        u'д': u'D',
+        u'р': u'R',
+        u'л': u'L',
+        u'ф': u'F',
+
+        # CYRILLIC UPPERCASE
+        u'Ï': u'I',
+        u'Х': u'X',
+        u'У': u'Y',
+        u'A': u'A',
+        u'О': u'O',
+        u'Э': u'E',
+        u'И': u'I',
+        u'Й': u'I',
+        u'Я': u'IA',
+        u'Ё': u'E',
+        u'Ю': u'IU',
+        u'Ы': u'Y',
+        u'Ь': u'J',
+        u'Ш': u'SH',
+        u'Щ': u'SHCH',
+        u'Ч': u'CH',
+        u'Ц': u'TS',
+        u'Т': u'T',
+        u'Ж': u'ZH',
+        u'З': u'Z',
+        u'E': u'E',
+        u'К': u'K',
+        u'С': u'C',
+        u'Б': u'B',
+        u'М': u'M',
+        u'В': u'V',
+        u'Н': u'N',
+        u'Г': u'G',
+        u'П': u'P',
+        u'Д': u'D',
+        u'Р': u'R',
+        u'Л': u'L',
+        u'Ф': u'F',
+    }
+
+    for bad, good in mstrs.items():
+        string = string.replace(bad, good)
+    
+    return (mangled_with_dots if accept_dots else mangled).sub('', string)

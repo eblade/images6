@@ -25,6 +25,7 @@ class System:
 
         self.setup_filesystem()
         self.setup_import()
+        self.setup_export()
         self.setup_server()
         self.setup_database()
         self.setup_jobs()
@@ -48,6 +49,15 @@ class System:
                 config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
                 import_folder = ImportFolder(name, self.root, **config)
                 self.import_folders[name] = import_folder
+
+    def setup_export(self):
+        self.export_folders = {}
+        for section in self.config.sections():
+            if section.startswith("Export:"):
+                name = section[7:]
+                config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                export_folder = ExportFolder(name, self.root, **config)
+                self.export_folders[name] = export_folder
 
     def setup_server(self):
         self.server_host = self.config['Server']['host']
@@ -209,206 +219,30 @@ class ImportFolder:
         return os.path.join(self.path, filepath)
 
 
-#class Database:
-#    def __init__(self, root_path):
-#        self.lock = threading.Lock()
-#        self.root_path = root_path
-#        self.data_folder = os.path.join(self.root_path, 'data')
-#        self.date_folder = os.path.join(self.root_path, 'date')
-#        os.makedirs(self.data_folder, exist_ok=True)
-#        os.makedirs(self.date_folder, exist_ok=True)
-#
-#        self.id_counter_file = os.path.join(self.root_path, 'id_counter')
-#        self.load_entries()
-#
-#    def next_id(self):
-#        with self.lock:
-#            try:
-#                with open(self.id_counter_file, 'r') as f:
-#                    current = int(f.readline())
-#            except IOError:
-#                current = 0
-#            with open(self.id_counter_file, 'w') as f:
-#                f.write(str(current + 1))
-#            return current
-#
-#    def load_entries(self):
-#        with self.lock:
-#            logging.info("Loading entries...")
-#            self.entries = []
-#            self.entries_by_id = {}
-#            self.dates = {}
-#            for r, ds, fs in os.walk(self.data_folder):
-#                for f in fs:
-#                    if f.endswith('.json'):
-#                        path = os.path.join(r, f)
-#                        with open(path, 'rb') as f:
-#                            s = f.read().decode('utf8')
-#                            entry = json.loads(s)
-#                            self._read_entry(entry)
-#            self._sort()
-#            logging.info("Loaded %i entries.", len(self.entries))
-#
-#    def _read_entry(self, entry):
-#        self.entries.append(entry)
-#        self.entries_by_id[entry.get('id')] = entry
-#        date = (entry.get('taken_ts') or '')[:10]
-#        self._load_date(date, entry)
-#
-#    def _sort(self):
-#        self.entries.sort(key=lambda e: e.get('taken_ts'), reverse=True)
-#
-#    def _load_date(self, date, entry):
-#        if not date:
-#            return
-#        if date not in self.dates.keys():
-#            try:
-#                path = os.path.join(self.date_folder, date + '.json')
-#                with open(path, 'rb') as f:
-#                    s = f.read().decode('utf8')
-#                    date_data = json.loads(s)
-#                    date_data['entries'] = {
-#                        entry['id']: entry['state']
-#                    }
-#                    self.dates[date] = date_data
-#            except OSError:
-#                self.dates[date] = {
-#                    'entries': {
-#                        entry['id']: entry['state'],
-#                    },
-#                }
-#        else:
-#            if not 'entries' in self.dates[date].keys():
-#                self.dates[date]['entries'] = {}
-#            self.dates[date]['entries'][entry['id']] = entry['state']
-#
-#    def sort(self):
-#        with self.lock:
-#            self._sort()
-#
-#    def get(self, id):
-#        return self.entries_by_id[id]
-#
-#    def update(self, id, new_entry):
-#        with self.lock:
-#            old_entry = self.entries_by_id[id]
-#            index = self.entries.index(old_entry)
-#            self.entries[index] = new_entry
-#            self.entries_by_id[id] = new_entry
-#            path = os.path.join(
-#                    self.data_folder,
-#                    self.get_json_filename(id)
-#            )
-#            tmp_path = path + '.tmp'
-#            with open(tmp_path, 'wb') as f:
-#                s = json.dumps(new_entry, indent=2, sort_keys=True)
-#                f.write(s.encode('utf8'))
-#            os.remove(path)
-#            os.rename(tmp_path, path)
-#
-#            date = (new_entry.get('taken_ts') or '')[:10]
-#            self._load_date(date, new_entry)
-#
-#    def create(self, id, new_entry):
-#        with self.lock:
-#            self._read_entry(new_entry)
-#            path = os.path.join(
-#                self.data_folder,
-#                self.get_json_filename(id)
-#            )
-#            with open(path, 'wb') as f:
-#                s = json.dumps(new_entry, indent=2, sort_keys=True)
-#                f.write(s.encode('utf8'))
-#
-#    def delete(self, id):
-#        with self.lock:
-#            entry = self.entries_by_id[id]
-#            self.entries.remove(entry)
-#            del self.entries_by_id[id]
-#            path = os.path.join(
-#                self.data_folder,
-#                self.get_json_filename(id)
-#            )
-#            os.remove(path)
-#            date = (entry.get('taken_ts') or '')[:10]
-#            date_info = self.dates.get(date)
-#            if date_info is not None:
-#                try:
-#                    del date_info['entries'][id]
-#                except KeyError:
-#                    pass
-#
-#    def count(self):
-#        return len(self.entries)
-#
-#    def get_page(self, offset, page_size):
-#        if offset >= len(self.entries):
-#            return []
-#        return self.entries[offset:offset + page_size]
-#
-#    def get_day(self, date):
-#        that_day = list(reversed(
-#            [(index, entry) for index, entry in enumerate(self.entries)
-#             if entry.get('taken_ts', '').startswith(date)]
-#        ))
-#        if len(that_day) == 0:
-#            return None, [], None
-#        earliest = that_day[0][0]
-#        latest = that_day[-1][0]
-#        before = None if earliest == self.count() - 1 else earliest + 1
-#        after = None if latest == 0 else latest - 1
-#        if before is not None:
-#            before = self.entries[before].get('taken_ts')[:10]
-#        if after is not None:
-#            after = self.entries[after].get('taken_ts')[:10]
-#        return before, [e[1] for e in that_day], after
-#
-#    def get_json_filename(self, id):
-#        return '%08x.json' % (id)
-#
-#    def get_ids_in_state(self, state):
-#        with self.lock:
-#            return list([entry.get('id') for entry in self.entries
-#                         if entry.get('state') == state])
-#
-#    def get_date_info(self, date):
-#        date_info = self.dates.get(date, {})
-#        date_info['date'] = date
-#        return date_info
-#
-#    def get_dates(self, query_str=''):
-#        with self.lock:
-#            result = []
-#            for date in reversed(sorted(self.dates.keys())):
-#                if not date.startswith(query_str):
-#                    continue
-#                date_info = self.dates[date]
-#                post = dict(date_info)
-#                post['date'] = date
-#                result.append(post)
-#            return result
-#
-#    def update_date_info(self, date, new_date_info):
-#        new_date_info = dict(
-#            short=new_date_info.get('short'),
-#            full=new_date_info.get('full'),
-#            mimetype=new_date_info.get('mimetype', 'text/plain'),
-#        )
-#        with self.lock:
-#            path = os.path.join(self.date_folder, date + '.json')
-#            with open(path, 'wb') as f:
-#                s = json.dumps(new_date_info, indent=2, sort_keys=True)
-#                f.write(s.encode('utf8'))
-#            self.dates[date] = dict(new_date_info)
-#
-#    def delete_date_info(self, date):
-#        with self.lock:
-#            path = os.path.join(self.date_folder, date + '.json')
-#            try:
-#                os.remove(path)
-#            except OSError:
-#                pass
-#            try:
-#                del self.dates[date]
-#            except KeyError:
-#                pass
+class ExportFolder:
+    def __init__(self, name, system_root, type='folder', mode=None, path=None, filename=None, backup=False, backup_type=None, longest_side=None):
+        logging.info("Setting up export folder %s", name)
+        assert type is not None, 'Import type required'
+        assert type == 'folder', 'Import type required (folder)'
+        self.name = name
+        self.type = type
+        self.path = os.path.expandvars(os.path.expanduser(path)) if path else None
+        if type == 'folder': assert path, 'Export path required for folder'
+        self.filename = filename or None
+        self.mode = mode
+        self.backup = (backup == 'yes')
+        self.backup_type = backup_type
+        if self.backup: assert backup_type in ('google', ), 'backup option requires backup type'
+        self.longest_side = None if longest_side is None else int(longest_side)
+
+        if type == 'folder':
+            try:
+                os.makedirs(path, exist_ok=True)
+            except Exception as e:
+                logging.error("Export Folder %s not reachable: %s.", path, str(e))
+
+    def __repr__(self):
+        return '<ExportFolder %s%s %s>' % ('+' if self.backup else '-', self.name, self.path)
+
+    def get_full_path(self, filepath):
+        return os.path.join(self.path, filepath)

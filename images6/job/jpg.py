@@ -8,7 +8,7 @@ from PIL import Image
 
 from ..system import current_system
 from ..importer import register_import_module
-from ..localfile import FileCopy
+from ..localfile import FileCopy, mangle
 from ..entry import (
     Entry,
     Variant,
@@ -205,6 +205,104 @@ register_job_handler(JPEGImportJobHandler)
 register_import_module('image/jpeg', JPEGImportJobHandler)
 register_import_module('image/tiff', JPEGImportJobHandler)
 register_import_module('image/png', JPEGImportJobHandler)
+
+
+class JPEGExportOptions(PropertySet):
+    entry_id = Property(int)
+    purpose = Property(enum=Purpose)
+    version = Property(int)
+    date = Property()
+    longest_side = Property(int)
+    folder = Property()
+    filename = Property()
+
+
+register_schema(JPEGExportOptions)
+
+
+class JPEGExportJobHandler(JobHandler):
+    Options = JPEGExportOptions
+    method = 'jpeg_export'
+
+    def run(self, job):
+        logging.info('Starting jpg generation.')
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
+        assert job.options.folder, "Need folder in job options"
+        assert job.options.entry_id or job.options.date, "Need either entry_id or date"
+        logging.info('Job\n%s', job.to_json())
+        self.system = current_system()
+        self.options = job.options
+        self.folder = self.system.export_folders[self.options.folder]
+
+        if self.options.date is not None:
+            self.explode()
+            return
+
+        self.entry = get_entry_by_id(self.options.entry_id)
+        self.select_source()
+        self.select_path()
+
+        if self.options.longest_side == None:
+            self.export_plain()
+
+    def explode(self):
+        pass
+        # Create one new job for each entry in from that date
+
+    def select_source(self):
+        purposes = (
+            (self.options.purpose,)
+            if self.options.purpose is not None
+            else (Purpose.original, Purpose.derivative)
+        )
+        for purpose in purposes:
+            try:
+                self.variant = entry.get_variant(purpose, self.options.version)
+                break
+            except IndexError:
+                pass
+        else:
+            raise ValueError('Could not find a suitable variant for %s/%s' % (
+                 self.options.purpose.value if self.options.purpose else '*',
+                 self.options.version if self.options.version is not None else '*'
+            ))
+
+    def select_path(self):
+        filename = self.options.filename or self.folder.filename
+        if filename is None:
+            if self.entry.original_filename:
+                filename = os.path.basename(self.entry.original_filename)
+                filename, _ = os.path.splitext(filename)
+                filename += '{extension}'
+            else:
+                filename = self.entry.original_filename or '{id}{extentsion}'
+
+        self.filename = filename.format(
+            id=str(self.entry.id),
+            extension=self.variant.get_extension,
+            title=mangle(self.entry.title) or str(self.entry.id),
+            date=self.entry.taken_ts[:10],
+        )
+
+    def export_plain(self):
+        filecopy = FileCopy(
+            source=os.path.join(
+                self.system.media_root,
+                self.variant.get_filename(self.entry.id),
+            ),
+            destination=os.path.join(
+                self.folder.get_full_path,
+                self.filename,
+            ),
+            link=True,
+            remove_source=False,
+        )
+        filecopy.run()
+        self.options.filename = filecopy.destination
+
+
+register_job_handler(JPEGExportJobHandler)
 
 
 class JPEGMetadata(PropertySet):
