@@ -4,7 +4,7 @@ import logging
 from jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
-from ..plugin import GenericPlugin, register_plugin
+from ..job import JobHandler, register_job_handler
 from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Variant
 from ..localfile import FileCopy, FolderScanner
 
@@ -18,13 +18,17 @@ class AmendOptions(PropertySet):
 register_schema(AmendOptions)
 
 
-class AmenderPlugin(GenericPlugin):
+class AmendJobHandler(JobHandler):
     method = 'amend'
+    Options = AmendOptions
 
-    def run(self, options):
+    def run(self, job):
         logging.info('Starting amending.')
-        logging.info('Options\n%s', options.to_json())
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
+        logging.info('Job\n%s', job.to_json())
 
+        options = job.options
         entry = get_entry_by_id(options.entry_id)
         before = entry.to_json()
         logging.info('Original entry is\n%s', before)
@@ -65,5 +69,5 @@ class AmenderPlugin(GenericPlugin):
 
         logging.info('Done amending.')
 
-register_plugin(AmenderPlugin)
 
+register_job_handler(AmendJobHandler)

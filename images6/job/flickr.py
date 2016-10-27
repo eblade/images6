@@ -2,8 +2,8 @@ import os
 import logging
 from jsonobject import register_schema, PropertySet, Property
 
+from ..job import JobHandler, register_job_handler
 from ..system import current_system
-from ..plugin import GenericPlugin, register_plugin
 from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Backup
 
 
@@ -20,14 +20,18 @@ class FlickrOptions(PropertySet):
 register_schema(FlickrOptions)
 
 
-class FlickrPlugin(GenericPlugin):
+class FlickrJobHandler(JobHandler):
     method = 'flickr'
+    Options = FlickrOptions
 
-    def run(self, payload):
+    def run(self, job):
         logging.info('Starting flickr export.')
-        logging.info('Options\n%s', payload.to_json())
+        assert job is not None, "Job can't be None"
+        assert job.options is not None, "Job Options can't be None"
+        logging.info('Job\n%s', job.to_json())
 
-        entry = get_entry_by_id(payload.entry_id)
+        options = job.options
+        entry = get_entry_by_id(options.entry_id)
 
         flickr_backup = None
         for backup in entry.backups:
@@ -38,15 +42,15 @@ class FlickrPlugin(GenericPlugin):
         flickr = flickrapi.FlickrAPI(api_key=self.key, secret=self.secret)
         flickr.authenticate_via_browser(perms='write')
 
-        self.source = entry.get_variant(payload.source_purpose, version=payload.source_version)
+        self.source = entry.get_variant(options.source_purpose, version=options.source_version)
 
         if flickr_backup is None:
             logging.debug('Uploading to flickr')
             response = flickr.upload(
                 filename=os.path.join(current_system().media_root, self.source.get_filename(entry.id)),
-                title=payload.title or entry.title or '',
-                description=payload.description or entry.description or '',
-                is_public=payload.is_public,
+                title=options.title or entry.title or '',
+                description=options.description or entry.description or '',
+                is_public=options.is_public,
                 format='etree',
             )
             photo_id = response.find('photoid').text
@@ -62,9 +66,9 @@ class FlickrPlugin(GenericPlugin):
             entry.backups.append(flickr_backup)
 
             if entry.title is None:
-                entry.title = payload.title
+                entry.title = options.title
             if entry.description is None:
-                entry.description = payload.description
+                entry.description = options.description
 
             update_entry_by_id(entry.id, entry)
 
@@ -85,4 +89,4 @@ class FlickrPlugin(GenericPlugin):
         logging.info('Done with flickr export.')
 
 
-register_plugin(FlickrPlugin)
+register_job_handler(FlickrJobHandler)

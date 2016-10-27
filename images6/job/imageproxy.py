@@ -88,7 +88,8 @@ class ImageProxyJobHandler(JobHandler):
 
         logging.debug('Created proxy files.')
 
-        update_entry_by_id(self.entry.id, self.entry)
+        self.entry = update_entry_by_id(self.entry.id, self.entry)
+
         logging.info('Done with image proxy generation.')
 
     def create_variant(self, store, purpose, longest_edge, angle, mirror):

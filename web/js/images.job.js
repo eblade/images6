@@ -50,14 +50,30 @@ $(function() {
                                         '</tr>');
                         });
 
-                        $(more_id).append('<div class="info">' + 
-                                          data.stats.total + ' jobs (' +
-                                          data.stats.new + ' new, ' + 
-                                          data.stats.acquired + ' acquired, ' +
-                                          data.stats.active + ' active, ' +
-                                          data.stats.held + ' held, ' +
-                                          data.stats.done + ' done and ' +
-                                          data.stats.failed + ' failed)</div>');
+                        $(more_id)
+                            .append('<div class="info">' + 
+                                    data.stats.total + ' jobs (' +
+                                    data.stats.new + ' new, ' + 
+                                    data.stats.acquired + ' acquired, ' +
+                                    data.stats.active + ' active, ' +
+                                    data.stats.held + ' held, ' +
+                                    data.stats.done + ' done and ' +
+                                    data.stats.failed + ' failed)</div>' +
+                                    '<div class="job_action_buttons">' + 
+                                    '<div class="job_action_button" ' +
+                                    'id="delete_jobs_button">clear all</div></div>');
+
+                        $('#delete_jobs_button')
+                            .click(function() {
+                                $.ajax({
+                                    url: '/job',
+                                    method: 'DELETE',
+                                    success: function(data) {},
+                                    error: function(data) {
+                                        $(id).addClass('error').html('ERROR');
+                                    },
+                                });
+                            });
                     }
                 },
                 error: function (data) {

@@ -189,3 +189,14 @@ def DeleteByKey(function, pre=None):
         function(key)
         raise bottle.HTTPError(204)
     return f
+
+
+def Delete(function, pre=None):
+    def f():
+        if callable(pre):
+            pre()
+        if id is None:
+            raise bottle.HTTPError(400)
+        function()
+        raise bottle.HTTPError(204)
+    return f

@@ -161,4 +161,5 @@
     display: inline-block;
     margin-top: 5pt;
     margin-left: 5pt;
+    cursor: pointer;
 }

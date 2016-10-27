@@ -23,6 +23,7 @@ from ..web import (
     FetchById,
     FetchByQuery,
     PatchById,
+    Delete,
 )
 
 
@@ -54,6 +55,11 @@ class App:
             path='/',
             method='POST',
             callback=Create(create_job, Job),
+        )
+        app.route(
+            path='/',
+            method='DELETE',
+            callback=Delete(delete_jobs),
         )
 
         return app
@@ -300,6 +306,10 @@ def patch_job_by_id(id, patch):
     job = Job.FromDict(current_system().db['entry'].save(entry.to_dict()))
     return job
 
+
+def delete_jobs():
+    logging.debug("Delete jobs.")
+    current_system().db['job'].clear()
 
 
 

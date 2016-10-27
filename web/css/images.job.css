@@ -18,6 +18,7 @@
     width: 500pt;
     background-color: #48a;
     color: white;
+    box-shadow: 0pt 0pt 10pt white;
 }
 
 #job_table {
@@ -46,4 +47,18 @@
 
 #more_jobs div.info {
     padding: 10pt;
+}
+
+div.job_action_buttons {
+    padding: 10pt;
+}
+
+div.job_action_button {
+    background-color: white;
+    color: #284;
+    padding: 8pt;
+    display: inline-block;
+    margin-top: 5pt;
+    margin-left: 5pt;
+    cursor: pointer;
 }
