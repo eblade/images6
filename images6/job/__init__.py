@@ -4,6 +4,7 @@ import threading
 import time
 import jsondb
 import urllib
+import traceback
 
 from jsonobject import (
     PropertySet,
@@ -132,6 +133,7 @@ def dispatch(job):
         current_system().db['job'].save(job.to_dict())
     except Exception as e:
         logging.error('Job of type %s failed with %s: %s', str(job.method), e.__class__.__name__, str(e))
+        traceback.print_stack()
         job.state = State.failed
         job.message = 'Job of type %s failed with %s: %s' % (str(job.method), e.__class__.__name__, str(e))
         job.stopped = time.time()

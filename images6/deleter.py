@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from .system import current_system
 from .web import ResourceBusy
 from .entry import get_entry_by_id, update_entry_by_id, delete_entry_by_id
+from .job import Job, create_job
+from .job.delete import DeleteJobHandler
 
 
 # WEB
@@ -105,10 +107,16 @@ def purge_job():
 
             while len(entry.variants) > 0:
                 variant = entry.variants.pop()
-                filename = variant.get_filename(entry.id)
-                logging.info("Deleting %s.", filename)
-                filepath = os.path.join(system.media_root, filename)
-                os.remove(filepath)
+                logging.info("Creating delete job for %s.", variant)
+                delete_job = Job(
+                    method=DeleteJobHandler.method,
+                    options=DeleteJobHandler.Options(
+                        entry_id=entry.id,
+                        variant=variant,
+                    )
+                )
+                delete_job = create_job(delete_job)
+                logging.info("Created delete job %d.", delete_job.id)
                 entry = update_entry_by_id(id, entry)
 
             delete_entry_by_id(id)

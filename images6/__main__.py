@@ -49,6 +49,7 @@ if __name__ == '__main__':
         raw,
         flickr,
         amend,
+        delete,
     )
 
     # Config

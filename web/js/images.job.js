@@ -31,14 +31,17 @@ $(function() {
                             var comment = '';
                             if (entry.method === 'jpeg_import') {
                                 if (entry.options.is_derivative) {
-                                    comment = 'Attaching ' + entry.options.folder + '/' + entry.options.source_path;
+                                    comment = 'Attach ' + entry.options.folder + '/' + entry.options.source_path;
                                 } else {
-                                    comment = 'Importing ' + entry.options.folder + '/' + entry.options.source_path;
+                                    comment = 'Import ' + entry.options.folder + '/' + entry.options.source_path;
                                 }
                             } else if (entry.method === 'raw_import') {
-                                comment = 'Importing ' + entry.options.folder + '/' + entry.options.source_path;
+                                comment = 'Import ' + entry.options.folder + '/' + entry.options.source_path;
                             } else if (entry.method === 'imageproxy') {
-                                comment = 'Generating proxy';
+                                comment = 'Generate proxy';
+                            } else if (entry.method === 'delete') {
+                                comment = 'Delete variant ' + entry.options.variant.purpose + '/'
+                                    + entry.options.variant.version;
                             }
                             $('#job_table tbody')
                                 .append('<tr>' +
