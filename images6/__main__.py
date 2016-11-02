@@ -43,8 +43,14 @@ if __name__ == '__main__':
     from . import publish
 
     from . import job
-    from .job import imageproxy, jpg, raw
-    #from .job import flickr, raw, amend
+    from .job import (
+        imageproxy,
+        jpg,
+        raw,
+        flickr,
+        amend,
+        delete,
+    )
 
     # Config
     system = System(args.config)

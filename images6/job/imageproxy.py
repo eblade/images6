@@ -4,7 +4,8 @@ import logging
 from jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
-from ..job import JobHandler, register_job_handler
+from ..job import JobHandler, register_job_handler, Job, create_job
+from ..job.delete import DeleteJobHandler
 from ..entry import (
     Entry,
     Variant,
@@ -69,7 +70,7 @@ class ImageProxyJobHandler(JobHandler):
         else:
             mirror = 0
 
-        self.create_variant(
+        thumb = self.create_variant(
             'thumb',
             Purpose.thumb,
             self.system.thumb_size,
@@ -77,19 +78,57 @@ class ImageProxyJobHandler(JobHandler):
             mirror,
         )
 
-        self.create_variant('proxy',
+        proxy = self.create_variant('proxy',
             Purpose.proxy,
             self.system.proxy_size,
             angle,
             mirror,
         )
 
-        self.create_check(angle, mirror)
+        check = self.create_check(angle, mirror)
 
         logging.debug('Created proxy files.')
 
-        update_entry_by_id(self.entry.id, self.entry)
+        print('-- 1 --')
+        print(self.entry.to_json())
+        self.delete_deprecated()
+        print('-- 2 --')
+        print(self.entry.to_json())
+        self.entry.variants += [thumb, proxy, check]
+        print('-- 3 --')
+        print(self.entry.to_json())
+        self.entry = update_entry_by_id(self.entry.id, self.entry)
+        print('-- 4 --')
+        print(self.entry.to_json())
+
         logging.info('Done with image proxy generation.')
+
+    def delete_deprecated(self):
+        logging.debug('Deleting deprecated variants...')
+        keep = []
+        while len(self.entry.variants):
+            variant = self.entry.variants.pop(0)
+            if variant.source_purpose is self.source.purpose \
+                    and variant.source_version == self.source.version:
+
+                logging.info("Creating delete job for %s.", variant)
+                delete_job = Job(
+                    method=DeleteJobHandler.method,
+                    options=DeleteJobHandler.Options(
+                        entry_id=self.entry.id,
+                        variant=variant,
+                    )
+                )
+                delete_job = create_job(delete_job)
+                logging.info("Created delete job %d.", delete_job.id)
+
+            else:
+                keep.append(variant)
+
+        self.entry.variants = keep
+
+        logging.debug('Done deleting deprecated variants.')
+
 
     def create_variant(self, store, purpose, longest_edge, angle, mirror):
         variant = Variant(
@@ -113,7 +152,7 @@ class ImageProxyJobHandler(JobHandler):
         )
         s = os.stat(full_path)
         variant.size=s.st_size
-        self.entry.variants.append(variant)
+        return variant
 
     def create_check(self, angle, mirror):
         variant = Variant(
@@ -137,7 +176,7 @@ class ImageProxyJobHandler(JobHandler):
         )
         s = os.stat(full_path)
         variant.size=s.st_size
-        self.entry.variants.append(variant)
+        return variant
 
 
 register_job_handler(ImageProxyJobHandler)

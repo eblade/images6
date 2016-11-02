@@ -474,16 +474,20 @@ $(function() {
                         link(variant, data.urls[variant.purpose][variant.version] + "?download=yes");
                     });
 
-                    if (has_original) {
+                    if (has_original || has_derivative) {
                         action('proxy', 'create new proxy', function() {
                             $.ajax({
-                                url: '/plugin/imageproxy/trig',
-                                method: 'post',
+                                url: '/job',
+                                method: 'POST',
                                 contentType: "application/json",
                                 data: JSON.stringify({
-                                    '*schema': 'ImageProxyOptions',
-                                    entry_id: data._id,
-                                    source_purpose: has_derivative ? 'derivative' : 'original',
+                                    '*schema': 'Job',
+                                    method: 'imageproxy',
+                                    options: {
+                                        '*schema': 'ImageProxyOptions',
+                                        entry_id: data._id,
+                                        source_purpose: has_derivative ? 'derivative' : 'original',
+                                    },
                                 }),
                                 success: function(data) {
                                     $('#action_proxy').html('creating');
@@ -497,12 +501,16 @@ $(function() {
                     if (!has_raw) {
                         action('raw', 'fetch raw file', function() {
                             $.ajax({
-                                url: '/plugin/rawfetch/trig',
-                                method: 'post',
+                                url: '/job',
+                                method: 'POST',
                                 contentType: "application/json",
                                 data: JSON.stringify({
-                                    '*schema': 'RawFetchOptions',
-                                    entry_id: data._id,
+                                    '*schema': 'Job',
+                                    method: 'rawfetch',
+                                    options: {
+                                        '*schema': 'RawFetchOptions',
+                                        entry_id: data._id,
+                                    },
                                 }),
                                 success: function(data) {
                                     $('#action_raw').html('fetching');
@@ -523,13 +531,17 @@ $(function() {
 
                     action('flickr', has_flickr ? 'replace on flickr' : 'publish to flickr', function() {
                         $.ajax({
-                            url: '/plugin/flickr/trig',
-                            method: 'post',
+                            url: '/job',
+                            method: 'POST',
                             contentType: "application/json",
                             data: JSON.stringify({
-                                '*schema': 'FlickrOptions',
-                                entry_id: data._id,
-                                source_purpose: has_derivative ? 'derivative' : 'original',
+                                '*schema': 'Job',
+                                method: 'flickr',
+                                options: {
+                                    '*schema': 'FlickrOptions',
+                                    entry_id: data._id,
+                                    source_purpose: has_derivative ? 'derivative' : 'original',
+                                },
                             }),
                             success: function(data) {
                                 $('#action_flickr').html('sent');
@@ -542,12 +554,16 @@ $(function() {
 
                     action('amend', 'amend entry', function() {
                         $.ajax({
-                            url: '/plugin/amend/trig',
-                            method: 'post',
+                            url: '/job',
+                            method: 'POST',
                             contentType: "application/json",
                             data: JSON.stringify({
-                                '*schema': 'AmendOptions',
-                                entry_id: data._id,
+                                '*schema': 'Job',
+                                method: 'amend',
+                                options: {
+                                    '*schema': 'AmendOptions',
+                                    entry_id: data._id,
+                                },
                             }),
                             success: function(data) {
                                 $('#action_amend').fadeOut(400);
