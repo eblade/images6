@@ -86,7 +86,7 @@ $(function() {
         };
 
         update(true);
-        //window.setInterval(update, 5000);
+        window.setInterval(update, 5000);
 
         $(id).click(function(e) {
             if ($.Images.jobs.showing) {
