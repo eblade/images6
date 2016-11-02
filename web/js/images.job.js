@@ -25,7 +25,7 @@ $(function() {
                                                          '<th>time</th>' +
                                                          '<th>entry</th>' +
                                                          '<th>comment</th>' +
-                                                         '</thead><tbody></tbody><table>');
+                                                         '</thead><tbody></tbody></table>');
 
                         $.each(data.entries, function(index, entry) {
                             var comment = '';
@@ -45,11 +45,11 @@ $(function() {
                             }
                             $('#job_table tbody')
                                 .append('<tr>' +
-                                        '<td class="state ' + entry.state + '">' + entry.state + '</td>' +
-                                        '<td>' + entry.method + '</td>' +
-                                        '<td>' + (entry.stopped - entry.started).toFixed(3) + '</td>' +
-                                        '<td>' + (entry.options.entry_id || '-') + '</td>' +
-                                        '<td>' + (entry.message || comment) + '</td>' +
+                                        '<td class="state ' + entry.state + '">' + entry.state.substr(0, 1) + '</td>' +
+                                        '<td class="method">' + entry.method + '</td>' +
+                                        '<td class="time">' + (entry.stopped - entry.started).toFixed(3) + '</td>' +
+                                        '<td class="entry">' + (entry.options.entry_id || '-') + '</td>' +
+                                        '<td class="comment">' + (entry.message || comment) + '</td>' +
                                         '</tr>');
                         });
 
@@ -86,7 +86,7 @@ $(function() {
         };
 
         update(true);
-        window.setInterval(update, 5000);
+        //window.setInterval(update, 5000);
 
         $(id).click(function(e) {
             if ($.Images.jobs.showing) {

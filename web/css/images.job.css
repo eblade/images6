@@ -14,28 +14,49 @@
 #more_jobs {
     position: absolute;
     left: 5pt;
+    right: 5pt;
     top: 71pt;
-    width: 500pt;
     background-color: #48a;
     color: white;
-    box-shadow: 0pt 0pt 10pt white;
 }
 
 #job_table {
     width: 100%;
+    border-color: white;
+    padding: 0;
+    border-spacing: 0;
+    border-collapse: separate;
+}
+
+#job_table thead {
+    background-color: white;
+    border-color: white;
+}
+
+#job_table thead tr {
+    background-color: white;
+    border-color: white;
 }
 
 #job_table th {
+    padding: 3pt;
     text-align: left;
-    border-bottom: 1pt dotted #8bd;
-    color: white;
+    color: #48a;
+    background-color: white;
     font-weight: bold;
 }
 
+#job_table td {
+    padding-top: 1pt;
+    padding-left: 3pt;
+    padding-bottom: 1pt;
+}
+
 #job_table td.state {
-    width: 60pt;
+    width: 10pt;
     text-align: center;
     font-weight: bold;
+    text-transform: uppercase;
 }
 
 #job_table td.new { }
@@ -45,12 +66,30 @@
 #job_table td.held { background-color: #288 }
 #job_table td.done { background-color: #284; }
 
+#job_table td.method {
+    width: 100pt;
+    font-weight: bold;
+}
+
+#job_table td.time {
+    width: 40pt;
+    font-style: italic;
+}
+
+#job_table td.entry {
+    width: 40pt;
+}
+
+#job_table td.comment {
+    font-weight: bold;
+}
+
 #more_jobs div.info {
     padding: 10pt;
 }
 
 div.job_action_buttons {
-    padding: 10pt;
+    padding-top: 0pt;
 }
 
 div.job_action_button {
@@ -59,6 +98,6 @@ div.job_action_button {
     padding: 8pt;
     display: inline-block;
     margin-top: 5pt;
-    margin-left: 5pt;
+    margin-left: 0pt;
     cursor: pointer;
 }
