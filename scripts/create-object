@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# create-object FILENAME OBJECT_FOLDER
+
+# Move FILENAME into a subfolder of OBJECT_FOLDER
+# If FILE is abcdefg, the the target is OBJECT_FOLDER/ab/cd/efg
+
+FILENAME="$1"
+OBJECT_FOLDER="$2"
+
+if [ ${#FILENAME} -le 3 ]; then echo "FILENAME too short" ; exit 1; fi
+if [ -z "$OBJECT_FOLDER" ]; then echo "OBJECT_FOLDER not given"; exit 2; fi
+
+FOLDER=${FILENAME:0:2}
+TARGET=${FILENAME:2}
+
+OBJECT_FOLDER="$OBJECT_FOLDER/$FOLDER"
+
+mkdir -p "$OBJECT_FOLDER"
+
+mv "$FILENAME" "$OBJECT_FOLDER/$TARGET"

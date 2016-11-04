@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# md5sum-only FILENAME
+
+# Calculate and echo *only* the md5 sum of FILE
+
+FILENAME="$1"
+
+MD5RESULT=$(md5sum $FILENAME)
+
+splitintwo() {
+    echo $1
+}
+
+MD5SUM=$(splitintwo $MD5RESULT)
+
+echo "$MD5SUM"

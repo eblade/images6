@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# md5sum-link FILENAME TARGET_FOLDER
+
+# Calculate the md5sum of FILENAME and hard link
+# FILENAME as MD5SUM into TARGET_FOLDER
+
+FILENAME="$1"
+TARGET_FOLDER="$2"
+
+if [ -z "$FILENAME" ]; then echo "FILENAME not given"; exit 2; fi
+if [ -z "$TARGET_FOLDER" ]; then echo "TARGET_FOLDER not given"; exit 2; fi
+
+MD5SUM=$(md5sum-only "$FILENAME")
+
+mkdir -p "$TARGET_FOLDER"
+
+ln "$FILENAME" "$TARGET_FOLDER/$MD5SUM"
