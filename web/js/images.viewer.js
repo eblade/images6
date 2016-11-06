@@ -662,7 +662,11 @@ $(function() {
                         toggle_copies();
                     } else if (event.which === 75) { // k
                         set_state($.scope.focus, 'keep');
+                    } else if (event.which === 81) { // q
+                        set_state($.scope.focus, 'keep');
                     } else if (event.which === 88) { // x
+                        set_state($.scope.focus, 'purge');
+                    } else if (event.which === 87) { // w
                         set_state($.scope.focus, 'purge');
                     } else if (event.which === 67) { // c
                         toggle_check();

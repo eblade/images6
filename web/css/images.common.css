@@ -63,6 +63,10 @@ h2 {
     border-color: #248;
 }
 
+.todo {
+    border-color: #248;
+}
+
 .empty {
     background-color: #666;
     border-color: #666;

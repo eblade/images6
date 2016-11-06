@@ -133,8 +133,10 @@ $(function() {
                     var date_css = 'index_normal';
                     if (date.count === 0) {
                         date_css = 'index_empty';
-                    } else if (date.stats.pending > 0 || date.stats.todo > 0 || date.stats.wip > 0) {
+                    } else if (date.stats.pending > 0) {
                         date_css = 'index_pending';
+                    } else if (date.stats.todo > 0 || date.stats.wip > 0) {
+                        date_css = 'index_todo';
                     } else if (date.stats.purge > 0) {
                         date_css = 'index_purge';
                     }
