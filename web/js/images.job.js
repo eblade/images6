@@ -9,7 +9,7 @@ $(function() {
                 success: function (data) {
                     if (data.stats.failed === 0) {
                         $(id).removeClass('error').html((data.stats.new + data.stats.acquired + data.stats.active) || 'OK');
-                        if (data.stats.active > 0) {
+                        if ((data.stats.active + data.stats.acquired + data.stats.new) > 0) {
                             $(id).addClass('active');
                         } else {
                             $(id).removeClass('active');
@@ -45,7 +45,7 @@ $(function() {
                             }
                             var time = '-';
                             if (entry.stopped && entry.started) {
-                                time = (entry.stopped - entry.started).toFixed(3) 
+                                time = (entry.stopped - entry.started).toFixed(3);
                             }
                             $('#job_table tbody')
                                 .append('<tr>' +
