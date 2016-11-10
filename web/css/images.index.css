@@ -98,7 +98,7 @@ div.index_tag {
     font-weight: bold;
     margin-left: 10pt;
     margin-top: 10pt;
-    padding: 8pt;
+    padding: 4pt;
     text-align: center;
     vertical-align: middle;
 }
@@ -108,9 +108,10 @@ span.index_tag {
 
 span.index_tag_count {
     font-size: 14pt;
-    margin-left: 8pt;
-    background-color: white;
-    color: #246;
+    margin-left: -4pt;
+    margin-right: 8pt;
+    background-color: #999;
+    color: #123;
     padding: 4pt;
 }
 

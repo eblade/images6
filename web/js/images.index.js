@@ -167,9 +167,9 @@ $(function() {
             success: function(data) {
                 $.each(data.entries, function(index, tag) {
                     $(feed_div)
-                        .append('<div class="index_tag"><span class="index_tag">' +
-                                tag.tag + '</span><span class="index_tag_count">' +
-                                tag.count + '</span></div>');
+                        .append('<div class="index_tag"><span class="index_tag_count">' +
+                                tag.count + '</span><span class="index_tag">' +
+                                tag.tag + '</span></div>');
                 });
             },
             error: function(data) {
