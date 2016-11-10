@@ -1,96 +1,80 @@
 $(function() {
     var
         menu_div = '#index_menu',
-        feed_div = '#index_feed';
+        sub_menu_div = '#index_sub_menu',
+        feed_div = '#index_feed',
+        jobs_div = '#index_menu_jobs';
+        imports_div = '#index_menu_imports';
+
+    var Menu = function(container_id) {
+        var that = {};
+        that.current = null;
+        that.container_id = container_id;
+
+        that.toggle = function(name, callback) {
+            if (that.current === null || that.current !== name) {
+                that.current = name;
+                $(that.container_id).html('');
+                callback();
+                $(that.container_id).fadeIn(300);
+            } else {
+                $(that.container_id).fadeOut(300);
+                that.current = null;
+            }
+        };
+
+        that.showing = function(name) {
+            return that.current === name;
+        };
+
+        that.close = function() {
+            $(that.container_id).fadeOut(300);
+            that.current = null;
+        }
+
+        return that;
+    };
 
     var load_menu = function() {
-        $(menu_div)
-            .html('<div id="index_jobs" class="index_menu_button">jobs</div>');
-        $.Images.jobs('#index_jobs', '#more_jobs');
-        $.ajax({
-            url: 'importer',
-            success: function(data) {
-                $.each(data.entries, function(index, trigger) {
-                    $(menu_div)
-                        .append('<div id="menu_trig_' + trigger.name +
-                                '" class="index_menu_button">import from ' + trigger.name +
-                                '</div>');
-                    $('#menu_trig_' + trigger.name)
-                        .click(function() {
-                            $(menu_div).hide();
-                            $.ajax({
-                                url: trigger.trig_url,
-                                method: 'POST',
-                                success: function(data) {
-                                    monitor('importer/status', 'importing', 'scanning', 'importing',
-                                        feed_div, function() {
-                                            load_index(feed_div);
-                                            $(feed_div).fadeIn(400)
-                                            $(menu_div).fadeIn(400)
-                                        }
-                                    );
-                                },
-                                error: function(data) {
-                                    alert('Error');
-                                },
-                            });
-                        });
-                });
-                $(menu_div)
-                    .append('<div id="menu_trig_purge" class="index_menu_button">purge</div>');
-                $('#menu_trig_purge')
-                    .click(function() {
-                        $(menu_div).hide();
-                        $.ajax({
-                            url: 'purger/trig',
-                            method: 'POST',
-                            success: function(data) {
-                                monitor('purger/status', 'purging', 'reading', 'deleting',
-                                    feed_div, function() {
-                                        load_index(feed_div);
-                                        $(feed_div).fadeIn(400)
-                                        $(menu_div).fadeIn(400)
-                                    }
-                                );
-                            },
-                            error: function(data) {
-                                alert('Error');
-                            },
-                        });
-                    });
-            },
-        });
-    };
+        var menu = Menu(sub_menu_div);
+        $(sub_menu_div).hide();
 
-    var monitor = function(url, caption, before, active, div, callback) {
-        $(div)
-            .html('<h2>' + caption + '</h2>')
-            .append('<div class="common_progress_outer"><div class="common_progress_inner" id="progress"></div></div>')
-            .append('<div class="common_error_message" id="menu_failure"></div>');
+        $.Images.jobs(menu, jobs_div);
+        $.Images.imports(menu, imports_div);
 
-        var poll = function() {
-            $.ajax({
-                url: url,
-                success: function(data) {
-                    if (data.failed > 0) {
-                        $('#menu_failure').html(data.failed + ' failed');
-                    }
-                    $('#progress').css('width', data.progress + '%');
-                    if (data.status === 'acquired' || data.status === before || data.status === active) {
-                        window.setTimeout(function() { poll(); }, 1000);
-                    } else {
-                        $(div).fadeOut(400)
-                        $.wait(500).then(callback);
-                    }
-                },
-                error: function(data) {
-                },
+        $('#index_menu_tags')
+            .click(function() {
+                document.location.hash = 'tags';
             });
-        };
-        poll();
+
+        $('#index_menu_dates')
+            .click(function() {
+                document.location.hash = 'dates';
+            });
+
+        $('#index_menu_purge')
+            .click(function() {
+                $(menu_div).hide();
+                $.ajax({
+                    url: 'purger/trig',
+                    method: 'POST',
+                    success: function(data) {
+                        $.monitor('purger/status', 'purging', 'reading', 'deleting',
+                            feed_div, function() {
+                                load_dates(feed_div);
+                                $(feed_div).fadeIn(400)
+                                $(menu_div).fadeIn(400)
+                            }
+                        );
+                    },
+                    error: function(data) {
+                        alert('Error');
+                    },
+                });
+            });
     };
 
-    var load_index = function() {
+    var load_dates = function(scroll_target) {
         $(feed_div)
             .html('');
         $.ajax({
@@ -175,15 +159,49 @@ $(function() {
         this.window.location = 'view-date#' + date;
     };
 
+    var load_tags = function(tags) {
+        $(feed_div).html('<div class="index_year">tags</div>');
+        $.ajax({
+            url: 'tag',
+            method: 'GET',
+            success: function(data) {
+                $.each(data.entries, function(index, tag) {
+                    $(feed_div)
+                        .append('<div class="index_tag"><span class="index_tag">' +
+                                tag.tag + '</span><span class="index_tag_count">' +
+                                tag.count + '</span></div>');
+                });
+            },
+            error: function(data) {
+                $(feed_div).append('Error! Failed to fetch tags...');
+            },
+        });
+    };
+
     load_menu('#index_menu');
-    load_index('#index_feed');
+
+    if (document.location.hash === '#tags') {
+        load_tags();
+    } else if (document.location.hash === '#dates') {
+        load_dates();
+    } else if (document.location.hash) {
+        load_dates(document.location.hash);
+    } else {
+        document.location.hash = 'index';
+    }
 
     $(document)
         .ready(function() {
             $(window)
                 .hashchange(function() {
                     if (document.location.hash) {
-                        $.scroll_to(document.location.hash, 200);
+                        if (document.location.hash === '#tags') {
+                            load_tags();
+                        } else if (document.location.hash === '#dates') {
+                            load_dates();
+                        } else {
+                            $.scroll_to(document.location.hash, 200);
+                        }
                     }
                 });
         });

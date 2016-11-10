@@ -1,7 +1,9 @@
 $(function() {
     var
-        feed_div = '#date_feed';
-    $.scope = {
+        feed_div = '#viewer_feed';
+
+    $.Images = $.Images || {};
+    $.Images.Viewer = {
         offset: 0,
         focus: 0,
         showing_viewer: false,
@@ -9,132 +11,42 @@ $(function() {
         showing_copies: false,
         mode: 'proxy',
         date: null,
-    };
-
-    var load_date = function(params) {
-        params = params || Object();
-        var date = params.date || 'today';
-        var delta = params.delta || '0';
-        var override = params.override || false;
-        $.scope.focus = 0;
-        if (document.location.hash !== '#' + date) {
-            document.location.hash = '#' + date;
-        } else if (!override) {
-            return;
-        }
-        $.ajax({
-            url: 'entry?date=' + date + '&delta=' + delta,
-            success: function(data) {
-                date = data.date;
-                $.scope.date = date;
-                $('#date_feed')
-                    .html('');
-                $('#date_this')
-                    .html(date)
-                    .click(function() { load_date({'date': 'today', 'delta': '0'}); });
-                $('#date_back')
-                    .click(function() { back_to_index(); });
-                $('#date_purge')
-                    .click(function() { purge_pending(); });
-                $.Images.autosave('#date_info_short');
-                $.Images.autosave('#date_info_full');
-                load_date_info(date);
-                $.each(data.entries, function(index, entry) {
-                    $('#date_feed')
-                        .append('<img data-self-url="' + entry.self_url +
-                                '" data-state="' + entry.state +
-                                '" data-state-url="' + entry.state_url +
-                                '" data-check-url="' + entry.check_url +
-                                '" data-proxy-url="' + entry.proxy_url +
-                                '" class="thumb date_state_' + entry.state + '" id="thumb_' + index +
-                                '" src="' + entry.thumb_url +
-                                '" title="' + index + '"/>');
-                    $('#thumb_' + index)
-                        .click(function(event) {
-                            var id = parseInt(this.title);
-                            var thumb = $('img.thumb')[id]
-                            update_focus({focus: id});
-                            show_viewer({
-                                proxy_url: thumb.getAttribute('data-proxy-url'),
-                            });
-                        });
-                });
-                update_focus({focus: 0});
-                $.scope.total_count = data.count;
-            },
-        });
-    };
-
-    var load_date_info = function (date) {
-        $.ajax({
-            url: '/date/' + date,
-            success: function(data) {
-                $('#date_info_short').val(data.short);
-                $('#date_info_short')[0].setAttribute('data-url', '/date/' + date);
-                $('#date_info_full').html(data.full);
-                $('#date_info_full')[0].setAttribute('data-url', '/date/' + date);
-                $('#date_details')
-                    .html(data.count + (data.count === 1 ? ' entry' : ' entries'));
-                if (data.stats) {
-                    if (data.stats.pending > 0) {
-                        $('#date_details')
-                            .append('<span class="viewer_state_label toggle_state_pending">' + data.stats.pending + ' pending</span>');
-                    }
-                    if (data.stats.purge > 0) {
-                        $('#date_details')
-                            .append('<span class="viewer_state_label toggle_state_purge">' + data.stats.purge + ' to purge</span>');
-                    }
-                    if (data.stats.todo > 0) {
-                        $('#date_details')
-                            .append('<span class="viewer_state_label toggle_state_todo">' + data.stats.todo + ' todo</span>');
-                    }
-                    if (data.stats.wip > 0) {
-                        $('#date_details')
-                            .append('<span class="viewer_state_label toggle_state_wip">' + data.stats.wip + ' wip</span>');
-                    }
-                    if (data.stats.final > 0) {
-                        $('#date_details')
-                            .append('<span class="viewer_state_label toggle_state_final">' + data.stats.final + ' final</span>');
-                    }
-                }
-            },
-            error: function(data) {
-            },
-        })
+        state_callback: function() {},
     };
 
     var update_focus = function(params) {
         params = params || new Object();
         var move = params.move || 0;
         var focus = params.focus;
-        var old_focus = $.scope.focus;
+        var old_focus = $.Images.Viewer.focus;
 
         if (focus === undefined) {
-            $.scope.focus += move;
+            $.Images.Viewer.focus += move;
         } else if (focus === -1) {
-            $.scope.focus = $.scope.total_count - 1;
+            $.Images.Viewer.focus = $.Images.Viewer.total_count - 1;
         } else {
-            $.scope.focus = focus;
+            $.Images.Viewer.focus = focus;
         }
 
-        if ($.scope.focus < 0) {
-            $.scope.focus = 0;
-        } else if ($.scope.focus >= $.scope.total_count) {
-            $.scope.focus = $.scope.total_count - 1;
+        if ($.Images.Viewer.focus < 0) {
+            $.Images.Viewer.focus = 0;
+        } else if ($.Images.Viewer.focus >= $.Images.Viewer.total_count) {
+            $.Images.Viewer.focus = $.Images.Viewer.total_count - 1;
         }
 
-        if ($.scope.focus !== old_focus) {
-            $.scroll_to('#thumb_' + $.scope.focus, 260);
+        if ($.Images.Viewer.focus !== old_focus) {
+            $.scroll_to('#thumb_' + $.Images.Viewer.focus, 260);
         }
 
         $('.thumb').each(function(index, thumb) {
-            if (index === $.scope.focus) {
-                if ($.scope.mode === 'check') {
-                    $.scope.mode = 'proxy';
+            if (index === $.Images.Viewer.focus) {
+                if ($.Images.Viewer.mode === 'check') {
+                    $.Images.Viewer.mode = 'proxy';
                 }
-                if ($.scope.showing_viewer) {
+                if ($.Images.Viewer.showing_viewer) {
                     show_viewer({
                         proxy_url: thumb.getAttribute('data-proxy-url'),
+                        strip: thumb.getAttribute('data-strip'),
                         animate: false,
                     });
                 }
@@ -149,7 +61,7 @@ $(function() {
     };
 
     var toggle_select = function() {
-        $('.thumb:eq(' + $.scope.focus + ')').toggleClass('thumb_selected');
+        $('.thumb:eq(' + $.Images.Viewer.focus + ')').toggleClass('thumb_selected');
     };
 
     var purge_pending = function() {
@@ -162,14 +74,14 @@ $(function() {
                     method: 'PUT',
                     success: function(data) {
                         thumb.setAttribute('data-state', 'purge');
-                        load_date_info($.scope.date);
+                        $.Images.Viewer.state_callback();
                     },
                     error: function(data) {
                         alert("Unabled to purge " + id);
                     },
                 });
-                $(thumb).removeClass('date_state_pending');
-                $(thumb).addClass('date_state_purge');
+                $(thumb).removeClass('state_pending');
+                $(thumb).addClass('state_purge');
             }
         });
         $('#day_thisday').click();
@@ -178,6 +90,7 @@ $(function() {
     var show_viewer = function(params) {
         params = params || Object();
         var proxy_url = params.proxy_url;
+        var strip = params.strip || '';
         var animate = params.animate === undefined ? true : params.animate;
 
         $('#viewer_metadata').hide();
@@ -187,25 +100,26 @@ $(function() {
         if (animate) {
             $('#viewer_overlay').fadeIn();
         }
-        $.scope.mode = 'proxy';
-        $.scope.showing_viewer = true;
-        $.scope.showing_metadata = false;
-        $.scope.showing_copies = false;
+        $('#viewer_strip').html(strip);
+        $.Images.Viewer.mode = 'proxy';
+        $.Images.Viewer.showing_viewer = true;
+        $.Images.Viewer.showing_metadata = false;
+        $.Images.Viewer.showing_copies = false;
         sync_overlay_buttons();
     };
 
     var back_to_index = function() {
-        document.location = '/#' + $.scope.date;
+        document.location = '/#' + $.Images.Viewer.date;
     };
 
     var hide_viewer = function() {
-        load_date_info($.scope.date);
-        $.scope.showing_viewer = false;
+        $.Images.Viewer.state_callback();
+        $.Images.Viewer.showing_viewer = false;
         $('#viewer_overlay').hide();
     };
 
     var sync_overlay_buttons = function() {
-        var thumb = $('img.thumb')[$.scope.focus];
+        var thumb = $('img.thumb')[$.Images.Viewer.focus];
         var state = thumb.getAttribute('data-state');
         if (state === 'keep') {
             $('#viewer_keep').addClass('toggle_state_keep');
@@ -232,17 +146,17 @@ $(function() {
         } else {
             $('#viewer_final').removeClass('toggle_state_final');
         }
-        if ($.scope.mode === 'check') {
+        if ($.Images.Viewer.mode === 'check') {
             $('#viewer_check').addClass('toggle_selected');
         } else {
             $('#viewer_check').removeClass('toggle_selected');
         }
-        if ($.scope.showing_metadata) {
+        if ($.Images.Viewer.showing_metadata) {
             $('#viewer_toggle_metadata').addClass('toggle_selected').addClass('toggle_extended');
         } else {
             $('#viewer_toggle_metadata').removeClass('toggle_selected').removeClass('toggle_extended');
         }
-        if ($.scope.showing_copies) {
+        if ($.Images.Viewer.showing_copies) {
             $('#viewer_toggle_copies').addClass('toggle_selected').addClass('toggle_extended');
         } else {
             $('#viewer_toggle_copies').removeClass('toggle_selected').removeClass('toggle_extended');
@@ -258,13 +172,13 @@ $(function() {
             success: function(data) {
                 thumb.setAttribute('data-state', new_state);
                 sync_overlay_buttons();
-                $(thumb).removeClass('date_state_pending');
-                $(thumb).removeClass('date_state_purge');
-                $(thumb).removeClass('date_state_keep');
-                $(thumb).removeClass('date_state_todo');
-                $(thumb).removeClass('date_state_wip');
-                $(thumb).removeClass('date_state_final');
-                $(thumb).addClass('date_state_' + new_state);
+                $(thumb).removeClass('state_pending');
+                $(thumb).removeClass('state_purge');
+                $(thumb).removeClass('state_keep');
+                $(thumb).removeClass('state_todo');
+                $(thumb).removeClass('state_wip');
+                $(thumb).removeClass('state_final');
+                $(thumb).addClass('state_' + new_state);
             },
             error: function(data) {
                 alert("Unabled to set state for " + id);
@@ -273,13 +187,13 @@ $(function() {
     };
 
     var toggle_check = function() {
-        var thumb = $('img.thumb')[$.scope.focus];
-        if ($.scope.mode === 'check') {
+        var thumb = $('img.thumb')[$.Images.Viewer.focus];
+        if ($.Images.Viewer.mode === 'check') {
             var url = thumb.getAttribute('data-proxy-url');
-            $.scope.mode = 'proxy';
+            $.Images.Viewer.mode = 'proxy';
         } else {
             var url = thumb.getAttribute('data-check-url');
-            $.scope.mode = 'check';
+            $.Images.Viewer.mode = 'check';
         }
         $('#viewer_overlay').css('background-image', 'url(' + url + ')');
         sync_overlay_buttons();
@@ -287,17 +201,17 @@ $(function() {
 
     var toggle_metadata = function(showing_metadata) {
         if (showing_metadata === undefined) {
-            $.scope.showing_metadata = !$.scope.showing_metadata;
+            $.Images.Viewer.showing_metadata = !$.Images.Viewer.showing_metadata;
         } else {
-            $.scope.showing_metadata = showing_metadata;
+            $.Images.Viewer.showing_metadata = showing_metadata;
         }
-        if ($.scope.showing_metadata) {
-            $.scope.showing_copies = false;
+        if ($.Images.Viewer.showing_metadata) {
+            $.Images.Viewer.showing_copies = false;
             $('#viewer_copies').fadeOut();
         }
         sync_overlay_buttons();
-        if ($.scope.showing_metadata) {
-            var thumb = $('img.thumb')[$.scope.focus];
+        if ($.Images.Viewer.showing_metadata) {
+            var thumb = $('img.thumb')[$.Images.Viewer.focus];
             var url = thumb.getAttribute('data-self-url');
             $('#viewer_metadata').fadeIn();
             $('#viewer_metadata_content').html('loading...');
@@ -327,9 +241,27 @@ $(function() {
                             return valid_values.indexOf(value) !== -1;
                         } : undefined);
                     };
+                    var mrow = function(key, value, patch_key) {
+                        value = value === null ? '' : value.join(', ');
+                        var
+                            url = '/entry/' + data._id,
+                            id = 'autosave_' + patch_key;
+                        $('#viewer_metadata_content')
+                            .append('<div class="viewer_metadata_key">' + key + '</div>' +
+                                    '<div class="viewer_metadata_editable">' +
+                                    '<input id="' + id + '" value="' + value + '" ' +
+                                           'data-url="' + url + '" ' +
+                                           'data-name="' + patch_key + '"/></div>');
+                        $.Images.autosave('#' + id, undefined, function(value) {
+                            value = value.split(',');
+                            value = value.map(function(x) { return x.trim() });
+                            return value.filter(function(x) { return x !== "" });
+                        });
+                    };
                     row('ID', data._id);
                     srow('Title', data.title, 'title', false);
                     srow('Description', data.description, 'description', false);
+                    mrow('Tags', data.tags, 'tags');
                     srow('Artist', data.metadata.Artist, 'Artist', true);
                     row('Taken', data.metadata.DateTimeOriginal);
                     if (data.metadata.FNumber[0] === 0) {
@@ -357,14 +289,14 @@ $(function() {
     };
 
     var toggle_copies = function() {
-        $.scope.showing_copies = !$.scope.showing_copies;
-        if ($.scope.showing_copies) {
-            $.scope.showing_metadata = false;
+        $.Images.Viewer.showing_copies = !$.Images.Viewer.showing_copies;
+        if ($.Images.Viewer.showing_copies) {
+            $.Images.Viewer.showing_metadata = false;
             $('#viewer_metadata').fadeOut();
         }
         sync_overlay_buttons();
-        if ($.scope.showing_copies) {
-            var thumb = $('img.thumb')[$.scope.focus];
+        if ($.Images.Viewer.showing_copies) {
+            var thumb = $('img.thumb')[$.Images.Viewer.focus];
             var url = thumb.getAttribute('data-self-url');
             $('#viewer_copies').fadeIn();
             $('#viewer_copies_content').html('loading...');
@@ -444,7 +376,7 @@ $(function() {
                             $('#' + id)
                                 .click(function() {
                                     $('#viewer_overlay').css('background-image', 'url(' + url + ')');
-                                    $.scope.mode = v.purpose;
+                                    $.Images.Viewer.mode = v.purpose;
                                     sync_overlay_buttons();
                                 });
                         }
@@ -584,23 +516,29 @@ $(function() {
 
     };
 
-    $('#button_select_all').click(function() {
+    var create_strip = function(entry) {
+        return entry.taken_ts + ' #' + entry._id + ' '
+            + entry.import_folder + '/' + entry.original_filename
+            + ' [' + entry.mime_type + '] ';
+    };
+
+    $('#viewer_select_all').click(function() {
         $('.thumb').each(function(index, thumb) {
             $(thumb).addClass('thumb_selected');
         });
     });
 
-    $('#button_select_none').click(function() {
+    $('#viewer_select_none').click(function() {
         $('.thumb').each(function(index, thumb) {
             $(thumb).removeClass('thumb_selected');
         });
     });
 
-    $('#viewer_keep').click(function() { set_state($.scope.focus, 'keep'); });
-    $('#viewer_purge').click(function() { set_state($.scope.focus, 'purge'); });
-    $('#viewer_todo').click(function() { set_state($.scope.focus, 'todo'); });
-    $('#viewer_wip').click(function() { set_state($.scope.focus, 'wip'); });
-    $('#viewer_final').click(function() { set_state($.scope.focus, 'final'); });
+    $('#viewer_keep').click(function() { set_state($.Images.Viewer.focus, 'keep'); });
+    $('#viewer_purge').click(function() { set_state($.Images.Viewer.focus, 'purge'); });
+    $('#viewer_todo').click(function() { set_state($.Images.Viewer.focus, 'todo'); });
+    $('#viewer_wip').click(function() { set_state($.Images.Viewer.focus, 'wip'); });
+    $('#viewer_final').click(function() { set_state($.Images.Viewer.focus, 'final'); });
     $('#viewer_toggle_metadata').click(function() { toggle_metadata(); });
     $('#viewer_toggle_copies').click(function() { toggle_copies(); });
     $('#viewer_check').click(function() { toggle_check(); });
@@ -632,26 +570,27 @@ $(function() {
                 } else if (event.which === 83) { // space
                     toggle_select();
                     event.preventDefault();
-                } else if (!$.scope.showing_viewer) {
+                } else if (!$.Images.Viewer.showing_viewer) {
                     if (event.which === 27) { // escape
                         back_to_index();
                         event.preventDefault();
                     } else if (event.which === 13) { // return
-                        var thumb = $('img.thumb')[$.scope.focus];
+                        var thumb = $('img.thumb')[$.Images.Viewer.focus];
                         show_viewer({
                             proxy_url: thumb.getAttribute('data-proxy-url'),
+                            strip: thumb.getAttribute('data-strip'),
                         });
                         event.preventDefault();
                     }
-                } else if ($.scope.showing_viewer) {
+                } else if ($.Images.Viewer.showing_viewer) {
                     if (event.which === 38) { // up
                         event.preventDefault();
                     } else if (event.which === 40) { // down
                         event.preventDefault();
                     } else if (event.which === 27) { // escape
-                        if ($.scope.showing_metadata) {
+                        if ($.Images.Viewer.showing_metadata) {
                             toggle_metadata();
-                        } else if ($.scope.showing_copies) {
+                        } else if ($.Images.Viewer.showing_copies) {
                             toggle_copies();
                         } else {
                             hide_viewer();
@@ -661,13 +600,13 @@ $(function() {
                     } else if (event.which === 70) { // f
                         toggle_copies();
                     } else if (event.which === 75) { // k
-                        set_state($.scope.focus, 'keep');
+                        set_state($.Images.Viewer.focus, 'keep');
                     } else if (event.which === 81) { // q
-                        set_state($.scope.focus, 'keep');
+                        set_state($.Images.Viewer.focus, 'keep');
                     } else if (event.which === 88) { // x
-                        set_state($.scope.focus, 'purge');
+                        set_state($.Images.Viewer.focus, 'purge');
                     } else if (event.which === 87) { // w
-                        set_state($.scope.focus, 'purge');
+                        set_state($.Images.Viewer.focus, 'purge');
                     } else if (event.which === 67) { // c
                         toggle_check();
                     }
@@ -676,7 +615,8 @@ $(function() {
         });
     };
 
-    $.Images = $.Images || {};
-    $.Images.load_date = load_date;
-    $.Images.bind_keys = bind_keys;
+    $.Images.Viewer.bind_keys = bind_keys;
+    $.Images.Viewer.update_focus = update_focus;
+    $.Images.Viewer.show_viewer = show_viewer;
+    $.Images.Viewer.create_strip = create_strip;
 });

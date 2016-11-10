@@ -1,3 +1,57 @@
+.viewer_info {
+    position: absolute;
+    left: 160pt;
+    top: 5pt;
+    right: 5pt;
+}
+
+.viewer_header {
+    width: 100%;
+    margin-top: 0pt;
+    margin-left: 0pt;
+    margin-right: 0pt;
+    background-color: #333;
+}
+
+.viewer_first_button_row {
+    position: absolute;
+    top: 0pt;
+    left: 5pt;
+    margin-left: 0pt;
+    margin-right: 0pt;
+}
+
+.viewer_second_button_row {
+    position: absolute;
+    top: 0pt;
+    left: 77pt;
+    margin-left: 0pt;
+    margin-right: 0pt;
+}
+
+.viewer_button {
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    height: 40pt;
+    line-height: 40pt;
+    margin-left: 0pt;
+    margin-top: 5pt;
+    padding: 8pt;
+    text-align: center;
+    vertical-align: middle;
+    width: 50pt;
+}
+
+#viewer_feed {
+    position: absolute;
+    top: 190pt;
+    left: 0pt;
+    bottom: 0pt;
+    right: 0pt;
+}
+
 .viewer_toggle {
     margin-left: 5pt;
     margin-top: 5pt;
@@ -95,8 +149,7 @@
 }
 
 .toggle_state_purge {
-    background-color: #843;
-    border-color: #843;
+    background-color: #f43;
 }
 
 .toggle_state_keep {
@@ -163,3 +216,57 @@
     margin-left: 5pt;
     cursor: pointer;
 }
+
+.viewer_strip {
+    position: absolute;
+    bottom: 0;
+    padding: 2pt;
+    right: 0;
+    background-color: black;
+    color: white;
+    font-family: fixed, "lucida console", "courier new";
+    font-size: 13pt;
+}
+
+img.thumb {
+    height: 150pt;
+    margin-left: 5pt;
+    margin-right: 5pt;
+    margin-top: 5pt;
+    margin-bottom: 3pt;
+    border: 4pt solid #333;
+}
+
+img.thumb_selected {
+    border-style: dashed !important;
+    border-bottom-color: white !important;
+}
+
+img.thumb_focused {
+    border-color: white !important;
+}
+
+img.state_pending {
+    border-color: #248;
+}
+
+img.state_purge {
+    border-color: #f43;
+}
+
+img.state_keep {
+    border-color: #444;
+}
+
+img.state_todo {
+    border-color: #248;
+}
+
+img.state_wip {
+    border-color: #288;
+}
+
+img.state_final {
+    border-color: #284;
+}
+

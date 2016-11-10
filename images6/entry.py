@@ -13,7 +13,6 @@ from jsonobject import (
     get_schema,
 )
 
-from .plugin import trig_plugin
 from .system import current_system
 from .web import (
     Create,
@@ -200,7 +199,7 @@ class Entry(PropertySet):
     raw_url = Property(calculated=True)
     derivative_url = Property(calculated=True)
 
-    _patchable = 'title', 'description'
+    _patchable = 'title', 'description', 'tags'
 
     def get_variant(self, purpose, version=None):
         variants = [variant for variant in self.variants
@@ -431,7 +430,7 @@ def patch_entry_metadata_by_id(id, patch):
     if 'Angle' in patch:
         options = get_schema('ImageProxyOptions')()
         options.entry_id = id
-        trig_plugin('imageproxy', options)
+        #trig_plugin('imageproxy', options)
 
     return get_entry_by_id(id)
 

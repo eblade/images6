@@ -1,8 +1,6 @@
 $(function() {
-    var jobs = function (id, more_id) {
-        $(more_id).hide();
-
-        var update = function (force) {
+    var jobs = function (menu, id) {
+        var load = function (force) {
             $.ajax({
                 url: 'job?page_size=20',
                 method: 'GET',
@@ -17,15 +15,15 @@ $(function() {
                     } else {
                         $(id).removeClass('active').addClass('error').html(data.stats.error);
                     }
-                    if ($.Images.jobs.showing || force) {
-                        $(more_id).html('');
-                        $(more_id).html('<table id="job_table"><thead>' +
-                                                         '<th></th>' +
-                                                         '<th>method</th>' +
-                                                         '<th>time</th>' +
-                                                         '<th>entry</th>' +
-                                                         '<th>comment</th>' +
-                                                         '</thead><tbody></tbody></table>');
+                    if (menu.showing('jobs') || force) {
+                        $(menu.container_id).html(
+                                '<table id="job_table"><thead>' +
+                                '<th></th>' +
+                                '<th>method</th>' +
+                                '<th>time</th>' +
+                                '<th>entry</th>' +
+                                '<th>comment</th>' +
+                                '</thead><tbody></tbody></table>');
 
                         $.each(data.entries, function(index, entry) {
                             var comment = '';
@@ -57,7 +55,7 @@ $(function() {
                                         '</tr>');
                         });
 
-                        $(more_id)
+                        $(menu.container_id)
                             .append('<div class="info">' +
                                     data.stats.total + ' jobs (' +
                                     data.stats.new + ' new, ' +
@@ -89,21 +87,14 @@ $(function() {
             });
         };
 
-        update(true);
-        window.setInterval(update, 5000);
+        load(true);
+        window.setInterval(load, 5000);
 
         $(id).click(function(e) {
-            if ($.Images.jobs.showing) {
-                $.Images.jobs.showing = false;
-                $(more_id).fadeOut(300);
-            } else {
-                $.Images.jobs.showing = true;
-                $(more_id).fadeIn(300);
-            }
+            menu.toggle('jobs', load);
         });
     };
 
     $.Images = $.Images || {};
     $.Images.jobs = jobs;
-    $.Images.jobs.showing = false;
 });

@@ -38,9 +38,11 @@ if __name__ == '__main__':
     from . import web
     from . import entry
     from . import date
+    from . import tag
     from . import importer
     from . import deleter
     from . import publish
+    from . import debug
 
     from . import job
     from .job import (
@@ -65,10 +67,12 @@ if __name__ == '__main__':
         for module in (
             entry,
             date,
+            tag,
             importer,
             deleter,
             publish,
             job,
+            debug,
         ):
             logging.info(
                 "Setting up %s on %s..." % (module.__name__, module.App.BASE)
@@ -86,6 +90,7 @@ if __name__ == '__main__':
             host=system.server_host,
             port=system.server_port,
             server=system.server_adapter,
+            debug=True,
         )
 
     elif command == 'select':

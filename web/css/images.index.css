@@ -20,7 +20,7 @@
     padding: 8pt;
     text-align: center;
     vertical-align: middle;
-    width: 200pt;
+    width: 100pt;
 }
 
 /* DATE */
@@ -88,5 +88,38 @@
 .index_purge {
     background-color: #843;
     border-color: #843;
+}
+
+div.index_tag {
+    background-color: #48a;
+    color: white;
+    cursor: pointer;
+    display: inline-block;
+    font-weight: bold;
+    margin-left: 10pt;
+    margin-top: 10pt;
+    padding: 8pt;
+    text-align: center;
+    vertical-align: middle;
+}
+
+span.index_tag {
+}
+
+span.index_tag_count {
+    font-size: 14pt;
+    margin-left: 8pt;
+    background-color: white;
+    color: #246;
+    padding: 4pt;
+}
+
+#index_sub_menu {
+    position: absolute;
+    left: 5pt;
+    right: 5pt;
+    top: 71pt;
+    background-color: #48a;
+    color: white;
 }
 

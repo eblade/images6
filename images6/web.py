@@ -1,5 +1,6 @@
 import os
 import bottle
+import urllib
 
 
 class App:
@@ -43,6 +44,11 @@ class App:
             path='/view-date',
             callback=lambda: bottle.static_file('date.html', root=self.HTML),
         )
+        app.route(
+            path='/view-tag',
+            callback=lambda: bottle.static_file('tag.html', root=self.HTML),
+        )
+
 
         return app
 
@@ -102,7 +108,7 @@ def FetchByQuery(function, QueryClass=None, pre=None):
         if QueryClass is None:
             result = function()
         else:
-            q = QueryClass.FromRequest()
+            q = make_query_from_request(QueryClass)
             result = function(q)
         return result.to_dict(include_calculated=True)
     return f
@@ -163,7 +169,7 @@ def UpdateByIdAndQuery(function, QueryClass=None, pre=None):
         if QueryClass is None:
             result = function(id)
         else:
-            q = QueryClass.FromRequest()
+            q = make_query_from_request(QueryClass)
             result = function(id, q)
         return result.to_dict(include_calculated=True)
     return f
@@ -200,3 +206,7 @@ def Delete(function, pre=None):
         function()
         raise bottle.HTTPError(204)
     return f
+
+
+def make_query_from_request(QueryClass):
+    return QueryClass.FromDict(bottle.request.query.decode())

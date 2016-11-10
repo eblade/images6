@@ -78,6 +78,10 @@ class System:
             result['total'] = len(values)
             return result
 
+        def each_tag(value):
+            for subvalue in value.get('tags', []):
+                yield (subvalue, None)
+
         self.entry_root = os.path.join(self.root, 'entry')
         entry = jsondb.Database(self.entry_root)
         entry.define(
@@ -100,6 +104,11 @@ class System:
         entry.define(
             'by_source',
             lambda o: ((o['import_folder'], o['original_filename']), None)
+        )
+        entry.define(
+            'by_tag',
+            each_tag,
+            lambda keys, values, rereduce: len(values),
         )
         self.db['entry'] = entry
 
@@ -157,9 +166,9 @@ class ImportFolder:
 
         if type == 'folder':
             try:
-                os.makedirs(path, exist_ok=True)
+                os.makedirs(self.path, exist_ok=True)
             except Exception as e:
-                logging.error("Import Folder %s not reachable: %s.", path, str(e))
+                logging.error("Import Folder %s not reachable: %s.", self.path, str(e))
 
         self.imported_file = os.path.join(
                 system_root, name + '_imported.index')
@@ -237,9 +246,9 @@ class ExportFolder:
 
         if type == 'folder':
             try:
-                os.makedirs(path, exist_ok=True)
+                os.makedirs(self.path, exist_ok=True)
             except Exception as e:
-                logging.error("Export Folder %s not reachable: %s.", path, str(e))
+                logging.error("Export Folder %s not reachable: %s.", self.path, str(e))
 
     def __repr__(self):
         return '<ExportFolder %s%s %s>' % ('+' if self.backup else '-', self.name, self.path)

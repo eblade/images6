@@ -1,4 +1,4 @@
-#index_jobs {
+#index_menu_jobs {
     width: 40pt !important;
 }
 
@@ -9,15 +9,6 @@
 #index_jobs.active {
     background-color: white; !important;
     color: #48a !important
-}
-
-#more_jobs {
-    position: absolute;
-    left: 5pt;
-    right: 5pt;
-    top: 71pt;
-    background-color: #48a;
-    color: white;
 }
 
 #job_table {
@@ -99,5 +90,6 @@ div.job_action_button {
     display: inline-block;
     margin-top: 5pt;
     margin-left: 0pt;
+    margin-right: 5pt;
     cursor: pointer;
 }

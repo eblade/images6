@@ -1,5 +1,5 @@
 $(function() {
-    var autosave = function (id, validator) {
+    var autosave = function (id, validator, preprocessor) {
         $(id).change(function () {
             $(id).removeClass('autosave_error').addClass('autosave_saving');
             var url = $(id)[0].getAttribute('data-url');
@@ -11,6 +11,9 @@ $(function() {
                     $(id).removeClass('autosave_saving').addClass('autosave_error');
                     return;
                 }
+            }
+            if (preprocessor !== undefined) {
+                value = preprocessor(value);
             }
             data[field] = value;
             $.ajax({
