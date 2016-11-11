@@ -12,6 +12,7 @@ $(function() {
         mode: 'proxy',
         date: null,
         state_callback: function() {},
+        index_hash: '',
     };
 
     var update_focus = function(params) {
@@ -109,7 +110,7 @@ $(function() {
     };
 
     var back_to_index = function() {
-        document.location = '/#' + $.Images.Viewer.date;
+        document.location = '/#' + $.Images.Viewer.index_hash;
     };
 
     var hide_viewer = function() {
@@ -522,6 +523,9 @@ $(function() {
             + ' [' + entry.mime_type + '] ';
     };
 
+    $('#viewer_back').click(back_to_index);
+    $('#viewer_autopurge').click(purge_pending);
+
     $('#viewer_select_all').click(function() {
         $('.thumb').each(function(index, thumb) {
             $(thumb).addClass('thumb_selected');
@@ -619,4 +623,5 @@ $(function() {
     $.Images.Viewer.update_focus = update_focus;
     $.Images.Viewer.show_viewer = show_viewer;
     $.Images.Viewer.create_strip = create_strip;
+    $.Images.Viewer.back_to_index = back_to_index;
 });

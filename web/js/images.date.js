@@ -15,15 +15,12 @@ $(function() {
             success: function(data) {
                 date = data.date;
                 $.Images.Viewer.date = date;
+                $.Images.Viewer.index_hash = date;
                 $('#viewer_feed')
                     .html('');
                 $('#date_this')
                     .html(date)
                     .click(function() { load_date({'date': 'today', 'delta': '0'}); });
-                $('#viewer_back')
-                    .click(function() { back_to_index(); });
-                $('#viewer_autopurge')
-                    .click(function() { purge_pending(); });
                 $.Images.autosave('#date_info_short');
                 $.Images.autosave('#date_info_full');
                 load_date_info(date);
