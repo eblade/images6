@@ -62,6 +62,13 @@
     font-weight: bold;
 }
 
+#job_table td.updated {
+    width: 160pt;
+    color: #ccc;
+    overflow-x: hidden;
+    white-space: nowrap;
+}
+
 #job_table td.time {
     width: 40pt;
     font-style: italic;
@@ -75,7 +82,7 @@
     font-weight: bold;
 }
 
-#more_jobs div.info {
+div.job_info {
     padding: 10pt;
 }
 

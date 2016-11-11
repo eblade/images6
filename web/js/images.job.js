@@ -20,6 +20,7 @@ $(function() {
                                 '<table id="job_table"><thead>' +
                                 '<th></th>' +
                                 '<th>method</th>' +
+                                '<th>updated</th>' +
                                 '<th>time</th>' +
                                 '<th>entry</th>' +
                                 '<th>comment</th>' +
@@ -41,6 +42,7 @@ $(function() {
                                 comment = 'Delete variant ' + entry.options.variant.purpose + '/'
                                     + entry.options.variant.version;
                             }
+                            var updated = new Date(entry.updated * 1000);
                             var time = '-';
                             if (entry.stopped && entry.started) {
                                 time = (entry.stopped - entry.started).toFixed(3);
@@ -49,6 +51,7 @@ $(function() {
                                 .append('<tr>' +
                                         '<td class="state ' + entry.state + '">' + entry.state.substr(0, 1) + '</td>' +
                                         '<td class="method">' + entry.method + '</td>' +
+                                        '<td class="updated">' + updated + '</td>' +
                                         '<td class="time">' + time + '</td>' +
                                         '<td class="entry">' + (entry.options.entry_id || '-') + '</td>' +
                                         '<td class="comment">' + (entry.message || comment) + '</td>' +
@@ -56,7 +59,7 @@ $(function() {
                         });
 
                         $(menu.container_id)
-                            .append('<div class="info">' +
+                            .append('<div class="job_info">' +
                                     data.stats.total + ' jobs (' +
                                     data.stats.new + ' new, ' +
                                     data.stats.acquired + ' acquired, ' +
