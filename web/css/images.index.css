@@ -21,6 +21,32 @@
     text-align: center;
     vertical-align: middle;
     width: 100pt;
+    font-weight: bold;
+}
+
+.index_menu_selected {
+    background-color: white !important;
+    color: #48a !important;
+}
+
+#index_sub_menu {
+    position: absolute;
+    left: 5pt;
+    right: 5pt;
+    top: 66pt;
+    background-color: #48a;
+    color: white;
+}
+
+.index_sub_menu_strap {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    background-color: white;
+    color: #48a;
+    font-weight: bold;
+    height: 17pt;
 }
 
 /* DATE */
@@ -114,13 +140,3 @@ span.index_tag_count {
     color: #123;
     padding: 4pt;
 }
-
-#index_sub_menu {
-    position: absolute;
-    left: 5pt;
-    right: 5pt;
-    top: 71pt;
-    background-color: #48a;
-    color: white;
-}
-

@@ -4,6 +4,8 @@ $(function() {
             $.ajax({
                 url: 'importer',
                 success: function(data) {
+                    $(menu.container_id)
+                        .html('<div class="index_sub_menu_strap"></div>');
                     $.each(data.entries, function(index, trigger) {
                         $(menu.container_id)
                             .append('<div id="import_trig_' + trigger.name +
@@ -20,7 +22,7 @@ $(function() {
                                             'importing',
                                             'scanning',
                                             'importing',
-                                            menu.container_id, 
+                                            menu.container_id,
                                             menu.close
                                         );
                                     },
@@ -34,6 +36,7 @@ $(function() {
             });
         };
 
+        menu.register_button('imports', id);
         $(id).click(function(e) {
             menu.toggle('imports', load);
         });

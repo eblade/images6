@@ -6,12 +6,14 @@ $(function() {
         jobs_div = '#index_menu_jobs';
         imports_div = '#index_menu_imports';
 
-    var Menu = function(container_id) {
+    var Menu = function(container_id, button_id) {
         var that = {};
         that.current = null;
         that.container_id = container_id;
+        that.button_ids = {};
 
         that.toggle = function(name, callback) {
+            var close = false;
             if (that.current === null || that.current !== name) {
                 that.current = name;
                 $(that.container_id).html('');
@@ -20,7 +22,15 @@ $(function() {
             } else {
                 $(that.container_id).fadeOut(300);
                 that.current = null;
+                close = true;
             }
+            $.each(that.button_ids, function(button_name, button_id) {
+                if (button_name === name && !close) {
+                    $(button_id).addClass('index_menu_selected');
+                } else {
+                    $(button_id).removeClass('index_menu_selected');
+                }
+            });
         };
 
         that.showing = function(name) {
@@ -30,7 +40,11 @@ $(function() {
         that.close = function() {
             $(that.container_id).fadeOut(300);
             that.current = null;
-        }
+        };
+
+        that.register_button = function(name, button_id) {
+            that.button_ids[name] = button_id;
+        };
 
         return that;
     };
@@ -144,9 +158,9 @@ $(function() {
                         .click(function() {
                             load_date(this.getAttribute('data-date'));
                         });
-                    if (document.location.hash) {
-                        $.scroll_to(document.location.hash, 200);
-                    }
+                    //if (document.location.hash) {
+                    //    $.scroll_to(document.location.hash, 200);
+                    //}
                 });
             },
             error: function(data) {
@@ -191,20 +205,19 @@ $(function() {
     };
 
 
-    load_menu('#index_menu');
-
-    if (document.location.hash === '#tags') {
-        load_tags();
-    } else if (document.location.hash === '#dates') {
-        load_dates();
-    } else if (document.location.hash) {
-        load_dates(document.location.hash);
-    } else {
-        document.location.hash = 'index';
-    }
 
     $(document)
         .ready(function() {
+            load_menu('#index_menu');
+            if (document.location.hash === '#tags') {
+                load_tags();
+            } else if (document.location.hash === '#dates') {
+                load_dates();
+            } else if (document.location.hash) {
+                load_dates(document.location.hash);
+            } else {
+                document.location.hash = 'index';
+            }
             $(window)
                 .hashchange(function() {
                     if (document.location.hash) {

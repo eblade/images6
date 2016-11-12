@@ -6,7 +6,8 @@ $(function() {
                 method: 'GET',
                 success: function (data) {
                     if (data.stats.failed === 0) {
-                        $(id).removeClass('error').html((data.stats.new + data.stats.acquired + data.stats.active) || 'OK');
+                        var enqueued = data.stats.new + data.stats.acquired + data.stats.active;
+                        $(id).removeClass('error').html(enqueued ? enqueued + ' jobs' : 'system');
                         if ((data.stats.active + data.stats.acquired + data.stats.new) > 0) {
                             $(id).addClass('active');
                         } else {
@@ -93,6 +94,7 @@ $(function() {
         load(true);
         window.setInterval(load, 5000);
 
+        menu.register_button('jobs', id);
         $(id).click(function(e) {
             menu.toggle('jobs', load);
         });
