@@ -101,11 +101,12 @@ def get_tags(query=None):
 
 def get_tag(tag, offset, page_size):
     tag_iter = current_system().db['entry'].view(
-        'by_tag',
+        'by_tag_and_taken_ts',
         no_reduce=True,
-        key=tag,
+        startkey=(tag, None),
+        endkey=(tag, any),
         include_docs=True,
-    ) 
+    )
 
     entries = [
         Entry.FromDict(data['doc'])

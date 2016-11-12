@@ -82,6 +82,10 @@ class System:
             for subvalue in value.get('tags', []):
                 yield (subvalue, None)
 
+        def each_tag_with_taken_ts(value):
+            for subvalue in value.get('tags', []):
+                yield ((subvalue, value.get('taken_ts')), None)
+
         self.entry_root = os.path.join(self.root, 'entry')
         entry = jsondb.Database(self.entry_root)
         entry.define(
@@ -109,6 +113,10 @@ class System:
             'by_tag',
             each_tag,
             lambda keys, values, rereduce: len(values),
+        )
+        entry.define(
+            'by_tag_and_taken_ts',
+            each_tag_with_taken_ts,
         )
         self.db['entry'] = entry
 
