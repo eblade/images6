@@ -10,7 +10,7 @@ $(function() {
             return;
         }
         $.ajax({
-            url: 'tag?tag=' + tag,
+            url: 'tag?tag=' + tag + '&page_size=500',
             success: function(data) {
                 tag = data.tag;
                 $.Images.Viewer.tag = tag;
