@@ -42,7 +42,7 @@ $(function() {
                             $.Images.Viewer.update_focus({focus: id});
                             $.Images.Viewer.show_viewer({
                                 proxy_url: thumb.getAttribute('data-proxy-url'),
-                                strip: thumb.getAttribute('data-strip'),
+                                strip: $.Images.Viewer.fix_strip(thumb.getAttribute('data-strip')),
                             });
                         });
                 });

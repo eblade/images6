@@ -144,9 +144,9 @@ $(function() {
                         .click(function() {
                             load_date(this.getAttribute('data-date'));
                         });
-                    //if (document.location.hash) {
-                    //    $.scroll_to(document.location.hash, 200);
-                    //}
+                    if (document.location.hash) {
+                        $.scroll_to(document.location.hash, 200);
+                    }
                 });
             },
             error: function(data) {
@@ -166,10 +166,18 @@ $(function() {
             method: 'GET',
             success: function(data) {
                 $.each(data.entries, function(index, tag) {
+                    var tag_id = 'tag_' + tag.tag;
                     $(feed_div)
-                        .append('<div class="index_tag"><span class="index_tag_count">' +
+                        .append('<div class="index_tag" id="' + tag_id +
+                                '" data-tag="' + tag.tag +
+                                '"><span class="index_tag_count">' +
                                 tag.count + '</span><span class="index_tag">' +
                                 tag.tag + '</span></div>');
+                    $(feed_div)
+                        .find('.index_tag')
+                        .click(function() {
+                            load_tag(this.getAttribute('data-tag'));
+                        });
                 });
             },
             error: function(data) {
@@ -177,6 +185,11 @@ $(function() {
             },
         });
     };
+
+    var load_tag = function(tag) {
+        this.window.location = 'view-tag#' + tag;
+    };
+
 
     load_menu('#index_menu');
 
