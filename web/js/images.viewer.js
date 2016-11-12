@@ -534,8 +534,8 @@ $(function() {
 
     var fix_strip = function(s) {
         return s
-            .replace('[tag]', '<span class="viewer_strip_tag">')
-            .replace('[/tag]', '</span>')
+            .replace(/\[tag\]/g, '<span class="viewer_strip_tag">')
+            .replace(/\[\/tag\]/g, '</span>')
     }
 
     $('#viewer_back').click(back_to_index);
