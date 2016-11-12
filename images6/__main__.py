@@ -52,6 +52,7 @@ if __name__ == '__main__':
         flickr,
         amend,
         delete,
+        tag as tag_job,
     )
 
     # Config

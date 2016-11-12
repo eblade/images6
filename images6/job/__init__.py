@@ -237,7 +237,6 @@ def get_jobs(query):
         state = None
 
     else:
-        logging.info(query.to_query_string())
         offset = query.offset
         page_size = query.page_size
         state = None if query.state is None else query.state.value

@@ -200,7 +200,7 @@ $(function() {
         sync_overlay_buttons();
     };
 
-    var toggle_metadata = function(showing_metadata) {
+    var toggle_metadata = function(showing_metadata, and_focus_input) {
         if (showing_metadata === undefined) {
             $.Images.Viewer.showing_metadata = !$.Images.Viewer.showing_metadata;
         } else {
@@ -278,13 +278,19 @@ $(function() {
                     srow('Angle', data.metadata.Angle, 'Angle', true, ['-270', '-180', '-90', '0', '90', '180', '270']);
                     srow('Copyright', data.metadata.Copyright, 'Copyright', true);
                     row('Source', data.import_folder + '/' + data.original_filename);
+                    if (and_focus_input !== undefined) {
+                        $('#autosave_' + and_focus_input).focus();
+                    }
                 },
                 error: function(data) {
                     $('#viewer_metadata_content').html('no metadata, apparently');
                 },
             });
         } else {
-            $('#viewer_metadata').fadeOut();
+            $('#viewer_metadata').fadeOut(300);
+            $.wait(300).then(function() {
+                $('#viewer_metadata_content').html('');
+            });
         }
 
     };
@@ -535,17 +541,19 @@ $(function() {
     $('#viewer_back').click(back_to_index);
     $('#viewer_autopurge').click(purge_pending);
 
-    $('#viewer_select_all').click(function() {
+    var select_all = function() {
         $('.thumb').each(function(index, thumb) {
             $(thumb).addClass('thumb_selected');
         });
-    });
+    };
+    $('#viewer_select_all').click(select_all);
 
-    $('#viewer_select_none').click(function() {
+    var select_none = function() {
         $('.thumb').each(function(index, thumb) {
             $(thumb).removeClass('thumb_selected');
         });
-    });
+    };
+    $('#viewer_select_none').click(select_none);
 
     $('#viewer_keep').click(function() { set_state($.Images.Viewer.focus, 'keep'); });
     $('#viewer_purge').click(function() { set_state($.Images.Viewer.focus, 'purge'); });
@@ -557,10 +565,79 @@ $(function() {
     $('#viewer_check').click(function() { toggle_check(); });
     $('#viewer_close').click(function() { hide_viewer(); });
 
+    $('#viewer_input').hide();
+
+    var show_bulk_add_tags = function() {
+        $('#viewer_input').fadeIn();
+        $('#viewer_input_heading').html('Add tags');
+        $('#viewer_input_box').focus()
+        $.wait(100).then(function() {
+            $('#viewer_input_box').val('');
+        });
+        $.Images.Viewer.showing_input_box = true;
+        $.Images.Viewer.input_box_callback = function() {
+            var value = $('#viewer_input_box').val();
+            value = value.split(',');
+            value = value.map(function(x) { return x.trim() });
+            value = value.filter(function(x) { return x !== "" });
+            $.ajax({
+                url: '/job',
+                method: 'POST',
+                contentType: "application/json",
+                data: JSON.stringify({
+                    '*schema': 'Job',
+                    method: 'tag_update',
+                    options: {
+                        '*schema': 'TagBulkUpdateOptions',
+                        entry_ids: $.map($('.thumb_selected'), function(thumb) { return thumb.getAttribute('data-id'); }),
+                        add_tags: value,
+                    },
+                }),
+                success: function(data) {
+                },
+                error: function(data) {
+                    alert('no!');
+                },
+            });
+        };
+    };
+
+    var hide_input_box = function() {
+        $('#viewer_input_box').blur();
+        $('#viewer_input').fadeOut();
+        $.Images.Viewer.showing_input_box = false;
+        $.Images.Viewer.input_box_callback = undefined;
+    };
+
     var bind_keys = function() {
         $(document).keydown(function(event) {
-            if ($('input,textarea').is(':focus')) {
-                // let it be
+            if (event.which === 27) { // escape
+                if ($.Images.Viewer.showing_viewer) {
+                    if ($.Images.Viewer.showing_metadata) {
+                        toggle_metadata();
+                        event.preventDefault();
+                    } else if ($.Images.Viewer.showing_copies) {
+                        toggle_copies();
+                        event.preventDefault();
+                    } else {
+                        hide_viewer();
+                        event.preventDefault();
+                    }
+                } else if ($.Images.Viewer.showing_input_box) {
+                    hide_input_box();
+                    event.preventDefault();
+                } else {
+                    back_to_index();
+                    event.preventDefault();
+                }
+            } else if ($('input,textarea').is(':focus')) {
+                if (event.which === 13) { // return
+                    if ($.Images.Viewer.showing_input_box) {
+                        $.Images.Viewer.input_box_callback();
+                        hide_input_box();
+                        event.preventDefault();
+                    }
+                }
             } else {
                 if (event.which === 37) { // left
                     update_focus({move: -1});
@@ -584,30 +661,25 @@ $(function() {
                     toggle_select();
                     event.preventDefault();
                 } else if (!$.Images.Viewer.showing_viewer) {
-                    if (event.which === 27) { // escape
-                        back_to_index();
-                        event.preventDefault();
-                    } else if (event.which === 13) { // return
+                    if (event.which === 13) { // return
                         var thumb = $('img.thumb')[$.Images.Viewer.focus];
                         show_viewer({
                             proxy_url: thumb.getAttribute('data-proxy-url'),
                             strip: $.Images.Viewer.fix_strip(thumb.getAttribute('data-strip')),
                         });
                         event.preventDefault();
+                    } else if (event.which === 84) { // t
+                        show_bulk_add_tags();
+                    } else if (event.which === 65) { // a
+                        select_all();
+                    } else if (event.which === 78) { // n
+                        select_none();
                     }
                 } else if ($.Images.Viewer.showing_viewer) {
                     if (event.which === 38) { // up
                         event.preventDefault();
                     } else if (event.which === 40) { // down
                         event.preventDefault();
-                    } else if (event.which === 27) { // escape
-                        if ($.Images.Viewer.showing_metadata) {
-                            toggle_metadata();
-                        } else if ($.Images.Viewer.showing_copies) {
-                            toggle_copies();
-                        } else {
-                            hide_viewer();
-                        }
                     } else if (event.which === 77) { // m
                         toggle_metadata();
                     } else if (event.which === 70) { // f
@@ -622,6 +694,8 @@ $(function() {
                         set_state($.Images.Viewer.focus, 'purge');
                     } else if (event.which === 67) { // c
                         toggle_check();
+                    } else if (event.which === 84) { // t
+                        toggle_metadata(true, 'tags');
                     }
                 }
             }

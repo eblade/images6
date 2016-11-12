@@ -337,7 +337,6 @@ def get_entries(query=None):
         reverse = False
 
     else:
-        logging.info(query.to_query_string())
         offset = query.offset
         page_size = query.page_size
         date = query.date
@@ -398,7 +397,6 @@ def update_entry_by_id(id, entry):
     entry.id = id
     logging.debug('Updating entry to\n%s', entry.to_json())
     entry = Entry.FromDict(current_system().db['entry'].save(entry.to_dict()))
-    logging.debug('Updated entry to\n%s', entry.to_json())
     return entry
 
 
@@ -450,7 +448,7 @@ def patch_entry_by_id(id, patch):
                 if key in Variant._patchable:
                     setattr(variant, key, value)
 
-    logging.info(entry.to_json())
+    logging.debug(entry.to_json())
     current_system().db['entry'].save(entry.to_dict())
     return get_entry_by_id(id)
 

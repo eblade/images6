@@ -273,3 +273,28 @@ img.state_final {
 .viewer_strip_tag {
     color: green !important;
 }
+
+#viewer_input {
+    position: fixed;
+    left: 10pt;
+    bottom: 10pt;
+    background-color: #48a;
+}
+
+#viewer_input_heading {
+    margin: 0;
+    background-color: white;
+    color: #48a;
+    font-weight: bold;
+    height: 17pt;
+    font-size: 16pt;
+}
+
+#viewer_input_box {
+    margin: 16pt;
+    border: 0;
+    background-color: white;
+    color: #48a;
+    font-weight: bold;
+    font-size: 16pt;
+}
