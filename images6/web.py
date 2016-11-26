@@ -48,6 +48,10 @@ class App:
             path='/view-tag',
             callback=lambda: bottle.static_file('tag.html', root=self.HTML),
         )
+        app.route(
+            path='/view-state',
+            callback=lambda: bottle.static_file('state.html', root=self.HTML),
+        )
 
 
         return app

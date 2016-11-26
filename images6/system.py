@@ -106,6 +106,10 @@ class System:
             lambda o: (o['state'], None)
         )
         entry.define(
+            'by_state_and_taken_ts',
+            lambda o: ((o['state'], o['taken_ts']), None)
+        )
+        entry.define(
             'by_source',
             lambda o: ((o['import_folder'], o['original_filename']), None)
         )

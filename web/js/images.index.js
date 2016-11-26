@@ -86,6 +86,21 @@ $(function() {
                     },
                 });
             });
+
+        $('#index_menu_state_todo')
+            .click(function() {
+                document.location = 'view-state#todo';
+            });
+
+        $('#index_menu_state_wip')
+            .click(function() {
+                document.location = 'view-state#wip';
+            });
+
+        $('#index_menu_state_final')
+            .click(function() {
+                document.location = 'view-state#final';
+            });
     };
 
     var load_dates = function(scroll_target) {

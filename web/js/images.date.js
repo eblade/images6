@@ -24,29 +24,7 @@ $(function() {
                 $.Images.autosave('#date_info_short');
                 $.Images.autosave('#date_info_full');
                 load_date_info(date);
-                $.each(data.entries, function(index, entry) {
-                    $('#viewer_feed')
-                        .append('<img data-self-url="' + entry.self_url +
-                                '" data-id="' + entry._id +
-                                '" data-state="' + entry.state +
-                                '" data-state-url="' + entry.state_url +
-                                '" data-check-url="' + entry.check_url +
-                                '" data-proxy-url="' + entry.proxy_url +
-                                '" data-strip="' + $.Images.Viewer.create_strip(entry) +
-                                '" class="thumb state_' + entry.state + '" id="thumb_' + index +
-                                '" src="' + entry.thumb_url +
-                                '" title="' + index + '"/>');
-                    $('#thumb_' + index)
-                        .click(function(event) {
-                            var id = parseInt(this.title);
-                            var thumb = $('img.thumb')[id]
-                            $.Images.Viewer.update_focus({focus: id});
-                            $.Images.Viewer.show_viewer({
-                                proxy_url: thumb.getAttribute('data-proxy-url'),
-                                strip: $.Images.Viewer.fix_strip(thumb.getAttribute('data-strip')),
-                            });
-                        });
-                });
+                $.each(data.entries, $.Images.Viewer.add_thumb);
                 $.Images.Viewer.update_focus({focus: 0});
                 $.Images.Viewer.total_count = data.count;
             },

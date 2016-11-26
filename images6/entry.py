@@ -8,6 +8,7 @@ import json
 from jsonobject import (
     PropertySet,
     Property,
+    Query,
     EnumProperty,
     wrap_dict,
     get_schema,
@@ -266,62 +267,23 @@ class EntryFeed(PropertySet):
     total_count = Property(int)
     offset = Property(int)
     date = Property()
+    state = Property(enum=State)
     entries = Property(Entry, is_list=True)
 
 
-class EntryQuery(PropertySet):
+class EntryQuery(Query):
     prev_offset = Property(int)
     offset = Property(int, default=0)
     page_size = Property(int, default=25, required=True)
     date = Property()
+    state = Property(enum=State)
     delta = Property(int, default=0)
     reverse = Property(bool, default=False)
 
-    @classmethod
-    def FromRequest(self):
-        eq = EntryQuery()
 
-        if bottle.request.query.prev_offset not in (None, ''):
-            eq.prev_offset = bottle.request.query.prev_offset
-        if bottle.request.query.offset not in (None, ''):
-            eq.offset = bottle.request.query.offset
-        if bottle.request.query.page_size not in (None, ''):
-            eq.page_size = bottle.request.query.page_size
-        if bottle.request.query.date not in (None, ''):
-            eq.date = bottle.request.query.date
-        if bottle.request.query.delta not in (None, ''):
-            eq.delta = int(bottle.request.query.delta)
-        if bottle.request.query.reverse not in (None, ''):
-            eq.reverse = (bottle.request.query.reverse == 'yes')
-
-        return eq
-
-    def to_query_string(self):
-        return urllib.parse.urlencode(
-            (
-                ('prev_offset', self.prev_offset or ''),
-                ('offset', self.offset),
-                ('page_size', self.page_size),
-                ('date', self.date),
-                ('delta', str(self.delta)),
-                ('reverse', 'yes' if self.reverse else 'no'),
-            )
-        )
-
-
-class StateQuery(PropertySet):
+class StateQuery(Query):
     state = Property()
     soft = Property(bool, default=False)
-
-    @classmethod
-    def FromRequest(self):
-        sq = StateQuery()
-        if bottle.request.query.state not in (None, ''):
-            sq.state = bottle.request.query.state
-        if bottle.request.query.soft not in (None, ''):
-            sq.soft = bottle.request.query.soft == 'yes'
-
-        return sq
 
 
 #####
@@ -331,8 +293,9 @@ class StateQuery(PropertySet):
 def get_entries(query=None):
     if query is None:
         offset = 0
-        page_size = 100
+        page_size = 500
         date = None
+        state = None
         delta = 0
         reverse = False
 
@@ -342,14 +305,19 @@ def get_entries(query=None):
         date = query.date
         delta = query.delta
         reverse = query.reverse
+        state = query.state
 
-    if date is None:
+    if state is not None:
         entry_data = current_system().db['entry'].view(
-            'by_taken_ts',
-            include_docs=True
+            'by_state_and_taken_ts',
+            startkey=(state.value, None),
+            endkey=(state.value, any),
+            include_docs=True,
+            skip=offset,
+            limit=page_size,
         )
 
-    else:
+    elif date is not None:
         if date == 'today':
             date = datetime.date.today()
         else:
@@ -360,14 +328,26 @@ def get_entries(query=None):
             'by_taken_ts',
             startkey=(date.year, date.month, date.day),
             endkey=(date.year, date.month, date.day, any),
-            include_docs=True
+            include_docs=True,
+            skip=offset,
+            limit=page_size,
         )
+
+    else:
+        entry_data = current_system().db['entry'].view(
+            'by_taken_ts',
+            include_docs=True,
+            skip=offset,
+            limit=page_size,
+        )
+
 
     entries = [Entry.FromDict(entry.get('doc')) for entry in entry_data]
     for entry in entries:
         entry.calculate_urls()
     return EntryFeed(
-        date=date.isoformat(),
+        date=(date.isoformat() if date else None),
+        state=state,
         count=len(entries),
         offset=offset,
         entries=entries if not reverse else list(reversed(entries)),

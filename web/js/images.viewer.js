@@ -538,6 +538,29 @@ $(function() {
             .replace(/\[\/tag\]/g, '</span>')
     }
 
+    var add_thumb = function(index, entry) {
+        $('#viewer_feed')
+            .append('<img data-self-url="' + entry.self_url +
+                    '" data-state="' + entry.state +
+                    '" data-state-url="' + entry.state_url +
+                    '" data-check-url="' + entry.check_url +
+                    '" data-proxy-url="' + entry.proxy_url +
+                    '" data-strip="' + create_strip(entry) +
+                    '" class="thumb state_' + entry.state + '" id="thumb_' + index +
+                    '" src="' + entry.thumb_url +
+                    '" title="' + index + '"/>');
+        $('#thumb_' + index)
+            .click(function(event) {
+                var id = parseInt(this.title);
+                var thumb = $('img.thumb')[id]
+                update_focus({focus: id});
+                show_viewer({
+                    proxy_url: thumb.getAttribute('data-proxy-url'),
+                    strip: fix_strip(thumb.getAttribute('data-strip')),
+                });
+            });
+    };
+
     $('#viewer_back').click(back_to_index);
     $('#viewer_autopurge').click(purge_pending);
 
@@ -708,4 +731,5 @@ $(function() {
     $.Images.Viewer.create_strip = create_strip;
     $.Images.Viewer.fix_strip = fix_strip;
     $.Images.Viewer.back_to_index = back_to_index;
+    $.Images.Viewer.add_thumb = add_thumb;
 });
