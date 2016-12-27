@@ -231,7 +231,7 @@ $(function() {
             } else if (document.location.hash) {
                 load_dates(document.location.hash);
             } else {
-                document.location.hash = 'index';
+                document.location.hash = 'dates';
             }
             $(window)
                 .hashchange(function() {
