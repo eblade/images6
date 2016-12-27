@@ -541,6 +541,7 @@ $(function() {
     var add_thumb = function(index, entry) {
         $('#viewer_feed')
             .append('<img data-self-url="' + entry.self_url +
+                    '" data-id="' + entry._id +
                     '" data-state="' + entry.state +
                     '" data-state-url="' + entry.state_url +
                     '" data-check-url="' + entry.check_url +
