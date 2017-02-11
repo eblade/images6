@@ -90,7 +90,7 @@ class JPEGImportJobHandler(JobHandler):
             options=ImageProxyOptions(
                 entry_id=self.entry.id,
                 source_purpose=variant.purpose,
-                source_version=0,
+                source_version=variant.version,
             )
         )
         proxy_job = create_job(proxy_job)
