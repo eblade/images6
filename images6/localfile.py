@@ -219,5 +219,5 @@ def mangle(string, accept_dots=False):
 
     for bad, good in mstrs.items():
         string = string.replace(bad, good)
-    
+
     return (mangled_with_dots if accept_dots else mangled).sub('', string)

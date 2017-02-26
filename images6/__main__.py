@@ -53,6 +53,8 @@ if __name__ == '__main__':
         amend,
         delete,
         tag as tag_job,
+        remote,
+        rules,
     )
 
     # Config

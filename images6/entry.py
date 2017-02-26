@@ -233,6 +233,12 @@ class Entry(PropertySet):
         return max([variant.version for variant in self.variants
                     if variant.purpose is purpose]) + 1
 
+    def has_backup(self, variant, method):
+        return any(x for x in self.backups
+                if x.source_purpose == variant.source_purpose
+               and x.source_version == variant.source_version
+               and x.method == method)
+
     def calculate_urls(self):
         self.self_url = '%s/%i' % (App.BASE, self.id)
         self.state_url = '%s/%i/state' % (App.BASE, self.id)

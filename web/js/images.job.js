@@ -39,6 +39,10 @@ $(function() {
                                 comment = 'Import ' + entry.options.folder + '/' + entry.options.source_path;
                             } else if (entry.method === 'imageproxy') {
                                 comment = 'Generate proxy';
+                            } else if (entry.method === 'rules') {
+                                comment = 'Check rules';
+                            } else if (entry.method === 'remote') {
+                                comment = 'Remote transfer';
                             } else if (entry.method === 'delete') {
                                 comment = 'Delete variant ' + entry.options.variant.purpose + '/'
                                     + entry.options.variant.version;

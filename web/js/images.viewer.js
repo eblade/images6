@@ -358,7 +358,7 @@ $(function() {
                         }
                         if (v.purpose === 'proxy' || v.purpose === 'check') {
                             var id = 'use_' + v.purpose + '_' + v.version;
-                            show = '<span id="' + id + '">&gt;&gt;&gt;</span>';
+                            show = '<span class="viewer_show" id="' + id + '">&gt;&gt;&gt;</span>';
                         }
                         if (v.angle !== null) {
                             angle = v.angle;
@@ -382,6 +382,7 @@ $(function() {
                             var id = 'use_' + v.purpose + '_' + v.version;
                             $('#' + id)
                                 .click(function() {
+                                    toggle_copies();
                                     $('#viewer_overlay').css('background-image', 'url(' + url + ')');
                                     $.Images.Viewer.mode = v.purpose;
                                     sync_overlay_buttons();
@@ -509,6 +510,28 @@ $(function() {
                             },
                             error: function(data) {
                                 $('#action_amend').html('error');
+                            },
+                        });
+                    });
+
+                    action('rules', 'check rules', function() {
+                        $.ajax({
+                            url: '/job',
+                            method: 'POST',
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                '*schema': 'Job',
+                                method: 'rules',
+                                options: {
+                                    '*schema': 'RulesOptions',
+                                    entry_id: data._id,
+                                },
+                            }),
+                            success: function(data) {
+                                $('#action_rules').fadeOut(400);
+                            },
+                            error: function(data) {
+                                $('#action_rules').html('error');
                             },
                         });
                     });

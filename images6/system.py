@@ -26,9 +26,11 @@ class System:
         self.setup_filesystem()
         self.setup_import()
         self.setup_export()
+        self.setup_remote()
         self.setup_server()
         self.setup_database()
         self.setup_jobs()
+        self.setup_rules()
 
         current_system.system = self
         logging.info("System registered.")
@@ -47,8 +49,7 @@ class System:
             if section.startswith("Import:"):
                 name = section[7:]
                 config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
-                import_folder = ImportFolder(name, self.root, **config)
-                self.import_folders[name] = import_folder
+                self.import_folders[name] = ImportFolder(name, self.root, **config)
 
     def setup_export(self):
         self.export_folders = {}
@@ -56,8 +57,15 @@ class System:
             if section.startswith("Export:"):
                 name = section[7:]
                 config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
-                export_folder = ExportFolder(name, self.root, **config)
-                self.export_folders[name] = export_folder
+                self.export_folders[name] = ExportFolder(name, self.root, **config)
+
+    def setup_remote(self):
+        self.remotes = {}
+        for section in self.config.sections():
+            if section.startswith("Remote:"):
+                name = section[7:]
+                config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                self.remotes[name] = Remote(name, **config)
 
     def setup_server(self):
         self.server_host = self.config['Server']['host']
@@ -157,6 +165,15 @@ class System:
                 method = section[4:]
                 self.job_config[method] = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
                 logging.info('Loaded job config for %s.', method)
+
+    def setup_rules(self):
+        self.rules = {}
+        for section in self.config.sections():
+            if section.startswith("Rule:"):
+                name = section[5:]
+                config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
+                self.rules[name] = Rule(name, **config)
+
 
 
 class ImportFolder:
@@ -267,3 +284,34 @@ class ExportFolder:
 
     def get_full_path(self, filepath):
         return os.path.join(self.path, filepath)
+
+
+class Remote:
+    def __init__(self, name, type="content addressable store", host='localhost', path='', media='all'):
+        from .entry import Purpose
+        logging.info('Setting up rule %s', name)
+        self.name = name
+        self.type = type
+        self.host = host
+        self.path = path
+        if media == 'all':
+            media = set(Purpose.__members__.values())
+        else:
+            media = set([Purpose(x.strip()) for x in media.split()
+                         if x.strip()])
+        self.media = media
+
+    @property
+    def method(self):
+        return "remote:%s" % self.name
+
+
+class Rule:
+    def __init__(self, name, when_tag=None, then_remote=None):
+        self.name = name
+        self.when_tag = [] if when_tag is None \
+                else [x.strip() for x in when_tag.split()
+                      if x.strip()]
+        self.then_remote = [] if then_remote is None \
+                else [x.strip() for x in then_remote.split()
+                      if x.strip()]
