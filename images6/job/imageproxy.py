@@ -6,6 +6,7 @@ from jsonobject import register_schema, PropertySet, Property
 from ..system import current_system
 from ..job import JobHandler, register_job_handler, Job, create_job
 from ..job.delete import DeleteJobHandler
+from ..job.rules import RulesJobHandler, RulesOptions
 from ..entry import (
     Entry,
     Variant,
@@ -89,16 +90,9 @@ class ImageProxyJobHandler(JobHandler):
 
         logging.debug('Created proxy files.')
 
-        print('-- 1 --')
-        print(self.entry.to_json())
         self.delete_deprecated()
-        print('-- 2 --')
-        print(self.entry.to_json())
         self.entry.variants += [thumb, proxy, check]
-        print('-- 3 --')
-        print(self.entry.to_json())
         self.entry = update_entry_by_id(self.entry.id, self.entry)
-        print('-- 4 --')
         print(self.entry.to_json())
 
         logging.info('Done with image proxy generation.')
