@@ -1,3 +1,3 @@
 #!/bin/bash
 conda install requests pillow cherrypy
-pip install flickrapi https://github.com/eblade/jsonobject/archive/1.0.2.tar.gz https://github.com/eblade/jsondb/archive/0.2.tar.gz
+pip install flickrapi argh bottle https://github.com/eblade/jsonobject/archive/1.0.2.tar.gz https://github.com/eblade/jsondb/archive/0.2.tar.gz
