@@ -21,6 +21,7 @@ def bootstrap(
 
 def serve(
     dbpath : 'path to where to store the sqlite db' = 'owners.db',
+    interface : 'server interface' = '127.0.0.1',
     port : 'server port' = 8889,
     secret : 'secret required as SECRET header' = None):
     """ Start up a server """
@@ -81,7 +82,7 @@ def serve(
     app = bottle.Bottle()
     app.route(path='/<id>/<owner>', method='POST', callback=acquire)
     app.route(path='/<id>/<owner>', method='DELETE', callback=release)
-    app.run(host='0.0.0.0', port=port, server='cherrypy')
+    app.run(host=interface, port=port, server='cherrypy')
 
 
 if __name__ == '__main__':
