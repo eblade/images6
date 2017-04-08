@@ -8,7 +8,7 @@ from ..entry import get_entry_by_id, update_entry_by_id, Purpose, Backup
 
 
 class FlickrOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     source_purpose = Property(enum=Purpose, default=Purpose.original)
     source_version = Property(int)
     title = Property()

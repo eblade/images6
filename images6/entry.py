@@ -42,21 +42,21 @@ class App:
             callback=FetchByQuery(get_entries, QueryClass=EntryQuery),
         )
         app.route(
-            path='/<id:int>',
+            path='/<id>',
             callback=FetchById(get_entry_by_id),
         )
         app.route(
-            path='/<id:int>',
+            path='/<id>',
             method='PUT',
             callback=UpdateById(update_entry_by_id, Entry),
         )
         app.route(
-            path='/<id:int>/metadata',
+            path='/<id>/metadata',
             method='PATCH',
             callback=PatchById(patch_entry_metadata_by_id),
         )
         app.route(
-            path='/<id:int>',
+            path='/<id>',
             method='PATCH',
             callback=PatchById(patch_entry_by_id),
         )
@@ -66,21 +66,21 @@ class App:
             callback=Create(create_entry, Entry),
         )
         app.route(
-            path='/<id:int>',
+            path='/<id>',
             method='DELETE',
             callback=DeleteById(delete_entry_by_id),
         )
         app.route(
-            path='/<id:int>/state',
+            path='/<id>/state',
             method='PUT',
             callback=UpdateByIdAndQuery(update_entry_state, QueryClass=StateQuery),
         )
         app.route(
-            path='/<id:int>/dl/<store>/<version:int>.<extension>',
+            path='/<id>/dl/<store>/<version:int>.<extension>',
             callback=download,
         )
         app.route(
-            path='/<id:int>/dl/<store>.<extension>',
+            path='/<id>/dl/<store>.<extension>',
             callback=download_latest,
         )
 
@@ -158,9 +158,8 @@ class Variant(PropertySet):
 
     def get_filename(self, id):
         extension = self.get_extension()
-        hex_id = '%08x' % (id)
         version = '_%i'  % self.version if self.version > 0 else ''
-        filename = hex_id + version + extension
+        filename = str(id) + version + extension
         return os.path.join(self.store, filename)
 
 
@@ -173,7 +172,7 @@ class Backup(PropertySet):
 
 
 class Entry(PropertySet):
-    id = Property(int, name='_id')
+    id = Property(name='_id')
     type = Property(enum=Type, default=Type.image)
     revision = Property(name='_rev')
     mime_type = Property()
@@ -240,13 +239,13 @@ class Entry(PropertySet):
                and x.method == method)
 
     def calculate_urls(self):
-        self.self_url = '%s/%i' % (App.BASE, self.id)
-        self.state_url = '%s/%i/state' % (App.BASE, self.id)
+        self.self_url = '%s/%s' % (App.BASE, self.id)
+        self.state_url = '%s/%s/state' % (App.BASE, self.id)
         self.urls = {}
         for variant in self.variants:
             if not variant.purpose.value in self.urls.keys():
                 self.urls[variant.purpose.value] = {}
-            url = '%s/%i/dl/%s/%i%s' % (
+            url = '%s/%s/dl/%s/%i%s' % (
                 App.BASE,
                 self.id,
                 variant.store,

@@ -10,7 +10,7 @@ from ..localfile import FileCopy, FolderScanner
 
 
 class AmendOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     amend_metadata = Property(bool, default=True)
     amend_variants = Property(bool, default=True)
 

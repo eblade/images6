@@ -32,7 +32,7 @@ from ..job.imageproxy import ImageProxyOptions, ImageProxyJobHandler
 
 
 class JPEGImportOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     source_path = Property()
     folder = Property()
     mime_type = Property()
@@ -208,7 +208,7 @@ register_import_module('image/png', JPEGImportJobHandler)
 
 
 class JPEGExportOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     purpose = Property(enum=Purpose)
     version = Property(int)
     date = Property()

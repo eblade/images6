@@ -44,7 +44,7 @@ for r, ds, fs in os.walk(source_data_folder):
                 entry = Entry.FromDict(entry_data)
                 entry.id = entry_data['id']
                 print(entry.id)
-                ids.append(int(entry.id))
+                ids.append(entry.id)
                 #system.entry.save(entry.to_dict())
 
 

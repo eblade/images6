@@ -44,11 +44,11 @@ class App:
             callback=FetchByQuery(get_jobs, QueryClass=JobQuery)
         )
         app.route(
-            path='/<id:int>',
+            path='/<id>',
             callback=FetchById(get_job_by_id)
         )
         app.route(
-            path='/<id:int>',
+            path='/<id>',
             method='PATCH',
             callback=PatchById(patch_job_by_id),
         )
@@ -155,7 +155,7 @@ class State(EnumProperty):
 
 
 class Job(PropertySet):
-    id = Property(int, name='_id')
+    id = Property(name='_id')
     revision = Property(name='_rev')
     method = Property(required=True)
     state = Property(enum=State, default=State.new)

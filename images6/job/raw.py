@@ -15,7 +15,7 @@ from ..localfile import FileCopy, FolderScanner
 
 
 class RawImportOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     source_path = Property()
     folder = Property()
     mime_type = Property()
@@ -110,7 +110,7 @@ register_import_module('image/dng', RawImportJobHandler)
 
 
 class RawFetchOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
 
 
 register_schema(RawFetchOptions)

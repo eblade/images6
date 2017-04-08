@@ -13,7 +13,7 @@ from ..entry import Variant
 LOCAL_STORES = ('original', 'derivative', 'thumb', 'proxy', 'check', 'raw')
 
 class DeleteOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     variant = Property(Variant)
 
 

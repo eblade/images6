@@ -206,17 +206,15 @@ def import_job(folder):
             if folder.derivatives:
                 # Try to see if there is an entry to match it with
                 file_name = os.path.basename(file_path)
-                m = re.search(r'^[0-9a-f]{8}', file_name)
+                m = re.search(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', file_name)
                 if m is not None:
-                    hex_id = m.group(0)
-                    logging.debug('Converting hex %s into decimal', hex_id)
-                    entry_id = int(hex_id, 16)
-                    logging.debug('Trying to use entry %s (%d)', hex_id, entry_id)
+                    entry_id = m.group(0)
+                    logging.debug('Trying to use entry %s', entry_id)
                     try:
                         entry = get_entry_by_id(entry_id)
                         new = False
                     except KeyError:
-                        logging.warn('There was no such entry %s (%d)', hex_id, entry_id)
+                        logging.warn('There was no such entry %s', entry_id)
 
             if entry is None:
                 logging.debug('Creating entry...')
@@ -226,7 +224,7 @@ def import_job(folder):
                     import_folder=folder.name,
                     mime_type=mime_type,
                 ))
-                logging.debug('Created entry %d.', entry.id)
+                logging.debug('Created entry %s.', entry.id)
                 new = True
 
             options = ImportModule.Options(

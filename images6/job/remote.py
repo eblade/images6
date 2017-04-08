@@ -16,7 +16,7 @@ from ..job import JobHandler, Job, create_job, register_job_handler
 
 
 class RemoteOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     variant = Property(type=Variant)
     remote = Property()
 

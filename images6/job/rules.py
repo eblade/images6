@@ -13,7 +13,7 @@ from .remote import RemoteOptions, RemoteJobHandler
 
 
 class RulesOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     entry_ids = Property(list)
 
 

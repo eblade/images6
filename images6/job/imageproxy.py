@@ -18,7 +18,7 @@ from ..entry import (
 
 
 class ImageProxyOptions(PropertySet):
-    entry_id = Property(int)
+    entry_id = Property()
     angle = Property(int)
     mirror = Property(int)
     source_purpose = Property(enum=Purpose, default=Purpose.original)
@@ -93,7 +93,6 @@ class ImageProxyJobHandler(JobHandler):
         self.delete_deprecated()
         self.entry.variants += [thumb, proxy, check]
         self.entry = update_entry_by_id(self.entry.id, self.entry)
-        print(self.entry.to_json())
 
         logging.info('Done with image proxy generation.')
 

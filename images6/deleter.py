@@ -103,7 +103,7 @@ def purge_job():
 
         for id in ids_to_purge:
             entry = get_entry_by_id(id)
-            logging.info("Deleting entry %i." % (entry.id))
+            logging.info("Deleting entry %s." % (entry.id))
 
             while len(entry.variants) > 0:
                 variant = entry.variants.pop()
@@ -116,12 +116,12 @@ def purge_job():
                     )
                 )
                 delete_job = create_job(delete_job)
-                logging.info("Created delete job %d.", delete_job.id)
+                logging.info("Created delete job %s.", delete_job.id)
                 entry = update_entry_by_id(id, entry)
 
             delete_entry_by_id(id)
             PurgeJob.deleted += 1
-            logging.info("Deleted entry %i.", entry.id)
+            logging.info("Deleted entry %s.", entry.id)
 
         PurgeJob.status = 'done'
 
