@@ -649,6 +649,47 @@ $(function() {
         };
     };
 
+    var show_bulk_export = function() {
+        $('#viewer_input').fadeIn();
+        $('#viewer_input_heading').html('Export');
+        $('#viewer_input_box').focus()
+        $.wait(100).then(function() {
+            $('#viewer_input_box').val('local');
+        });
+        $.Images.Viewer.showing_input_box = true;
+        $.Images.Viewer.input_box_callback = function() {
+            var values = $('#viewer_input_box').val();
+            values = values.split();
+            values = values.map(function(x) { return x.trim() });
+            values = values.filter(function(x) { return x !== "" });
+            var export_name = values[0];
+            var longest_side = null;
+            if (values.length === 2) {
+                longest_side = values[1];
+            }
+            $.ajax({
+                url: '/job',
+                method: 'POST',
+                contentType: "application/json",
+                data: JSON.stringify({
+                    '*schema': 'Job',
+                    method: 'jpeg_export',
+                    options: {
+                        '*schema': 'JPEGExportOptions',
+                        entry_ids: $.map($('.thumb_selected'), function(thumb) { return thumb.getAttribute('data-id'); }),
+                        folder: export_name,
+                        longest_side: longest_side,
+                    },
+                }),
+                success: function(data) {
+                },
+                error: function(data) {
+                    alert('no!');
+                },
+            });
+        };
+    };
+
     var hide_input_box = function() {
         $('#viewer_input_box').blur();
         $('#viewer_input').fadeOut();
@@ -717,6 +758,8 @@ $(function() {
                         event.preventDefault();
                     } else if (event.which === 84) { // t
                         show_bulk_add_tags();
+                    } else if (event.which === 69) { // e
+                        show_bulk_export();
                     } else if (event.which === 65) { // a
                         select_all();
                     } else if (event.which === 78) { // n

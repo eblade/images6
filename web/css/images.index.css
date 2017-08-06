@@ -91,6 +91,10 @@
     overflow: hidden;
 }
 
+.index_gray {
+   color: #666;
+}
+
 .index_pending {
     background-color: #248;
     border-color: #248;

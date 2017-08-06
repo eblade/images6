@@ -209,6 +209,7 @@ register_import_module('image/png', JPEGImportJobHandler)
 
 class JPEGExportOptions(PropertySet):
     entry_id = Property(int)
+    entry_ids = Property(list)
     purpose = Property(enum=Purpose)
     version = Property(int)
     date = Property()
@@ -229,11 +230,26 @@ class JPEGExportJobHandler(JobHandler):
         assert job is not None, "Job can't be None"
         assert job.options is not None, "Job Options can't be None"
         assert job.options.folder, "Need folder in job options"
-        assert job.options.entry_id or job.options.date, "Need either entry_id or date"
+        assert job.options.entry_id or job.options.entry_ids or job.options.date, "Need either entry_id or date"
         logging.info('Job\n%s', job.to_json())
         self.system = current_system()
         self.options = job.options
         self.folder = self.system.export_folders[self.options.folder]
+
+        # If we get multiple entry ids, create a new job for each and finish
+        if self.options.entry_ids:
+            for entry_id in self.options.entry_ids:
+                create_job(Job(
+                    method=self.method,
+                    options=self.Options(
+                        entry_id=entry_id,
+                        purpose=self.options.purpose,
+                        folder=self.options.folder,
+                        filename=self.options.filename,
+                        longest_side=self.options.longest_side,
+                    )
+                ))
+            return
 
         if self.options.date is not None:
             self.explode()
@@ -257,11 +273,9 @@ class JPEGExportJobHandler(JobHandler):
             else (Purpose.original, Purpose.derivative)
         )
         for purpose in purposes:
-            try:
-                self.variant = entry.get_variant(purpose, self.options.version)
+            self.variant = self.entry.get_variant(purpose, self.options.version)
+            if self.variant is not None:
                 break
-            except IndexError:
-                pass
         else:
             raise ValueError('Could not find a suitable variant for %s/%s' % (
                  self.options.purpose.value if self.options.purpose else '*',
@@ -269,21 +283,14 @@ class JPEGExportJobHandler(JobHandler):
             ))
 
     def select_path(self):
-        filename = self.options.filename or self.folder.filename
-        if filename is None:
-            if self.entry.original_filename:
-                filename = os.path.basename(self.entry.original_filename)
-                filename, _ = os.path.splitext(filename)
-                filename += '{extension}'
-            else:
-                filename = self.entry.original_filename or '{id}{extentsion}'
-
-        self.filename = filename.format(
+        params = dict(
             id=str(self.entry.id),
-            extension=self.variant.get_extension,
-            title=mangle(self.entry.title) or str(self.entry.id),
+            extension=self.variant.get_extension(),
+            title=mangle(self.entry.title) if self.entry.title else str(self.entry.id),
             date=self.entry.taken_ts[:10],
+            original=self.entry.original_filename,
         )
+        self.destination_path = self.folder.get_full_path(**params)
 
     def export_plain(self):
         filecopy = FileCopy(
@@ -291,11 +298,8 @@ class JPEGExportJobHandler(JobHandler):
                 self.system.media_root,
                 self.variant.get_filename(self.entry.id),
             ),
-            destination=os.path.join(
-                self.folder.get_full_path,
-                self.filename,
-            ),
-            link=True,
+            destination=self.destination_path,
+            link=False,
             remove_source=False,
         )
         filecopy.run()

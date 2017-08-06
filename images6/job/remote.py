@@ -49,7 +49,7 @@ class RemoteJobHandler(JobHandler):
         if exists:
             logging.info("Object already exists in store %s", remote.name)
         else:
-            upload(remote, full_local_filepath, md5sum_for_file)
+            upload_ssh(remote, full_local_filepath, md5sum_for_file)
 
         entry = get_entry_by_id(options.entry_id)
         entry.backups.append(
@@ -80,8 +80,8 @@ def check_if_exists(remote, md5hash):
     return code == 0
 
 
-def upload(remote, source_path, md5hash):
-    destination_path = os.path.join(remote.path, md5hash)
+def upload_ssh(remote, source_path, remote_filaname):
+    destination_path = os.path.join(remote.path, remote_filaname)
     scp_path = '%s:%s' % (remote.host, destination_path)
     code = subprocess.call(['scp', source_path, scp_path])
     if code != 0:

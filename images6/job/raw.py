@@ -102,6 +102,7 @@ class RawImportJobHandler(JobHandler):
 register_job_handler(RawImportJobHandler)
 register_import_module('image/raf', RawImportJobHandler)
 register_import_module('image/dng', RawImportJobHandler)
+register_import_module('image/cr2', RawImportJobHandler)
 
 
 

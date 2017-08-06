@@ -57,7 +57,7 @@ class System:
             if section.startswith("Export:"):
                 name = section[7:]
                 config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
-                self.export_folders[name] = ExportFolder(name, self.root, **config)
+                self.export_folders[name] = ExportFolder(name, **config)
 
     def setup_remote(self):
         self.remotes = {}
@@ -258,7 +258,7 @@ class ImportFolder:
 
 
 class ExportFolder:
-    def __init__(self, name, system_root, type='folder', mode=None, path=None, filename=None, backup=False, backup_type=None, longest_side=None):
+    def __init__(self, name, type='folder', mode=None, path=None, filename=None, backup=False, backup_type=None, longest_side=None):
         logging.info("Setting up export folder %s", name)
         assert type is not None, 'Import type required'
         assert type == 'folder', 'Import type required (folder)'
@@ -266,12 +266,12 @@ class ExportFolder:
         self.type = type
         self.path = os.path.expandvars(os.path.expanduser(path)) if path else None
         if type == 'folder': assert path, 'Export path required for folder'
-        self.filename = filename or None
+        self.filename = filename or '{original}.{extension}'
         self.mode = mode
         self.backup = (backup == 'yes')
         self.backup_type = backup_type
         if self.backup: assert backup_type in ('google', ), 'backup option requires backup type'
-        self.longest_side = None if longest_side is None else int(longest_side)
+        self.longest_side = 1600 if longest_side is None else int(longest_side)
 
         if type == 'folder':
             try:
@@ -282,8 +282,15 @@ class ExportFolder:
     def __repr__(self):
         return '<ExportFolder %s%s %s>' % ('+' if self.backup else '-', self.name, self.path)
 
-    def get_full_path(self, filepath):
-        return os.path.join(self.path, filepath)
+    def get_full_path(self, **params):
+        full_path = os.path.join(self.path, self.filename.format(**params))
+        dir_name = os.path.dirname(full_path)
+        try:
+            os.makedirs(dir_name, exist_ok=True)
+            return full_path
+        except Exception as e:
+            logging.error("Export Folder %s not reachable: %s.", dir_name, str(e))
+
 
 
 class Remote:

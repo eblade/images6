@@ -159,14 +159,14 @@ $(function() {
                                     '<div id="' + day_id +
                                         '" data-date="' + date.date +
                                         '" class="index_date_block ' + date_css + '">' + day + '</div>' +
-                                    '<div class="index_date_short">' + date.stats.total + ' - ' + date.short + '</div></div>');
+                                    '<div class="index_date_short">' + date.short + '</div></div>');
                     } else {
                         $(feed_div)
                             .append('<div class="index_date_wrapper">' +
                                     '<div id="' + day_id +
                                     '" data-date="' + date.date +
                                     '" class="index_date_block ' + date_css + '">' + day + '</div>' +
-                                    '<div class="index_date_short">' + date.stats.total + '</div></div>');
+                                    '<div class="index_date_short index_gray">(' + date.stats.total + ')</div></div>');
                     }
                     $(feed_div)
                         .find('#' + day_id)
@@ -191,7 +191,7 @@ $(function() {
     var load_tags = function(tags) {
         $(feed_div).html('<div class="index_year">tags</div>');
         $.ajax({
-            url: 'tag',
+            url: 'tag?page_size=500',
             method: 'GET',
             success: function(data) {
                 $.each(data.entries, function(index, tag) {
