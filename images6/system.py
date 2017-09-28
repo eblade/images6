@@ -20,6 +20,7 @@ class System:
         self.proxy_size = self.config['Images'].getint('proxy size', 1280)
         self.thumb_size = self.config['Images'].getint('thumb size', 200)
         self.check_size = self.config['Images'].getint('check size', 300)
+        self.close_hooks = []
 
         logging.info("Config read from %s", config_path)
 
@@ -95,7 +96,7 @@ class System:
                 yield ((subvalue, value.get('taken_ts')), None)
 
         self.entry_root = os.path.join(self.root, 'entry')
-        entry = jsondb.Database(self.entry_root)
+        entry = jsondb.Database(self.entry_root, True)
         entry.define(
             'by_taken_ts',
             lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')) + (o['taken_ts'][11:],), None)
@@ -133,7 +134,7 @@ class System:
         self.db['entry'] = entry
 
         self.date_root = os.path.join(self.root, 'date')
-        date = jsondb.Database(self.date_root)
+        date = jsondb.Database(self.date_root, True)
         date.define(
             'by_date',
             lambda o: (o['_id'], None)
@@ -141,7 +142,7 @@ class System:
         self.db['date'] = date
 
         self.job_root = os.path.join(self.root, 'job')
-        job = jsondb.Database(self.job_root)
+        job = jsondb.Database(self.job_root, True)
         job.define(
             'by_state',
             lambda o: ((o['state'], o['release'], o['priority']), None),
@@ -174,6 +175,11 @@ class System:
                 config = {k.replace(' ', '_'): v for k, v in self.config.items(section)}
                 self.rules[name] = Rule(name, **config)
 
+    def close(self):
+        for close_hook in self.close_hooks:
+            close_hook()
+        for db in self.db.values():
+            db.close()
 
 
 class ImportFolder:

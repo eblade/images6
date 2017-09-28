@@ -70,15 +70,12 @@ class TagQuery(Query):
 
 def get_tags(query=None):
     if query is None:
-        offset = 0
-        page_size = 0
-        tag = None
+        query = TagQuery()
 
-    else:
-        logging.info(query.to_query_string())
-        offset = query.offset
-        page_size = query.page_size
-        tag = query.tag
+    logging.info(query.to_query_string())
+    offset = query.offset
+    page_size = query.page_size
+    tag = query.tag
 
     if tag is not None:
         return get_tag(tag, offset, page_size)

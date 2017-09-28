@@ -132,21 +132,19 @@ class DateQuery(PropertySet):
 
 def get_dates(query=None):
     if query is None:
-        query_str = ''
-        reverse = False
+        query = DateQuery()
 
+    logging.info(query.to_query_string())
+    if query.month is not None:
+        sk = (query.year, query.month)
+        ek = (query.year, query.month, any)
+    elif query.year is not None:
+        sk = (query.year, )
+        ek = (query.year, any)
     else:
-        logging.info(query.to_query_string())
-        if query.month is not None:
-            sk = (query.year, query.month)
-            ek = (query.year, query.month, any)
-        elif query.year is not None:
-            sk = (query.year, )
-            ek = (query.year, any)
-        else:
-            sk = None
-            ek = any
-        reverse = query.reverse
+        sk = None
+        ek = any
+    reverse = query.reverse
 
     date_stats = [(date['key'], DateStats.FromDict(date['value'])) for date
                   in current_system().db['entry'].view('state_by_date', startkey=sk, endkey=ek, group=True)]

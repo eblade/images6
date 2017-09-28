@@ -2,6 +2,8 @@ import os
 import bottle
 import urllib
 
+from .system import current_system
+
 
 class App:
     BASE = '/'
@@ -53,6 +55,10 @@ class App:
             callback=lambda: bottle.static_file('state.html', root=self.HTML),
         )
 
+        app.route(
+            path='/shutdown',
+            callback=lambda: current_system().close(),
+        )
 
         return app
 

@@ -67,6 +67,7 @@ if __name__ == '__main__':
         # Apps
         logging.info("*** Setting up apps...")
         app = web.App.create()
+        system.close_hooks.append(lambda: app.close())
         for module in (
             entry,
             date,
@@ -100,6 +101,24 @@ if __name__ == '__main__':
         from .select import select
         for line in select(args):
             print(line)
+
+    elif command == 'gui':
+        from .gui import main
+
+    elif command == 'copy':
+        from .tag import get_tag
+        from .entry import Purpose
+        from .job import Job, create_job
+        from .job.jpg import JPEGExportOptions
+        tag = args[0]
+
+        for entry in get_tag(tag, 0, 10000).entries:
+            options = JPEGExportOptions(
+                entry_id=entry.id,
+                folder="local",
+                filename="elsas_valpar/{original}.{extension}")
+            job = Job(method="jpeg_export", options=options)
+            create_job(job)
 
     elif command == 'amend':
         dates = args

@@ -786,6 +786,50 @@ $(function() {
                         toggle_check();
                     } else if (event.which === 84) { // t
                         toggle_metadata(true, 'tags');
+                    } else if (event.which === 65) { // a
+                        var thumb = $('img.thumb')[$.Images.Viewer.focus];
+                        var value = ["brollop_album"];
+                        $.ajax({
+                            url: '/job',
+                            method: 'POST',
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                '*schema': 'Job',
+                                method: 'tag_update',
+                                options: {
+                                    '*schema': 'TagBulkUpdateOptions',
+                                    entry_ids: [thumb.getAttribute('data-id')],
+                                    add_tags: value,
+                                },
+                            }),
+                            success: function(data) {
+                            },
+                            error: function(data) {
+                                alert('no!');
+                            },
+                        });
+                    } else if (event.which === 66) { // b
+                        var thumb = $('img.thumb')[$.Images.Viewer.focus];
+                        var value = ["brollop_album"];
+                        $.ajax({
+                            url: '/job',
+                            method: 'POST',
+                            contentType: "application/json",
+                            data: JSON.stringify({
+                                '*schema': 'Job',
+                                method: 'tag_update',
+                                options: {
+                                    '*schema': 'TagBulkUpdateOptions',
+                                    entry_ids: [thumb.getAttribute('data-id')],
+                                    remove_tags: value,
+                                },
+                            }),
+                            success: function(data) {
+                            },
+                            error: function(data) {
+                                alert('no!');
+                            },
+                        });
                     }
                 }
             }
