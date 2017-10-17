@@ -71,7 +71,7 @@ class System:
     def setup_server(self):
         self.server_host = self.config['Server']['host']
         self.server_port = int(self.config['Server']['port'])
-        self.server_adapter = self.config['Server'].get('adapter', 'cherrypy')
+        self.server_adapter = self.config['Server'].get('adapter', 'cheroot')
 
     def setup_database(self):
         self.db = dict()
@@ -96,7 +96,7 @@ class System:
                 yield ((subvalue, value.get('taken_ts')), None)
 
         self.entry_root = os.path.join(self.root, 'entry')
-        entry = jsondb.Database(self.entry_root, True)
+        entry = jsondb.Database(self.entry_root)
         entry.define(
             'by_taken_ts',
             lambda o: (tuple(int(x) for x in o['taken_ts'][:10].split('-')) + (o['taken_ts'][11:],), None)
@@ -134,7 +134,7 @@ class System:
         self.db['entry'] = entry
 
         self.date_root = os.path.join(self.root, 'date')
-        date = jsondb.Database(self.date_root, True)
+        date = jsondb.Database(self.date_root)
         date.define(
             'by_date',
             lambda o: (o['_id'], None)
@@ -142,7 +142,7 @@ class System:
         self.db['date'] = date
 
         self.job_root = os.path.join(self.root, 'job')
-        job = jsondb.Database(self.job_root, True)
+        job = jsondb.Database(self.job_root)
         job.define(
             'by_state',
             lambda o: ((o['state'], o['release'], o['priority']), None),
@@ -179,7 +179,8 @@ class System:
         for close_hook in self.close_hooks:
             close_hook()
         for db in self.db.values():
-            db.close()
+            #db.close()
+            pass
 
 
 class ImportFolder:
