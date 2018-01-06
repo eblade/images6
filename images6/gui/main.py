@@ -217,6 +217,7 @@ from ..system import current_system
 from ..date import get_dates, get_date
 from ..entry import get_entries, get_entry_by_id, update_entry_by_id, EntryQuery, Purpose, State
 from ..tag import get_tags
+from ..importer import trig_import
 from .router import Router, Route
 
 
@@ -224,9 +225,10 @@ class Parser:
     def __init__(self):
         self._commands = {}
 
-    def add_commands(self, commands):
+    def add_commands(self, *commands):
         for command in commands:
-            self._commands[command.__name__] = command
+            name = command.__name__[:-1] if command.__name__.endswith('_') else command.__name__
+            self._commands[name] = command
 
     def dispatch(self, args, context):
         command_name = args.pop(0)
@@ -247,12 +249,12 @@ class Interpreter:
     def __init__(self):
         self._router = Router()
         self._parser = Parser()
-        self._parser.add_commands([
+        self._parser.add_commands(
             self.exit, self.help,
             self.cd, self.pwd, self.ls,
             self.info, self.cat, self.view,
-            self.cache
-        ])
+            self.cache, self.import_
+        )
         self.location = ''
 
     def place(self, path=None, callback=None):
@@ -351,6 +353,11 @@ class Interpreter:
         else:
             yield ErrorOutput(context, f'The command cache should be followed by clear or index')
 
+    def import_(self, context, folder):
+        trig_import(folder)
+        yield StandardOutput(context, 'Importing...')
+
+
 class Window(pyglet.window.Window):
     def __init__(self, *args, interpreter=None, **kwargs):
         super(Window, self).__init__(*args, **kwargs)
@@ -401,8 +408,8 @@ class Window(pyglet.window.Window):
     def on_mouse_press(self, x, y, button, modifiers):
         if self.command_line.hit_test(x, y):
             self.set_focus(self.command_line)
-        else:
-            self.set_focus(None)
+        #else:
+        #    self.set_focus(None)
 
         if self.focus and hasattr(self.focus, 'caret'):
             self.focus.caret.on_mouse_press(x, y, button, modifiers)
@@ -545,7 +552,10 @@ class DatePlace:
         yield ImageViewerOverlay(context, self, 0)
 
 
-interpreter.location = '/dates/2017-09-17'
+from ..job import App as JobApp
+JobApp.run(workers=4)
+
+interpreter.location = '/dates/2017-10-19'
 
 
 window = Window(800, 600, resizable=True, caption="IMAGES", interpreter=interpreter)

@@ -116,7 +116,7 @@ if __name__ == '__main__':
             options = JPEGExportOptions(
                 entry_id=entry.id,
                 folder="local",
-                filename="elsas_valpar/{original}.{extension}")
+                filename=tag + "/{original}.{extension}")
             job = Job(method="jpeg_export", options=options)
             create_job(job)
 
