@@ -23,6 +23,7 @@ $(function() {
                 data: JSON.stringify(data),
                 success: function (data) {
                     $(id).removeClass('autosave_saving');
+                    $(id).val(data[field]);
                 },
                 error: function (data) {
                     $(id).removeClass('autosave_saving').addClass('autosave_error');

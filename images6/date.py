@@ -92,6 +92,12 @@ class Date(PropertySet):
         if self.stats is not None:
             self.count = self.stats.total
 
+    def decode(self):
+        if self.short:
+            self.short = _decode(self.short)
+        if self.full:
+            self.full = _decode(self.full)
+
 
 class DateFeed(PropertySet):
     count = Property(int)
@@ -185,6 +191,7 @@ def get_date(date):
 
 def update_date(date, date_info):
     date_info.id = date
+    date_info.decode()
     date_info.calculate_urls()
     date_info = date_info.to_dict()
     return current_system().db['date'].save(date_info)
@@ -203,3 +210,17 @@ def patch_date(date, patch):
 
 def delete_date(date):
     current_system().db['date'].delete(date)
+
+
+def _decode(s):
+    return (
+        s
+        .replace('/a:', 'ä')
+        .replace('/ao', 'å')
+        .replace('/o:', 'ö')
+        .replace("/e'", 'é')
+        .replace('/A:', 'Ä')
+        .replace('/Ao', 'Å')
+        .replace('/O:', 'Ö')
+        .replace("/E'", 'É')
+    )
