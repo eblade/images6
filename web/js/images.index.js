@@ -173,8 +173,8 @@ $(function() {
                         .click(function() {
                             load_date(this.getAttribute('data-date'));
                         });
-                    //if (document.location.hash) {
-                    //    $.scroll_to(document.location.hash, 200);
+                    //if (scroll_target) {
+                    //    $.scroll_to(scroll_target, 200);
                     //}
                 });
             },

@@ -12,6 +12,7 @@ from .web import (
     UpdateByKey,
     PatchByKey,
     DeleteByKey,
+    decode_composed,
 )
 
 
@@ -94,9 +95,9 @@ class Date(PropertySet):
 
     def decode(self):
         if self.short:
-            self.short = _decode(self.short)
+            self.short = decode_composed(self.short)
         if self.full:
-            self.full = _decode(self.full)
+            self.full = decode_composed(self.full)
 
 
 class DateFeed(PropertySet):
@@ -210,17 +211,3 @@ def patch_date(date, patch):
 
 def delete_date(date):
     current_system().db['date'].delete(date)
-
-
-def _decode(s):
-    return (
-        s
-        .replace('/a:', 'ä')
-        .replace('/ao', 'å')
-        .replace('/o:', 'ö')
-        .replace("/e'", 'é')
-        .replace('/A:', 'Ä')
-        .replace('/Ao', 'Å')
-        .replace('/O:', 'Ö')
-        .replace("/E'", 'É')
-    )

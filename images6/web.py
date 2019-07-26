@@ -220,3 +220,17 @@ def Delete(function, pre=None):
 
 def make_query_from_request(QueryClass):
     return QueryClass.FromDict(bottle.request.query.decode())
+
+
+def decode_composed(s):
+    return (
+        s
+        .replace('/a:', 'ä')
+        .replace('/ao', 'å')
+        .replace('/o:', 'ö')
+        .replace("/e'", 'é')
+        .replace('/A:', 'Ä')
+        .replace('/Ao', 'Å')
+        .replace('/O:', 'Ö')
+        .replace("/E'", 'É')
+    )

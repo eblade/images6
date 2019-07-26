@@ -110,7 +110,7 @@ $(function() {
     };
 
     var back_to_index = function() {
-        document.location = '/#' + $.Images.Viewer.index_hash;
+        document.location.replace('/#' + $.Images.Viewer.index_hash);
     };
 
     var hide_viewer = function() {
@@ -623,10 +623,15 @@ $(function() {
         });
         $.Images.Viewer.showing_input_box = true;
         $.Images.Viewer.input_box_callback = function() {
-            var value = $('#viewer_input_box').val();
-            value = value.split(',');
-            value = value.map(function(x) { return x.trim() });
-            value = value.filter(function(x) { return x !== "" });
+            var values = $('#viewer_input_box').val();
+            values = values.split(',');
+            values = values.map(function(x) { return x.trim() });
+            values = values.filter(function(x) { return x !== "" });
+	    var add_tags = values
+		.filter(function(x) { return !x.startsWith("-") });
+	    var remove_tags = values
+		.filter(function(x) { return x.startsWith("-") })
+		.map(function(x) { return x.substring(1) });
             $.ajax({
                 url: '/job',
                 method: 'POST',
@@ -637,7 +642,8 @@ $(function() {
                     options: {
                         '*schema': 'TagBulkUpdateOptions',
                         entry_ids: $.map($('.thumb_selected'), function(thumb) { return thumb.getAttribute('data-id'); }),
-                        add_tags: value,
+                        add_tags: add_tags,
+                        remove_tags: remove_tags,
                     },
                 }),
                 success: function(data) {

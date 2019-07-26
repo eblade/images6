@@ -23,6 +23,7 @@ from .web import (
     UpdateByIdAndQuery,
     PatchById,
     DeleteById,
+    decode_composed,
 )
 
 
@@ -201,6 +202,7 @@ class Entry(PropertySet):
     derivative_url = Property(calculated=True)
 
     _patchable = 'title', 'description', 'tags'
+    _decodeable = 'title', 'description', 'tags'
 
     def get_variant(self, purpose, version=None):
         variants = [variant for variant in self.variants
@@ -266,6 +268,15 @@ class Entry(PropertySet):
                 self.raw_url = url
             elif variant.purpose is Purpose.derivative:
                 self.derivative_url = url
+
+    def decode(self):
+        for attr in self._decodeable:
+            value = getattr(self, attr)
+            if value:
+                if attr == 'tags':
+                    setattr(self, attr, [decode_composed(x) for x in value])
+                else:
+                    setattr(self, attr, decode_composed(value))
 
 
 class EntryFeed(PropertySet):
@@ -381,6 +392,7 @@ def get_entry_by_source(folder, filename):
 
 def update_entry_by_id(id, entry):
     entry.id = id
+    entry.decode()
     logging.debug('Updating entry to\n%s', entry.to_json())
     entry = Entry.FromDict(current_system().db['entry'].save(entry.to_dict()))
     return entry
@@ -425,6 +437,10 @@ def patch_entry_by_id(id, patch):
 
     for key, value in patch.items():
         if key in Entry._patchable:
+            if key == 'tags':
+                value = [decode_composed(x) for x in value]
+            elif key in Entry._decodeable:
+                value = decode_composed(value)
             setattr(entry, key, value)
         elif key == 'variants':
             purpose = value['purpose']
