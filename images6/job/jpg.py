@@ -3,7 +3,7 @@ import os
 import re
 import exifread
 from datetime import datetime
-from jsonobject import PropertySet, Property, register_schema
+from lindh.jsonobject import PropertySet, Property, register_schema
 from PIL import Image
 
 from ..system import current_system

@@ -37,7 +37,7 @@ setup(
         "pillow>=2.5.1",
         "cherrypy",
         "flickrapi",
-        "jsonobject",
+        "lindh-jsonobject",
         "jsondb",
     ],
     classifiers=classifiers,

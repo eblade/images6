@@ -3,7 +3,7 @@ import bottle
 import threading
 import time
 
-from jsonobject import wrap_dict
+from lindh.jsonobject import wrap_dict
 
 from .multi import Pool
 from .system import current_system

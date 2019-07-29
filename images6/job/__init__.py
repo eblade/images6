@@ -6,7 +6,7 @@ import jsondb
 import urllib
 import traceback
 
-from jsonobject import (
+from lindh.jsonobject import (
     PropertySet,
     Property,
     EnumProperty,

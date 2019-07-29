@@ -3,7 +3,7 @@ import bottle
 import datetime
 import urllib
 import json
-from jsonobject import PropertySet, Property, EnumProperty
+from lindh.jsonobject import PropertySet, Property, EnumProperty
 
 from .system import current_system
 from .web import (

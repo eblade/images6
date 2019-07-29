@@ -5,7 +5,7 @@ import urllib
 import mimetypes
 import os
 import json
-from jsonobject import (
+from lindh.jsonobject import (
     PropertySet,
     Property,
     Query,

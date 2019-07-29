@@ -1,7 +1,7 @@
 import logging
 import bottle
 import urllib
-from jsonobject import PropertySet, Property, Query
+from lindh.jsonobject import PropertySet, Property, Query
 
 from .system import current_system
 from .web import (

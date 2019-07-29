@@ -2,7 +2,7 @@ import logging
 import os
 import re
 import exifread
-from jsonobject import PropertySet, Property, register_schema
+from lindh.jsonobject import PropertySet, Property, register_schema
 
 from ..system import current_system
 from ..localfile import FileCopy, mangle

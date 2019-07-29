@@ -1,7 +1,7 @@
 import logging
 import bottle
 from datetime import datetime
-from jsonobject import PropertySet, Property, EnumProperty, register_schema
+from lindh.jsonobject import PropertySet, Property, EnumProperty, register_schema
 
 from .system import current_system
 from .web import App as MainApp

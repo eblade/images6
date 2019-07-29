@@ -3,7 +3,7 @@ import hashlib
 import os
 import subprocess
 from datetime import datetime
-from jsonobject import PropertySet, Property, register_schema
+from lindh.jsonobject import PropertySet, Property, register_schema
 
 from ..system import current_system
 from ..entry import (

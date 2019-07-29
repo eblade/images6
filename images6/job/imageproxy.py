@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 import logging
-from jsonobject import register_schema, PropertySet, Property
+from lindh.jsonobject import register_schema, PropertySet, Property
 
 from ..system import current_system
 from ..job import JobHandler, register_job_handler, Job, create_job

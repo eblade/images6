@@ -1,6 +1,6 @@
 import os
 import logging
-from jsonobject import register_schema, PropertySet, Property
+from lindh.jsonobject import register_schema, PropertySet, Property
 
 from . import Job, JobHandler, register_job_handler, create_job
 from .jpg import JPEGImportJobHandler
