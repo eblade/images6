@@ -2,7 +2,7 @@ import logging
 import bottle
 import threading
 import time
-import jsondb
+from lindh import jsondb
 import urllib
 import traceback
 

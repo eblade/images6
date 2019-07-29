@@ -3,7 +3,7 @@ import configparser
 import os
 import threading
 import json
-import jsondb
+from lindh import jsondb
 
 
 def current_system():

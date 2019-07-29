@@ -38,7 +38,7 @@ setup(
         "cherrypy",
         "flickrapi",
         "lindh-jsonobject",
-        "jsondb",
+        "lindh-jsondb",
     ],
     classifiers=classifiers,
 )

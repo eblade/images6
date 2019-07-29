@@ -21,7 +21,7 @@ Features
 Dependencies
 ------------
 
-- Python 3.5
+- Python 3.6
 - PIL (or pillow)
-- jsonobject
-- jsondb
+- lindh-jsonobject
+- lindh-jsondb
